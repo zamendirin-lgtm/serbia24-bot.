@@ -23,7 +23,6 @@ from zoneinfo import ZoneInfo
 import feedparser
 import requests
 from bs4 import BeautifulSoup
-from deep_translator import GoogleTranslator
 from unidecode import unidecode
 
 LOG = logging.getLogger("serbia24")
@@ -158,14 +157,65 @@ def prepare_summary(article: Article) -> str:
     return first if len(first) >= 35 else ""
 
 
-def translate_article(article: Article, translator: GoogleTranslator) -> tuple[str, str]:
-    title = (translator.translate(article.title) or "").strip()
-    if not title or title == article.title:
+class FreeTranslator:
+    """Free keyless translation with a secondary provider as fallback.
+
+    These are public, unofficial/community endpoints; neither has an SLA.
+    """
+
+    def translate(self, text: str) -> str:
+        if not text:
+            return ""
+        try:
+            response = requests.get(
+                "https://translate.googleapis.com/translate_a/t",
+                params={
+                    "client": "dict-chrome-ex",
+                    "sl": "sr",
+                    "tl": "ru",
+                    "q": text,
+                },
+                timeout=15,
+            )
+            response.raise_for_status()
+            data = response.json()
+            translated = data[0] if data and isinstance(data[0], str) else ""
+            if translated and translated.strip() != text.strip():
+                return translated.strip()
+        except (ValueError, IndexError, KeyError, requests.RequestException):
+            pass
+
+        # MyMemory accepts up to 500 bytes per segment, anonymous quota 5000 chars/day.
+        if len(text.encode("utf-8")) > 490:
+            raise ValueError("Слишком длинный текст для бесплатного резервного переводчика")
+        try:
+            response = requests.get(
+                "https://api.mymemory.translated.net/get",
+                params={"q": text, "langpair": "sr|ru"},
+                timeout=15,
+            )
+            response.raise_for_status()
+            data = response.json()
+            if int(data.get("responseStatus", 0)) != 200:
+                raise ValueError("MyMemory отказал в переводе")
+            translated = html.unescape(data.get("responseData", {}).get("translatedText", "")).strip()
+            if translated and translated != text.strip() and "MYMEMORY WARNING" not in translated.upper():
+                return translated
+        except (ValueError, requests.RequestException) as exc:
+            raise RuntimeError("Оба бесплатных переводчика сейчас недоступны") from None
+        raise RuntimeError("Бесплатный перевод недоступен")
+
+
+def translate_article(article: Article, translator: FreeTranslator) -> tuple[str, str]:
+    title = translator.translate(article.title)
+    if not title:
         raise ValueError("Не удалось перевести заголовок")
     summary_sr = prepare_summary(article)
-    summary_ru = (translator.translate(summary_sr) or "").strip() if summary_sr else ""
-    if summary_sr and not summary_ru:
-        raise ValueError("Не удалось перевести анонс")
+    try:
+        summary_ru = translator.translate(summary_sr) if summary_sr else ""
+    except Exception:
+        LOG.warning("Не удалось перевести анонс — публикуем только заголовок")
+        summary_ru = ""
     return title, summary_ru
 
 
@@ -251,7 +301,7 @@ def run() -> None:
     candidates = [a for a in fetch_news() if recent_enough(a, now) and relevant(a)]
     candidates.sort(key=lambda a: a.published_ts, reverse=True)
     LOG.info("Подходящих свежих новостей: %s", len(candidates))
-    translator = GoogleTranslator(source="auto", target="ru")
+    translator = FreeTranslator()
     sent = 0
     for article in candidates:
         if sent >= remaining:
