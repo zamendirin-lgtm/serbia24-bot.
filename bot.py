@@ -34,7 +34,7 @@ FEEDS = {
     "RTS": "https://www.rts.rs/vesti/rss.html",
     "N1": "https://n1info.rs/feed/",
     "Danas": "https://www.danas.rs/feed/",
-    "B92": "https://www.b92.net/info/rss/vesti.xml",
+    "B92": "https://www.b92.net/rss/b92/info",
 }
 
 SERBIA_WORDS = (
