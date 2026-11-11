@@ -1,9 +1,10 @@
 import unittest
+from unittest.mock import patch
 from datetime import datetime, timezone
 
 from bot import (
     Article, canonical_url, format_post, is_duplicate, normalized_title,
-    parse_feed, recent_enough, relevant,
+    parse_feed, recent_enough, relevant, post_telegram, prepare_summary,
 )
 
 
@@ -61,6 +62,43 @@ class NewsBotTests(unittest.TestCase):
         <pubDate>Wed, 11 Nov 2026 14:00:00 GMT</pubDate>
         <description>Nova odluka o cenama.</description></item></channel></rss>'''
         self.assertEqual(len(parse_feed("test", rss)), 1)
+
+
+    def test_news_style_branding(self):
+        item = Article(
+            "RTS", "Cene u Srbiji", "https://rts.rs/a", "",
+            datetime.now(timezone.utc).timestamp(),
+        )
+        post = format_post(item, "Цены в Сербии изменились", "Первая деталь. Вторая деталь. Третья деталь.")
+        self.assertIn("<b>Цены в Сербии изменились</b>", post)
+        self.assertIn("Сербия 24", post)
+        self.assertIn("Источник: RTS", post)
+        self.assertIn("\n\n", post)
+        self.assertNotIn("https://example.com", post)
+
+    def test_telegram_preview_above_text(self):
+        class FakeResponse:
+            status_code = 200
+
+            def json(self):
+                return {"ok": True}
+
+        with patch("bot.requests.post", return_value=FakeResponse()) as send:
+            post_telegram("Тест", "not-a-real-token", "@testchannel", "https://rts.rs/a")
+            payload = send.call_args.kwargs["json"]
+            self.assertTrue(payload["link_preview_options"]["show_above_text"])
+            self.assertTrue(payload["link_preview_options"]["prefer_large_media"])
+            self.assertEqual(payload["link_preview_options"]["url"], "https://rts.rs/a")
+
+    def test_long_rss_excerpt_remains_concise(self):
+        item = Article("RTS", "Novi zakon", "https://rts.rs/a",
+                       "Prva rečenica ima važan podatak o Srbiji. "
+                       "Druga rečenica objašnjava šta se promenilo. "
+                       "Treća rečenica dodaje konkretnu informaciju.",
+                       datetime.now(timezone.utc).timestamp())
+        excerpt = prepare_summary(item)
+        self.assertIn("Druga rečenica", excerpt)
+        self.assertLessEqual(len(excerpt), 420)
 
 
 if __name__ == "__main__":
