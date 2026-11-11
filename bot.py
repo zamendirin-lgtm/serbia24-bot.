@@ -142,7 +142,11 @@ def fetch_news() -> list[Article]:
 
 
 def prepare_summary(article: Article) -> str:
-    """Берём первое краткое предложение RSS-анонса."""
+    """Select up to three complete sentences from the RSS excerpt.
+
+    Keep original facts, do not invent additional context or summarize an
+    unrelated article. A short RSS entry may produce just one paragraph.
+    """
     summary = clean_text(article.summary)
     if not summary or normalized_title(summary) == normalized_title(article.title):
         return ""
@@ -150,11 +154,14 @@ def prepare_summary(article: Article) -> str:
         r"\b(Pročitajte više|Procitajte vise|Čitaj više|Citaj vise)\b.*$",
         "", summary, flags=re.I,
     ).strip()
-    parts = re.split(r"(?<=[.!?])\s+", summary)
-    first = parts[0].strip() if parts else ""
-    if len(first) > 240:
-        return ""
-    return first if len(first) >= 35 else ""
+    sentences = [s.strip() for s in re.split(r"(?<=[.!?])\s+", summary) if s.strip()]
+    selected = []
+    for sentence in sentences[:3]:
+        if len(" ".join(selected + [sentence])) > 420:
+            break
+        selected.append(sentence)
+    excerpt = " ".join(selected)
+    return excerpt if len(excerpt) >= 35 else ""
 
 
 class FreeTranslator:
@@ -219,19 +226,59 @@ def translate_article(article: Article, translator: FreeTranslator) -> tuple[str
     return title, summary_ru
 
 
+def news_emoji(article: Article, title_ru: str) -> str:
+    """Small, restrained topic indicator; avoid sensationalism."""
+    title = normalized_title(article.title + " " + title_ru)
+    categories = (
+        (("banka", "banci", "banke", "bank"), "🏦"),
+        (("goriv", "benzin", "dizel", "fuel"), "⛽"),
+        (("vreme", "nevrem", "meteorolog"), "🌦️"),
+        (("saobrac", "autoput", "putarin"), "🚗"),
+        (("skol", "vrtic", "obrazovan"), "🎓"),
+        (("zdravst", "bolnic", "lekar"), "🏥"),
+        (("nekretn", "stanovi", "stanarina"), "🏠"),
+        (("cena", "cene", "poskupl", "inflacij", "porez"), "💶"),
+        (("izbor", "skupstin", "vlada", "ministar"), "🏛️"),
+    )
+    for keywords, emoji in categories:
+        if any(word in title for word in keywords):
+            return emoji
+    return "🇷🇸"
+
+
 def format_post(article: Article, title_ru: str, summary_ru: str) -> str:
-    result = f"🇷🇸 <b>{html.escape(title_ru)}</b>\n\n"
-    if summary_ru:
-        result += f"{html.escape(summary_ru)}\n\n"
+    """Brand-consistent Telegram post, HTML escaped and linked to its source."""
+    emoji = news_emoji(article, title_ru)
+    result = f"{emoji} <b>{html.escape(title_ru)}</b>\n\n"
+    if summary_ru.strip():
+        # Use real sentence boundaries only; a short excerpt stays one paragraph.
+        summary = summary_ru.strip()
+        sentences = re.split(r"(?<=[.!?])\s+", summary)
+        if len(sentences) >= 3:
+            split = len(sentences) // 2
+            summary = " ".join(sentences[:split]) + "\n\n" + " ".join(sentences[split:])
+        result += f"{html.escape(summary)}\n\n"
     result += (
         f'🔗 <a href="{html.escape(article.url, quote=True)}">'
-        f"Источник: {html.escape(article.source)}</a>\n#Сербия24"
+        f"Источник: {html.escape(article.source)}</a>\n\n"
+        "🇷🇸 <b>Сербия 24</b> | #НовостиСербии"
     )
-    return result[:3800]
+    return result
 
 
-def post_telegram(message: str, token: str, channel: str) -> None:
-    # Не логируем полный URL с токеном при ошибках Telegram.
+def post_telegram(message: str, token: str, channel: str, preview_url: str = "") -> None:
+    """Use Telegram's large webpage preview ABOVE the text when available.
+
+    Telegram itself resolves the source website's thumbnail; the bot does not
+    download or redistribute third-party photographs.
+    """
+    preview = {
+        "is_disabled": False,
+        "prefer_large_media": True,
+        "show_above_text": True,
+    }
+    if preview_url:
+        preview["url"] = preview_url
     try:
         response = requests.post(
             f"https://api.telegram.org/bot{token}/sendMessage",
@@ -239,12 +286,12 @@ def post_telegram(message: str, token: str, channel: str) -> None:
                 "chat_id": channel,
                 "text": message,
                 "parse_mode": "HTML",
-                "link_preview_options": {"is_disabled": True},
+                "link_preview_options": preview,
             },
             timeout=20,
         )
         data = response.json()
-    except (requests.RequestException, ValueError) as exc:
+    except (requests.RequestException, ValueError):
         raise RuntimeError("Сбой сетевого запроса к Telegram") from None
     if response.status_code != 200 or not data.get("ok"):
         raise RuntimeError(
@@ -314,7 +361,7 @@ def run() -> None:
             if dry_run:
                 LOG.info("DRY_RUN: %s", message)
             else:
-                post_telegram(message, token, channel)
+                post_telegram(message, token, channel, article.url)
             sent += 1
             stamp = now.timestamp()
             state["seen"][article_id(article)] = stamp
