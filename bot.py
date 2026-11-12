@@ -143,12 +143,14 @@ def contains_anchor(text: str, stems: tuple[str, ...]) -> bool:
     return False
 
 
-def has_serbia_anchor(text: str) -> bool:
-    words = text.split()
-    if any(w in words for w in ("nis", "nisa", "nisu")):
-        # Only use "Niš" with clearer context; "nisu" always means "are not".
-        if "nis" in words or "nisa" in words:
-            return True
+def has_serbia_anchor(text: str, original: str = "") -> bool:
+    # "Nišu" loses its accent under transliteration and becomes "nisu",
+    # identical to common Serbian word "nisu" (= are not). Only trust
+    # the proper accented or Cyrillic spelling as a city reference.
+    if re.search(r"\b(?:Niš(?:u|a|em)?|Ниш(?:у|а|ем)?)\b", original, re.I):
+        return True
+    if re.search(r"\b(?:u|iz|kod)\s+nis(?:u|a)?\b", text):
+        return True
     if "novi sad" in text or "novom sadu" in text:
         return True
     return contains_anchor(text, SERBIA_LOCATIONS) or contains_anchor(text, SERBIA_ACTORS)
@@ -165,7 +167,7 @@ def relevant(article: Article) -> bool:
             return False
         return contains_anchor(title, SERBIA_LOCATIONS + SERBIA_ACTORS)
 
-    if has_serbia_anchor(title):
+    if has_serbia_anchor(title, article.title):
         return True
 
     # Worldwide headlines can quote Serbian media in a generic summary.
@@ -176,7 +178,7 @@ def relevant(article: Article) -> bool:
     # and a clear Serbia location/institution appear in its short excerpt.
     return (
         contains_anchor(title, LOCAL_TOPIC_MARKERS)
-        and has_serbia_anchor(summary)
+        and has_serbia_anchor(summary, article.summary[:450])
     )
 
 
