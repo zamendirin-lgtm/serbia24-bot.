@@ -14,6 +14,7 @@ import difflib
 from dataclasses import dataclass
 
 import requests
+from language_guard import ensure_russian, WrongLanguageError
 
 LOG = logging.getLogger("serbia24.editorial")
 
@@ -23,9 +24,14 @@ REPETITION_WORDS = frozenset("""
 будет были эта этот этой этом того том они она он оно здесь такие такой
 """.split())
 
-SYSTEM_RULES = """Ты выпускающий редактор русскоязычного новостного канала «Сербия 24».
-Тебе дан проверяемый материал сербского СМИ и черновой перевод.
-Твоя задача — НЕ дословно переводить, а написать ясный, нейтральный новостной текст.
+SYSTEM_RULES = """Ты выпускающий редактор РУССКОЯЗЫЧНОГО новостного канала «Сербия 24».
+Тебе дан материал сербского СМИ и черновой перевод.
+ОТВЕЧАЙ СТРОГО НА НОРМАТИВНОМ РУССКОМ ЯЗЫКЕ (Россия).
+Нельзя писать по-сербски ни латиницей, ни сербской кириллицей.
+Никаких «полиција», «грађана», «удружења», «је», «сумње», «њ», «ћ», «љ».
+Сербский оригинал служит только источником фактов, а НЕ образцом языка.
+Твоя задача — написать ясный, нейтральный русский новостной текст,
+а НЕ дословно перевести или пересказать сербский сербскими словами.
 
 СТРОГО:
 - Излагай ТОЛЬКО факты, содержащиеся в предоставленном материале, без домыслов,
@@ -154,6 +160,7 @@ def _basic_checks(title: str, paragraphs: list[str] | tuple[str, ...],
         raise EditorialError("В тексте появились цифры, которых нет в источнике")
     if any("\n" in p or p.strip().startswith(("-", "•", "#")) for p in parts):
         raise EditorialError("Неверная разметка новости")
+    ensure_russian(title, parts)
     return EditedNews(title, tuple(parts), "checked")
 
 
@@ -171,6 +178,7 @@ def conservative_polish(title_ru: str, draft_ru: str) -> EditedNews:
     # Keep original statement intact, with punctuation and attribution.
     if not 200 <= len("\n\n".join(unique)) <= 770:
         raise EditorialError("Текст слишком короткий или длинный")
+    ensure_russian(title, unique[:3])
     return EditedNews(title, tuple(unique[:3]), "without_ai")
 
 
@@ -202,28 +210,43 @@ def edit_with_groq(source_title: str, source_paragraphs: list[str],
         "include_reasoning": False,
         "stream": False,
     }
-    try:
-        response = requests.post(
-            "https://api.groq.com/openai/v1/chat/completions",
-            headers={"Authorization": f"Bearer {api_key}",
-                     "Content-Type": "application/json"},
-            json=payload, timeout=32,
-        )
-        response.raise_for_status()
-        result = response.json()
-        parsed = json.loads(result["choices"][0]["message"]["content"])
-        if not parsed.get("publish"):
-            raise EditorialError("Groq-редактор отклонил недостаточно содержательную новость")
-        edited = _basic_checks(
-            parsed.get("title", ""), parsed.get("paragraphs", []), original,
-        )
-        return EditedNews(edited.title, edited.paragraphs, "groq")
-    except EditorialError:
-        raise
-    except (requests.RequestException, KeyError, IndexError, TypeError,
-            ValueError) as exc:
-        LOG.warning("Groq-редактор недоступен: %s", type(exc).__name__)
-        raise EditorialError("Не удалось проверить новость через Groq") from None
+    for attempt in range(2):
+        if attempt:
+            payload["messages"][0]["content"] = (
+                SYSTEM_RULES
+                + "\nКРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: ПРЕДЫДУЩИЙ ОТВЕТ БЫЛ НЕ ПО-РУССКИ. "
+                "ПИШИ ИСКЛЮЧИТЕЛЬНО НА РУССКОМ ЯЗЫКЕ. "
+                "ПЕРЕВЕДИ ВСЕ СЕРБСКИЕ СЛОВА И ФРАЗЫ НА ЕСТЕСТВЕННЫЙ РУССКИЙ. "
+                "Не смешивай русский и сербский. Не добавляй новых фактов."
+            )
+        try:
+            response = requests.post(
+                "https://api.groq.com/openai/v1/chat/completions",
+                headers={"Authorization": f"Bearer {api_key}",
+                         "Content-Type": "application/json"},
+                json=payload, timeout=32,
+            )
+            response.raise_for_status()
+            result = response.json()
+            parsed = json.loads(result["choices"][0]["message"]["content"])
+            if not parsed.get("publish"):
+                raise EditorialError("Groq-редактор отклонил недостаточно содержательную новость")
+            edited = _basic_checks(
+                parsed.get("title", ""), parsed.get("paragraphs", []), original,
+            )
+            return EditedNews(edited.title, edited.paragraphs, "groq")
+        except WrongLanguageError:
+            if attempt == 0:
+                LOG.warning("Groq вернул нерусский текст; повторяем редактуру на русском")
+                continue
+            raise EditorialError("Groq дважды вернул не русский текст") from None
+        except EditorialError:
+            raise
+        except (requests.RequestException, KeyError, IndexError, TypeError,
+                ValueError) as exc:
+            LOG.warning("Groq-редактор недоступен: %s", type(exc).__name__)
+            raise EditorialError("Не удалось проверить новость через Groq") from None
+    raise EditorialError("Groq не смог выдать русскоязычный материал")
 
 
 def edit_with_gemini(source_title: str, source_paragraphs: list[str],
