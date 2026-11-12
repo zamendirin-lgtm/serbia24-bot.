@@ -147,6 +147,60 @@ class EditorialTests(unittest.TestCase):
                 edit_with_groq("Novi centar", SERBIAN, TITLE,
                                PARA1 + "\n\n" + PARA2, api_key="fake-secret")
 
+    def test_groq_retries_serbian_and_accepts_russian_second_response(self):
+        serbian = {
+            "publish": True,
+            "title": "Заступника удружења грађана ухапсила полиција у Новом Саду",
+            "paragraphs": [
+                "По налогу Вишег јавног тужилаштва у Новом Саду, полиција је ухапсила представника удружења грађана због сумње да је злоупотребио положај.",
+                "Тужилаштво је саопштило да се осумњичени терети за злоупотребу положаја одговорног лица, а да је полиција предузела потребне мере.",
+            ],
+        }
+        russian = {"publish": True, "title": TITLE, "paragraphs": [PARA1, PARA2]}
+
+        class Response:
+            def __init__(self, payload):
+                self.payload = payload
+            def raise_for_status(self):
+                return None
+            def json(self):
+                return {"choices": [{"message": {
+                    "content": json.dumps(self.payload, ensure_ascii=False)
+                }}]}
+
+        with patch("editorial.requests.post", side_effect=[
+                Response(serbian), Response(russian)]) as post:
+            item = edit_with_groq("Novi centar", SERBIAN, TITLE,
+                                  PARA1 + "\n\n" + PARA2, api_key="fake-secret")
+        self.assertEqual(item.mode, "groq")
+        self.assertEqual(item.title, TITLE)
+        self.assertEqual(post.call_count, 2)
+        self.assertIn(
+            "ПРЕДЫДУЩИЙ ОТВЕТ БЫЛ НЕ ПО-РУССКИ",
+            post.call_args_list[1].kwargs["json"]["messages"][0]["content"],
+        )
+
+    def test_groq_two_serbian_outputs_are_never_accepted(self):
+        bad = {
+            "publish": True,
+            "title": "Заступника удружења грађана ухапсила полиција у Новом Саду",
+            "paragraphs": [
+                "По налогу Вишег јавног тужилаштва у Новом Саду, полиција је ухапсила представника удружења грађана због сумње да је злоупотребио положај.",
+                "Тужилаштво је саопштило да се осумњичени терети за злоупотребу положаја одговорног лица, а да је полиција предузела потребне мере.",
+            ],
+        }
+        class Response:
+            def raise_for_status(self): return None
+            def json(self):
+                return {"choices": [{"message": {
+                    "content": json.dumps(bad, ensure_ascii=False)
+                }}]}
+        with patch("editorial.requests.post", return_value=Response()) as post:
+            with self.assertRaisesRegex(EditorialError, "дважды вернул"):
+                edit_with_groq("Novi centar", SERBIAN, TITLE,
+                               PARA1 + "\n\n" + PARA2, api_key="fake-secret")
+        self.assertEqual(post.call_count, 2)
+
     def test_groq_prioritized_over_gemini(self):
         with patch.dict(os.environ, {"GROQ_API_KEY": "groq-test", "GEMINI_API_KEY": "gemini-test"}), \
              patch("editorial.edit_with_groq", return_value=EditedNews(TITLE, (PARA1, PARA2), "groq")) as groq, \
