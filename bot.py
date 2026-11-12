@@ -1049,7 +1049,7 @@ def run() -> None:
         verify_telegram_bot(token, channel)
 
     now_local_date = now.astimezone(TZ).date()
-    daily_limit = max(1, int(os.getenv("DAILY_LIMIT", "10")))
+    daily_limit = max(1, int(os.getenv("DAILY_LIMIT", "40")))
     per_run_limit = max(1, int(os.getenv("PER_RUN_LIMIT", "2")))
     posted_today = sum(
         1 for p in state["posted"]
