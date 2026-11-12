@@ -9,7 +9,8 @@ from bot import (
     Article, canonical_url, format_post, is_duplicate, normalized_title,
     parse_feed, recent_enough, relevant, post_telegram, prepare_summary, photo_caption, rss_photo, normal_image_url,
     same_event_title, event_terms, prune_state, publication_allowed,
-    branded_fallback_photo,
+    branded_fallback_photo, extract_article_paragraphs, select_news_paragraphs,
+    translate_article, complete_sentences_for_budget,
     image_dhash, photo_url_key, is_repeated_photo,
 )
 
@@ -356,6 +357,72 @@ class NewsBotTests(unittest.TestCase):
           <media:content url="https://rts.rs/photos/a.jpg" type="image/jpeg"/>
           </item></channel></rss>""").entries[0]
         self.assertEqual(rss_photo(entry, "https://rts.rs/article"), "https://rts.rs/photos/a.jpg")
+
+    def test_extraction_avoids_navigation_and_related_articles(self):
+        article_html = """<html><body><nav>Newsletter - click here!</nav><article>
+          <h1>U Beogradu otvoren novi dom zdravlja</h1>
+          <p>U Beogradu je danas otvoren novi dom zdravlja koji će služiti stanovnicima nekoliko opština.</p>
+          <p>Grad je saopštio da će ustanova imati dvadeset ordinacija i poseban prostor za dečje preglede.</p>
+          <p>Pacijenti će moći da zakažu pregled putem telefona, dok su prvi termini dostupni sledeće nedelje.</p>
+          <p>Nova ustanova finansirana je iz gradskog budžeta, a radovi su počeli prošlog leta.</p>
+        </article><footer>Related news: Trump and Iran</footer></body></html>"""
+        paragraphs = extract_article_paragraphs(article_html)
+        self.assertTrue(paragraphs)
+        selected = select_news_paragraphs(paragraphs, "U Beogradu otvoren novi dom zdravlja")
+        self.assertGreaterEqual(len(selected), 2)
+        all_text = " ".join(selected)
+        self.assertIn("dvadeset ordinacija", all_text)
+        self.assertNotIn("Trump", all_text)
+        self.assertNotIn("Newsletter", all_text)
+
+    def test_editorial_facts_question_not_printed(self):
+        source = [
+            "Grad je objavio nove cene parkiranja koje stupaju na snagu prvog decembra u Beogradu.",
+            "Nova tarifa će važiti za prvu i drugu parking zonu, dok će treća zona ostati bez promene.",
+            "Koliko će građani plaćati sledeće godine?",
+            "Prema saopštenju grada, vozači će novu cenu videti pri plaćanju SMS porukom od ponedeljka.",
+        ]
+        selected = select_news_paragraphs(source, "Nove cene parkiranja u Beogradu")
+        self.assertNotIn("?", " ".join(selected))
+        self.assertGreaterEqual(len(selected), 2)
+
+    def test_full_article_required_before_translation(self):
+        article = Article("RTS", "Novosti u Beogradu", "https://rts.rs/a", "Kratak pregled", 0)
+        class Translator:
+            def translate(self, text):
+                return "Перевод: " + text
+        with patch("bot.fetch_editorial_paragraphs", return_value=[]):
+            with self.assertRaisesRegex(ValueError, "Слишком мало"):
+                translate_article(article, Translator())
+
+    def test_translation_yields_multiple_paragraphs(self):
+        article = Article("RTS", "Novosti u Beogradu", "https://rts.rs/a", "", 0)
+        content = [
+            "U Beogradu je danas saopšteno da će nova gradska ustanova biti otvorena tokom narednog meseca.",
+            "Prema saopštenju gradske uprave, planira se trideset novih radnih mesta i nekoliko ambulanti za decu.",
+            "Ministarstvo je navelo da će se završni radovi finansirati sredstvima iz gradskog budžeta za 2026. godinu.",
+        ]
+        class Translator:
+            def translate(self, text):
+                return "Перевод текста: " + text
+        with patch("bot.fetch_editorial_paragraphs", return_value=content):
+            ru_title, ru_content = translate_article(article, Translator())
+        self.assertEqual(ru_content.count("\n\n"), 2)
+        self.assertTrue(len(ru_content) > 200)
+        self.assertTrue(ru_title.startswith("Перевод"))
+
+    def test_caption_preserves_paragraphs_without_cutting_word(self):
+        article = Article("RTS", "Lokalna vest", "https://rts.rs/a", "", 0)
+        content = (
+            "Первое предложение с основным фактом новости.\n\n"
+            "Второй абзац содержит объяснение обстоятельств и несколько важных подробностей.\n\n"
+            "Третий абзац посвящён тому, когда изменения начнут действовать."
+        )
+        caption = photo_caption(article, "Новые изменения в Белграде", content)
+        self.assertIn("\n\nВторой абзац", caption)
+        self.assertIn("\n\nТретий абзац", caption)
+        self.assertIn("Источник: RTS", caption)
+        self.assertLessEqual(len(caption.replace("<b>", "").replace("</b>", "")), 1024)
 
     def test_long_rss_excerpt_remains_concise(self):
         item = Article("RTS", "Novi zakon", "https://rts.rs/a",
