@@ -22,6 +22,7 @@ from zoneinfo import ZoneInfo
 
 import requests
 from bs4 import BeautifulSoup
+from estate_cards import details_from_html, format_card, translate_short, send_photos, safe_https_url
 
 BASE = "https://www.4zida.rs"
 STATE = Path("data/estate_seen.json")
@@ -59,6 +60,13 @@ class Offer:
     area_m2: float
     updated: str
     advertiser: str = "Не указан"
+    location: str = ""
+    description_sr: str = ""
+    description_ru: str = ""
+    pros: tuple[str, ...] = ()
+    cons: tuple[str, ...] = ()
+    photo_urls: tuple[str, ...] = ()
+    photos_allowed: bool = False
 
     @property
     def unit_price(self) -> float:
@@ -137,6 +145,7 @@ def parse_offer(markup: str, url: str, city: str, kind: str, now: datetime | Non
             seller = "Агентство / посредник"
         elif re.search(r"\b(?:vlasnik|fizičko lice)\b", contact_text):
             seller = "Собственник (по объявлению)"
+    location, description, pros, cons, photos = details_from_html(markup, url)
     return Offer(
         url=canonical_url(url),
         city=CITIES[city],
@@ -146,6 +155,12 @@ def parse_offer(markup: str, url: str, city: str, kind: str, now: datetime | Non
         area_m2=size,
         updated=updated.isoformat(),
         advertiser=seller,
+        location=location,
+        description_sr=description,
+        pros=pros,
+        cons=cons,
+        photo_urls=photos,
+        photos_allowed=os.getenv("PROPERTY_4ZIDA_MEDIA_LICENSED", "") == "1",
     )
 
 
@@ -243,43 +258,86 @@ def shortlist(offers: list[Offer], seen: dict, limit: int = 1) -> list[Offer]:
     return [offer for _, offer in sorted(qualified, key=lambda x: x[0])[:limit]]
 
 
-def format_post(offer: Offer, now: datetime) -> str:
-    intent, subject = KINDS[offer.kind]
-    detail = "€/м²/мес." if intent == "Аренда" else "€/м²"
-    amount = f"{offer.price_eur:,}".replace(",", " ")
-    unit = f"{offer.unit_price:,.0f}".replace(",", " ")
-    period = "/мес." if intent == "Аренда" else ""
-    title = html.escape(offer.title)
-    url = html.escape(offer.url, quote=True)
-    checked = now.strftime("%d.%m.%Y %H:%M")
-    return (
-        f"🏠 <b>{intent}: {subject} · {offer.city}</b>\n"
-        f"💶 <b>{amount} €{period}</b> · 📐 {offer.area_m2:g} м² ({unit} {detail})\n"
-        f"📍 {title}\n"
-        f"👤 {html.escape(offer.advertiser)}\n"
-        f"🗓 Объявление обновлено: {offer.updated}; проверено: {checked} (Белград)\n"
-        f"🔎 <i>Предварительный отбор по цене. Доступность и документы не подтверждены.</i>\n"
-        f'🔗 <a href="{url}">Объявление и контакты</a>\n'
-        f"⚠️ Не переводите задаток до проверки объекта и условий."
-    )
+def format_post(offer: Offer, now: datetime, translated: str = "") -> str:
+    return format_card(offer, now, translated=translated)
 
 
-def send_telegram(session: requests.Session, token: str, chat_id: str, post: str) -> bool:
-    response = session.post(
-        f"https://api.telegram.org/bot{token}/sendMessage",
-        json={
-            "chat_id": chat_id,
-            "text": post,
-            "parse_mode": "HTML",
-            "disable_web_page_preview": True,
-        },
-        timeout=18,
-    )
-    if not response.ok:
-        # Do not include the sensitive request URL containing the bot token in logs.
-        print(f"Telegram returned HTTP {response.status_code}; check group ID and admin permissions.")
-        return False
-    return response.json().get("ok", False) is True
+def send_telegram(session: requests.Session, token: str, chat_id: str, post: str) -> int | None:
+    """Send text first to avoid duplicate albums after partial Telegram failures."""
+    try:
+        response = session.post(
+            f"https://api.telegram.org/bot{token}/sendMessage",
+            json={
+                "chat_id": chat_id,
+                "text": post,
+                "parse_mode": "HTML",
+                "disable_web_page_preview": True,
+            },
+            timeout=18,
+        )
+        if not response.ok:
+            # Never include the token-containing request URL in logs.
+            print(f"Telegram returned HTTP {response.status_code}; verify chat ID and permissions.")
+            return None
+        body = response.json()
+        if body.get("ok") and isinstance(body.get("result", {}).get("message_id"), int):
+            return body["result"]["message_id"]
+    except (requests.RequestException, ValueError):
+        print("Telegram text delivery failed; check the bot/chat configuration.")
+    return None
+
+
+def load_submitted_offers(now: datetime) -> list[Offer]:
+    """Listings submitted for republication by their authorized owner/agent."""
+    path = Path("data/estate_submissions.json")
+    try:
+        content = json.loads(path.read_text(encoding="utf8"))
+    except (OSError, ValueError):
+        return []
+    if not isinstance(content, list):
+        return []
+    approved = []
+    for item in content:
+        if not isinstance(item, dict) or not (
+            item.get("approved") is True and item.get("permission_to_publish") is True
+        ):
+            continue
+        try:
+            url = str(item["url"])
+            city = str(item["city"])
+            kind = str(item["kind"])
+            title = str(item["title"])[:120]
+            price = int(item["price_eur"])
+            size = float(item["area_m2"])
+            updated = datetime.strptime(str(item["updated"]), "%Y-%m-%d").date()
+        except (KeyError, TypeError, ValueError, OverflowError):
+            continue
+        if not safe_https_url(url) or kind not in KINDS or not (18 <= size <= 450):
+            continue
+        if (now.date() - updated).days > 14 or updated > now.date() + timedelta(days=1):
+            continue
+        if kind.startswith("izdavanje-") and not (70 <= price <= 3500):
+            continue
+        if kind.startswith("prodaja-") and not (15000 <= price <= 700000):
+            continue
+        def strings(key: str, limit: int) -> tuple[str, ...]:
+            value = item.get(key, [])
+            return tuple(str(x).strip()[:120 if key != "photo_urls" else 1000]
+                         for x in value[:limit] if isinstance(x, str) and x.strip()
+                         ) if isinstance(value, list) else ()
+        photos = tuple(x for x in strings("photo_urls", 5) if safe_https_url(x))
+        approved.append(Offer(
+            url=url, city=city[:70], kind=kind, title=title, price_eur=price,
+            area_m2=size, updated=updated.isoformat(),
+            advertiser=str(item.get("advertiser", "Не указан"))[:80],
+            location=str(item.get("location", ""))[:130],
+            description_ru=str(item.get("description_ru", ""))[:400],
+            pros=strings("pros", 4), cons=strings("cons", 4),
+            photo_urls=photos,
+            photos_allowed=bool(item.get("photo_permission") is True),
+        ))
+    print(f"Authorized owner/agent submissions loaded: {len(approved)}")
+    return approved
 
 
 def load_seen() -> dict:
@@ -303,16 +361,18 @@ def main() -> int:
         return 0
     session = requests.Session()
     session.headers.update({"User-Agent": UA, "Accept-Language": "sr-RS,sr;q=0.9"})
-    offers = scan(session, now)
+    offers = scan(session, now) + load_submitted_offers(now)
     print(f"Public source candidates parsed: {len(offers)}")
     seen = load_seen()
     picks = shortlist(offers, seen, limit=1)
     for offer in picks:
-        post = format_post(offer, now)
+        translated = translate_short(offer.description_sr) if offer.description_sr else ""
+        post = format_post(offer, now, translated)
         if dry:
             print(post)
             continue
-        if send_telegram(session, token, chat_id, post):
+        message_id = send_telegram(session, token, chat_id, post)
+        if message_id:
             seen[offer.key] = {
                 "url": offer.url,
                 "price": offer.price_eur,
@@ -322,7 +382,9 @@ def main() -> int:
             STATE.write_text(
                 json.dumps(seen, ensure_ascii=False, indent=2) + "\n", encoding="utf8"
             )
-            print("Published a listing link successfully.")
+            print("Published a Russian property card successfully.")
+            if offer.photos_allowed and offer.photo_urls:
+                send_photos(session, token, chat_id, message_id, offer.photo_urls)
         else:
             print("No state update after Telegram failure.", file=sys.stderr)
             return 1
