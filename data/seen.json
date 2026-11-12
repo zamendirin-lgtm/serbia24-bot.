@@ -29,7 +29,8 @@
     "6aebbb1143ebecedd04ccf32": 1794494501.125882,
     "0570e018e8b0def6861b96e0": 1794498100.84124,
     "507c89d91559f224fd09bd0d": 1794501924.745252,
-    "5c5e40c49f744fe80f89da1f": 1794505165.927597
+    "5c5e40c49f744fe80f89da1f": 1794505165.927597,
+    "4967920c6297b35c3035a956": 1794508586.022071
   },
   "photos": {
     "50f559ee5d138a92c244ad4c": 1794474084.088928,
@@ -50,7 +51,8 @@
     "3b45fcf67c38d0bbc5383aeb": 1794494501.125882,
     "7fc4c08dd61a14cdcfa61ef8": 1794498100.84124,
     "1e1fe1b1044d92e4077eaf9f": 1794501924.745252,
-    "6158d3937bfc3f5404f16853": 1794505165.927597
+    "6158d3937bfc3f5404f16853": 1794505165.927597,
+    "81a1596fc9f182c2a37d01ac": 1794508586.022071
   },
   "phashes": {
     "2ceefee6566d6666": 1794474084.088928,
@@ -71,7 +73,8 @@
     "e3c7dbd3d24acef5": 1794494501.125882,
     "091d0d343030382c": 1794498100.84124,
     "9b9bcd2d393b3313": 1794501924.745252,
-    "07190c581014343e": 1794505165.927597
+    "07190c581014343e": 1794505165.927597,
+    "1810144c0d119898": 1794508586.022071
   },
   "posted": [
     {
@@ -248,6 +251,12 @@
       "ts": 1794505165.927597,
       "title_norm": "culibrk javna preduzeca ce biti ostecena zbog alta banke pitanje je samo koliko treba ispitati i krivicnu odgovornost u nbs",
       "summary_norm": "urednik nedeljnika radar milan culibrk ocenio je za n1 da ce javna preduzeca koja su drzala novac u alta banci pretrpeti gubitke a da je sada kljucno",
+      "source": "N1"
+    },
+    {
+      "ts": 1794508586.022071,
+      "title_norm": "central bank says fx reserves down",
+      "summary_norm": "the national bank of serbia nbs said that its gross fx reserves stood at eur 29 163 9 million at the endo of october down by eur 695 3 million comp",
       "source": "N1"
     }
   ]
