@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 import calendar
+from collections import Counter
 from io import BytesIO
 import difflib
 import hashlib
@@ -775,7 +776,14 @@ def run() -> None:
         LOG.info("Дневной лимит %s достигнут", daily_limit)
         return
 
-    candidates = [a for a in fetch_news() if recent_enough(a, now) and relevant(a)]
+    all_articles = fetch_news()
+    # A feed using the very same picture for different articles is likely
+    # providing a generic promo/placeholder (such as a Danas interview).
+    image_counts = Counter(a.image_url for a in all_articles if a.image_url)
+    generic_images = {url for url, count in image_counts.items() if count > 1}
+    if generic_images:
+        LOG.info("Скрываем %s повторяющихся шаблонных изображений RSS", len(generic_images))
+    candidates = [a for a in all_articles if recent_enough(a, now) and relevant(a)]
     candidates.sort(key=lambda a: a.published_ts, reverse=True)
     LOG.info("Подходящих свежих новостей: %s", len(candidates))
     translator = FreeTranslator()
@@ -794,7 +802,11 @@ def run() -> None:
             if dry_run:
                 LOG.info("DRY_RUN: %s", message)
             else:
-                image_url = article_photo(article)
+                if article.image_url and article.image_url in generic_images:
+                    LOG.info("Шаблонное фото на нескольких новостях — публикуем без него: %s", article.source)
+                    image_url = ""
+                else:
+                    image_url = article_photo(article)
                 if image_url:
                     # Skip repeating a visual from another story, even if its
                     # article link and headline are different.
