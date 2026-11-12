@@ -160,7 +160,35 @@ COMMON_NEWS_TERMS = frozenset("""
     nesre povre polici osobe osobi ljudi protes radni banka cen goriv
     vlast drzav javno vest stude zdrav sport fabri stanov
 """.split())
-NEGATION_WORDS = frozenset(("ne", "nije", "nisu", "nema", "nismo", "bez", "nikad"))
+NEGATION_WORDS = frozenset(("ne", "nije", "nisu", "nema", "nismo", "bez", "nikad", "nece", "necu", "necemo"))
+OPPOSING_EVENTS = (
+    ("otvor", "zatvor"),  # opened vs shut down
+    ("povec", "smanj"),  # increased vs decreased
+    ("usvoj", "odbij"),  # approved vs rejected
+    ("pobed", "izgub"),  # won vs lost
+    ("pokre", "obust"),  # started vs halted
+    ("odob", "zabra"),  # approved vs prohibited
+)
+
+
+def conflicting_event_details(a: str, b: str) -> bool:
+    words_a, words_b = set(a.split()), set(b.split())
+    if bool(words_a & NEGATION_WORDS) != bool(words_b & NEGATION_WORDS):
+        return True
+    nums_a = {w for w in words_a if w.isdigit()}
+    nums_b = {w for w in words_b if w.isdigit()}
+    if nums_a and nums_b and nums_a != nums_b:
+        return True
+    for left, right in OPPOSING_EVENTS:
+        if (
+            any(w.startswith(left) for w in words_a)
+            and any(w.startswith(right) for w in words_b)
+        ) or (
+            any(w.startswith(right) for w in words_a)
+            and any(w.startswith(left) for w in words_b)
+        ):
+            return True
+    return False
 
 
 def event_terms(title: str) -> set[str]:
@@ -187,14 +215,7 @@ def same_event_title(a: str, b: str, threshold: float = 0.86) -> bool:
         return False
     if a == b:
         return True
-    a_words, b_words = set(a.split()), set(b.split())
-    a_neg = bool(a_words & NEGATION_WORDS)
-    b_neg = bool(b_words & NEGATION_WORDS)
-    if a_neg != b_neg:
-        return False
-    numbers_a = {w for w in a_words if w.isdigit()}
-    numbers_b = {w for w in b_words if w.isdigit()}
-    if numbers_a and numbers_b and numbers_a != numbers_b:
+    if conflicting_event_details(a, b):
         return False
     if difflib.SequenceMatcher(None, a, b).ratio() >= threshold:
         return True
@@ -226,6 +247,8 @@ def same_event_summary(article: Article, record: dict, title_norm: str) -> bool:
     if not old_summary or not article.summary:
         return False
     old_title = record.get("title_norm", "")
+    if conflicting_event_details(title_norm, old_title):
+        return False
     intersection = event_terms(title_norm) & event_terms(old_title)
     if len(intersection) < 2:
         return False
