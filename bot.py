@@ -599,6 +599,10 @@ def select_news_paragraphs(blocks: list[str], headline: str) -> list[str]:
         if not sentences:
             continue
         paragraph = " ".join(sentences)
+        # Sentence fragments after a year abbreviation (e.g. "godine...")
+        # should never become standalone explanatory paragraphs.
+        if paragraph[0].islower():
+            continue
         norm = normalized_title(paragraph)
         if not paras:
             # Opening a post with 'he said' or 'according to him' makes it
@@ -609,16 +613,18 @@ def select_news_paragraphs(blocks: list[str], headline: str) -> list[str]:
             if len(title_terms) >= 3 and len(overlap) < 1:
                 continue
             first_terms = event_terms(paragraph)
-        elif len(paras) >= 2:
-            # A third paragraph must clearly concern the SAME headline,
-            # not a loosely related local event further down the article.
-            if len(event_terms(paragraph) & title_terms) < 2:
+        elif len(paras) >= 1:
+            # Every additional paragraph must develop the actual headline,
+            # not an unrelated statement from further down the news page.
+            common = event_terms(paragraph) & title_terms
+            required = 2 if len(title_terms) >= 5 else 1
+            if len(common) < required:
                 continue
         paras.append(paragraph)
         if len(paras) >= 3:
             break
 
-    if len(paras) < 2 or len(" ".join(paras)) < 220:
+    if len(paras) < 2 or len(" ".join(paras)) < 165:
         return []
     return paras
 
