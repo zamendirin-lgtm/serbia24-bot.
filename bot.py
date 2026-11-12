@@ -17,7 +17,7 @@ import time
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
+from urllib.parse import parse_qsl, urlencode, urljoin, urlsplit, urlunsplit
 from zoneinfo import ZoneInfo
 
 import feedparser
@@ -58,6 +58,7 @@ class Article:
     url: str
     summary: str
     published_ts: float
+    image_url: str = ""
 
 
 def clean_text(value: str) -> str:
@@ -107,6 +108,40 @@ def is_duplicate(article: Article, state: dict, threshold: float = 0.86) -> bool
     return False
 
 
+def normal_image_url(raw: str, base: str = "") -> str:
+    """Accept only HTTPS image URLs obtained from publisher RSS/HTML."""
+    url = urljoin(base, html.unescape((raw or "").strip()))
+    parts = urlsplit(url)
+    if parts.scheme.lower() != "https" or not parts.netloc or parts.username:
+        return ""
+    if parts.hostname in {"localhost", "127.0.0.1", "::1"}:
+        return ""
+    if parts.path.lower().endswith((".svg", ".gif", ".ico")):
+        return ""
+    return url
+
+
+def rss_photo(entry, article_url: str) -> str:
+    """Direct photo attached to RSS (no Telegram page-title overlay)."""
+    for field in ("media_content", "media_thumbnail", "enclosures"):
+        for item in entry.get(field, []):
+            if not isinstance(item, dict):
+                continue
+            media_type = str(item.get("type", ""))
+            if media_type and not media_type.startswith("image/"):
+                continue
+            image_url = normal_image_url(item.get("url", item.get("href", "")), article_url)
+            if image_url:
+                return image_url
+    description = BeautifulSoup(
+        entry.get("summary", "") or "", "html.parser"
+    )
+    img = description.find("img", src=True)
+    if img:
+        return normal_image_url(img.get("src", ""), article_url)
+    return ""
+
+
 def parse_feed(source: str, payload: bytes) -> list[Article]:
     parsed = feedparser.parse(payload)
     output = []
@@ -118,8 +153,40 @@ def parse_feed(source: str, payload: bytes) -> list[Article]:
             continue
         ts = calendar.timegm(date)
         snippet = clean_text(entry.get("summary", ""))
-        output.append(Article(source, title, url, snippet, ts))
+        image_url = rss_photo(entry, url)
+        output.append(Article(source, title, url, snippet, ts, image_url))
     return output
+
+
+def article_photo(article: Article) -> str:
+    """Find publisher's original photo without adding the page's English headline.
+
+    It cannot strip text that is part of the actual image pixels.
+    """
+    if article.image_url:
+        return article.image_url
+    try:
+        r = requests.get(
+            article.url, timeout=14, headers={"User-Agent": "Mozilla/5.0 Serbia24Bot/1.1"},
+        )
+        r.raise_for_status()
+        if "html" not in r.headers.get("Content-Type", "").lower():
+            return ""
+        # Only parse the first 2 MB of the webpage.
+        soup = BeautifulSoup(r.content[:2_000_000], "html.parser")
+        for attr, name in (
+            ("property", "og:image"),
+            ("name", "twitter:image"),
+            ("property", "article:image"),
+        ):
+            tag = soup.find("meta", attrs={attr: name})
+            if tag and tag.get("content"):
+                image_url = normal_image_url(tag["content"], article.url)
+                if image_url:
+                    return image_url
+    except (requests.RequestException, ValueError) as exc:
+        LOG.warning("Не удалось найти фото у %s: %s", article.source, type(exc).__name__)
+    return ""
 
 
 def fetch_news() -> list[Article]:
@@ -266,38 +333,86 @@ def format_post(article: Article, title_ru: str, summary_ru: str) -> str:
     return result
 
 
-def post_telegram(message: str, token: str, channel: str, preview_url: str = "") -> None:
-    """Use Telegram's large webpage preview ABOVE the text when available.
+def photo_caption(article: Article, title_ru: str, summary_ru: str) -> str:
+    """Telegram photo captions are limited to 1024 visible characters.
 
-    Telegram itself resolves the source website's thumbnail; the bot does not
-    download or redistribute third-party photographs.
+    Keep source attribution, the Russian headline and as much summary as fits.
     """
-    preview = {
-        "is_disabled": False,
-        "prefer_large_media": True,
-        "show_above_text": True,
-    }
-    if preview_url:
-        preview["url"] = preview_url
+    title = title_ru.strip()[:220]
+    emoji = news_emoji(article, title_ru)
+    first = f"{emoji} <b>{html.escape(title)}</b>\n\n"
+    ending = (
+        f'\n\n🔗 <a href="{html.escape(article.url, quote=True)}">'
+        f"Источник: {html.escape(article.source)}</a>"
+        "\n🇷🇸 <b>Сербия 24</b> | #НовостиСербии"
+    )
+    # HTML tags are not counted toward Telegram's visible character limit;
+    # 800 visible characters leaves room for all normal source URLs.
+    budget = max(0, 800 - len(title) - len(article.source))
+    summary = (summary_ru or "").strip()[:budget]
+    return first + html.escape(summary) + ending
+
+
+def telegram_api(method: str, token: str, payload: dict, timeout: int = 25) -> tuple[bool, str]:
     try:
         response = requests.post(
-            f"https://api.telegram.org/bot{token}/sendMessage",
-            json={
-                "chat_id": channel,
-                "text": message,
-                "parse_mode": "HTML",
-                "link_preview_options": preview,
-            },
-            timeout=20,
+            f"https://api.telegram.org/bot{token}/{method}",
+            json=payload,
+            timeout=timeout,
         )
         data = response.json()
     except (requests.RequestException, ValueError):
-        raise RuntimeError("Сбой сетевого запроса к Telegram") from None
+        return False, "Ошибка соединения с Telegram"
     if response.status_code != 200 or not data.get("ok"):
-        raise RuntimeError(
-            f"Telegram rejected publication: HTTP {response.status_code} "
-            f"({data.get('description', 'unknown error')})"
+        return False, str(data.get("description", "Ошибка Telegram"))
+    return True, ""
+
+
+def post_telegram(
+    message: str,
+    token: str,
+    channel: str,
+    preview_url: str = "",
+    photo_url: str = "",
+    caption: str = "",
+) -> None:
+    """Send the source photo with OUR Russian text, not a webpage preview.
+
+    Page-title metadata from the publisher (which can be in English) is never
+    displayed. If the photograph itself contains letters, they remain part of
+    the original image; this code does not manipulate or fabricate imagery.
+    """
+    if photo_url and caption:
+        success, error = telegram_api(
+            "sendPhoto",
+            token,
+            {
+                "chat_id": channel,
+                "photo": photo_url,
+                "caption": caption,
+                "parse_mode": "HTML",
+                "show_caption_above_media": False,
+            },
+            timeout=30,
         )
+        if success:
+            return
+        LOG.warning("Telegram не принял исходное фото; публикуем текст без предпросмотра: %s", error)
+
+    # Do not show auto-generated article previews, which inject foreign
+    # title/description above or below the post.
+    success, error = telegram_api(
+        "sendMessage",
+        token,
+        {
+            "chat_id": channel,
+            "text": message,
+            "parse_mode": "HTML",
+            "link_preview_options": {"is_disabled": True},
+        },
+    )
+    if not success:
+        raise RuntimeError(f"Telegram publication failed: {error}")
 
 
 def verify_telegram_bot(token: str, channel: str) -> None:
@@ -397,7 +512,9 @@ def run() -> None:
             if dry_run:
                 LOG.info("DRY_RUN: %s", message)
             else:
-                post_telegram(message, token, channel, article.url)
+                image_url = article_photo(article)
+                caption = photo_caption(article, title_ru, summary_ru)
+                post_telegram(message, token, channel, article.url, image_url, caption)
             sent += 1
             stamp = now.timestamp()
             state["seen"][article_id(article)] = stamp
