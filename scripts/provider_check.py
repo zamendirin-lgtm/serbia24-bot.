@@ -48,7 +48,7 @@ def probe_groq() -> bool:
         return False
 
 def probe_gemini() -> bool:
-    key = os.getenv("GEMINI_API_KEY", "").strip()
+    key = (os.getenv("GEMINI_API_KEY", "") or os.getenv("GOOGLE_API_KEY", "")).strip()
     if not key:
         print("Gemini: key missing")
         return False
