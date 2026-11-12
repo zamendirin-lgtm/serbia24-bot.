@@ -3,7 +3,9 @@
     "01330b7c8cf1fe49e4693691": 1794442000.315383,
     "f948a5952f2ac7659a7adc99": 1794442000.315383,
     "47084dd88d14d6904adf7859": 1794442501.421553,
-    "8c143a11e8c99eddbd0277dd": 1794442501.421553
+    "8c143a11e8c99eddbd0277dd": 1794442501.421553,
+    "3f93b449c22a8aa910dc89ae": 1794446263.666197,
+    "8da3e7b1676ff0d93fdd43c4": 1794446263.666197
   },
   "posted": [
     {
@@ -25,6 +27,18 @@
       "ts": 1794442501.421553,
       "title_norm": "drekslmajer o zatvaranju fabrike u zrenjaninu odluka nije povezana s promenom vlasti",
       "source": "Danas"
+    },
+    {
+      "ts": 1794446263.666197,
+      "title_norm": "u zubinom potoku na severu kosova protest porodica uhapstenih srba u slucaju dosije 23",
+      "summary_norm": "porodice uhapsenih srba iz ibarskog kolasina su danas sa protesta ispred zgrade opstine u zubinom potoku na severu kosova zatrazile pravican postupak i mogucnost da se brane sa slobode",
+      "source": "Danas"
+    },
+    {
+      "ts": 1794446263.666197,
+      "title_norm": "branko ruzic nova partija crvena linija nece biti rekonstruisani sps",
+      "summary_norm": "osnivac partije crvena linija socijaldemokrate i nekadasnji funkcioner socijalisticke partije srbije branko ruzic izjavio je da vec oko dva meseca zajedno sa istomisljenicima radi na formiranju nove politicke partije pod nazivom crvena linija",
+      "source": "B92"
     }
   ]
 }
