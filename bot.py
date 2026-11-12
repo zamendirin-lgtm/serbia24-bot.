@@ -579,6 +579,9 @@ def extract_article_paragraphs(article_html: str | bytes) -> list[str]:
 
 def select_news_paragraphs(blocks: list[str], headline: str) -> list[str]:
     """Keep the opening, closely related facts; never stitch distant topics."""
+    # Some sites flatten all HTML paragraphs into a single text block.
+    if len(blocks) == 1:
+        blocks = split_news_sentences(blocks[0])
     title_terms = event_terms(headline) - COMMON_NEWS_TERMS
     paras = []
     first_terms = set()
@@ -613,9 +616,9 @@ def select_news_paragraphs(blocks: list[str], headline: str) -> list[str]:
             if len(title_terms) >= 3 and len(overlap) < 1:
                 continue
             first_terms = event_terms(paragraph)
-        elif len(paras) >= 1:
-            # Every additional paragraph must develop the actual headline,
-            # not an unrelated statement from further down the news page.
+        elif len(paras) >= 2:
+            # A third, more distant paragraph must clearly develop the
+            # headline; the first two often introduce facts using synonyms.
             common = event_terms(paragraph) & title_terms
             required = 2 if len(title_terms) >= 5 else 1
             if len(common) < required:
