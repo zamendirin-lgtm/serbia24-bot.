@@ -90,11 +90,55 @@ def recent_enough(article: Article, now: datetime, hours: int = 8) -> bool:
     return 0 <= now.timestamp() - article.published_ts <= hours * 3600
 
 
+# Serbia's national news sites also publish many foreign-world headlines.
+# The headline must relate to Serbia; a passing reference in a long article
+# is insufficient for our local Russian-language Telegram channel.
+SERBIA_HEADLINE_MARKERS = (
+    "srbij", "beograd", "novi sad", "novom sadu", "novosad",
+    "nisu", "nisa", "nis ", "kragujev", "subotic", "pancev", "zrenjanin",
+    "sombor", "kraljev", "cacak", "leskov", "uzic", "valjev",
+    "lazarevac", "obrenovac", "zemun", "vracar", "vozdovac",
+    "vojvodin", "kosov", "vucic", "brnabic", "dacic", "vulin",
+    "skupstin", "ministarstv", "narodn bank", "poštanska",
+    "postanska", "mup", "dinara", "dinara", "dinari",
+)
+FOREIGN_TITLE_MARKERS = (
+    "spanij", "madrid", "portugal", "lisabon", "francusk", "pariz",
+    "nemack", "berlin", "italij", "rim", "austrij", "bec ",
+    "britanij", "london", "englesk", "americ", "amerika",
+    "sad ", "vasington", "njujork", "ukrajin", "kijev",
+    "rusij", "moskv", "kin ", "peking", "japan", "tokij",
+    "grck", "atin", "hrvatsk", "zagreb", "slovenij", "ljubljan",
+    "madjarsk", "budimpest", "rumunij", "bukurest",
+    "bugarsk", "sofij", "tursk", "istanbul", "ankara",
+    "albanij", "tiran", "iran", "irak", "izrael", "gaza",
+    "liban", "sirij", "sudan", "egipat", "kanad", "brazil",
+    "indij", "pakistan", "svajcarsk", "brisel", "evropsk unij",
+)
+LOCAL_TOPIC_MARKERS = (
+    "cen", "porez", "bank", "goriv", "struj", "grejanj", "poskup",
+    "plata", "penzij", "policij", "hapsen", "protest", "zakon",
+    "izbor", "skol", "vrtic", "saobrac", "put", "stan", "zdrav",
+    "nagrad", "drzav", "radnik", "vlada", "ministar", "grad",
+)
+
+
 def relevant(article: Article) -> bool:
-    title = normalized_title(article.title)
-    summary = normalized_title(article.summary[:400])
-    joined = f"{title} {summary}"
-    return any(word in joined for word in SERBIA_WORDS)
+    title = normalized_title(article.title) + " "
+    summary = normalized_title(article.summary[:450]) + " "
+    title_local = any(marker in title for marker in SERBIA_HEADLINE_MARKERS)
+    if title_local:
+        return True
+    # Reject e.g. "Protests in Spain" even if the source's excerpt mentions
+    # Serbia or a local politician in passing.
+    if any(marker in title for marker in FOREIGN_TITLE_MARKERS):
+        return False
+    # Otherwise require both a relevant local topic and a *clear*
+    # Serbian geographic/person anchor in the short summary.
+    return (
+        any(marker in title for marker in LOCAL_TOPIC_MARKERS)
+        and any(marker in summary for marker in SERBIA_HEADLINE_MARKERS)
+    )
 
 
 def is_duplicate(article: Article, state: dict, threshold: float = 0.86) -> bool:
