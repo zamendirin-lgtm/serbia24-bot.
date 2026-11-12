@@ -672,6 +672,30 @@ def extract_article_paragraphs(article_html: str | bytes) -> list[str]:
     return []
 
 
+def film_premiere_context(blocks: list[str], headline: str) -> str:
+    """Find a named documentary deeper in the original article, if present.
+
+    A quote attributed to a film director is NOT automatically a film title:
+    require an explicit reference to 'film/dokumentarac' near the quoted name.
+    """
+    if not contains_anchor(normalized_title(headline), ("dokumentar", "premijer", "film")):
+        return ""
+    title_pattern = re.compile(
+        r"(?:film|dokumentar\w*).{0,130}[„“«\"']([^„“«»\"']{5,100})[“»\"']",
+        flags=re.I,
+    )
+    for block in blocks[:35]:
+        if not title_pattern.search(block):
+            continue
+        for sentence in split_news_sentences(block):
+            if title_pattern.search(sentence) and factual_sentence(sentence, headline):
+                return sentence
+        # Keep a short, complete source block if its sentence segmentation fails.
+        if 45 <= len(block) <= 330 and block[-1] in ".!":
+            return block
+    return ""
+
+
 def select_news_paragraphs(blocks: list[str], headline: str) -> list[str]:
     """Keep the opening, closely related facts; never stitch distant topics."""
     # Some sites flatten all HTML paragraphs into a single text block.
@@ -725,6 +749,15 @@ def select_news_paragraphs(blocks: list[str], headline: str) -> list[str]:
         last_source_index = block_index
         if len(paras) >= 3:
             break
+
+    # A story about a documentary premiere is meaningless unless the
+    # reader knows WHICH film. Source sites sometimes name it farther down.
+    film_context = film_premiere_context(blocks, headline)
+    if film_context and not any(film_context in p for p in paras):
+        if len(paras) >= 3:
+            paras[2] = film_context
+        else:
+            paras.append(film_context)
 
     # For a price-focused article, extract a concrete currency amount when
     # it appears in the original body but not in the opening paragraphs.
