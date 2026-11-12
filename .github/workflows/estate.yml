@@ -1,0 +1,49 @@
+name: Serbia24 real estate
+
+on:
+  schedule:
+    - cron: '11 * * * *' # hourly; code enforces 08:00-22:00 Belgrade time
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: serbia24-estate
+  cancel-in-progress: false
+
+jobs:
+  discover:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install dependencies
+        run: python -m pip install -r requirements.txt
+      - name: Unit tests
+        run: python -m unittest discover -s tests -p 'test_property_bot.py' -v
+      - name: Check credentials (no secrets logged)
+        id: credentials
+        env:
+          PROPERTY_BOT_TOKEN: ${{ secrets.PROPERTY_BOT_TOKEN }}
+          PROPERTY_CHAT_ID: ${{ vars.PROPERTY_CHAT_ID }}
+        run: |
+          if [ -z "$PROPERTY_BOT_TOKEN" ] || [ -z "$PROPERTY_CHAT_ID" ]; then
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::Add secret PROPERTY_BOT_TOKEN and variable PROPERTY_CHAT_ID to enable real-estate posts."
+          else
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Search and publish verified-link candidates
+        if: steps.credentials.outputs.ready == 'true'
+        env:
+          PROPERTY_BOT_TOKEN: ${{ secrets.PROPERTY_BOT_TOKEN }}
+          PROPERTY_CHAT_ID: ${{ vars.PROPERTY_CHAT_ID }}
+          PROPERTY_ENABLE_4ZIDA: ${{ vars.PROPERTY_ENABLE_4ZIDA }}
+        run: python property_bot.py
+      - name: Persist property history (separate from news)
+        if: steps.credentials.outputs.ready == 'true'
+        run: python scripts/persist_estate.py
