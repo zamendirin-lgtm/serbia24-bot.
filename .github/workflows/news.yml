@@ -43,6 +43,28 @@ jobs:
             echo "ready=true" >> "$GITHUB_OUTPUT"
             echo "::notice::Bot token is configured. Testing channel permissions and fetching news."
           fi
+      - name: Validate channel logo fallback (no posting)
+        if: steps.credentials.outputs.ready == 'true'
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHANNEL: '@serbia24live'
+        run: |
+          python - <<'PY'
+          from io import BytesIO
+          import os
+          from unittest.mock import patch
+          from PIL import Image
+          import bot
+          token = os.environ["TELEGRAM_BOT_TOKEN"]
+          channel = os.environ["TELEGRAM_CHANNEL"]
+          avatar = bot._telegram_channel_avatar(token, channel)
+          with patch.object(bot, "_telegram_channel_avatar", return_value=avatar):
+              result = bot.branded_fallback_photo(token, channel)
+          with Image.open(BytesIO(result)) as picture:
+              assert picture.size == (1200, 675)
+              assert picture.format == "JPEG"
+          print("Fallback branded JPEG: OK; Telegram channel avatar available:", bool(avatar))
+          PY
       - name: Find, translate, publish
         if: steps.credentials.outputs.ready == 'true'
         env:
