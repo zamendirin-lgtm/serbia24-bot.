@@ -13,7 +13,25 @@
     "42ac8e68bcbbc941c9ee936a": 1794474084.088928,
     "840d1d8d4c2e417702bce65e": 1794474084.088928,
     "2d74df63802bf4115d1c7f64": 1794475929.468675,
-    "62ca6c229a98b30bf69f36fa": 1794475929.468675
+    "62ca6c229a98b30bf69f36fa": 1794475929.468675,
+    "80c33318b8b29fe60de06733": 1794476472.317931,
+    "f3b962c45b02b0e7f0fe835d": 1794476472.317931
+  },
+  "photos": {
+    "50f559ee5d138a92c244ad4c": 1794474084.088928,
+    "20de160d64cade826944af14": 1794474084.088928,
+    "d02a6fbd9719acae2e0aa67a": 1794475929.468675,
+    "763e2034df44cc63a5d1027d": 1794475929.468675,
+    "1e167c36e03478fe716489a8": 1794476472.317931,
+    "df12afac38d42b1787b63645": 1794476472.317931
+  },
+  "phashes": {
+    "2ceefee6566d6666": 1794474084.088928,
+    "c6c4d5e161f1b1a7": 1794474084.088928,
+    "8446c2ce8e9e0e6c": 1794475929.468675,
+    "377363e3e1e0a939": 1794475929.468675,
+    "342c0c0c1c9c9637": 1794476472.317931,
+    "04050109436307d3": 1794476472.317931
   },
   "posted": [
     {
@@ -95,18 +113,18 @@
       "title_norm": "portal iz zgrade pokrajinske vlade u novom sadu nestala umetnicka slika",
       "summary_norm": "iz zgrade pokrajinske vlade u novom sadu nestala je umetnicka slika a slucaj je prijavljen policiji koja je o tome obavestila osnovno javno tuzilastvo objavio je portal moj novi sad",
       "source": "Danas"
+    },
+    {
+      "ts": 1794476472.317931,
+      "title_norm": "maja ognjenovic narod u srbiji zasluzuje da zivi dobro i normalno",
+      "summary_norm": "proslo je nesto vise od dva meseca od osvajanja bronzane medalje odbojkasica srbije na evropskom prvenstvu",
+      "source": "Danas"
+    },
+    {
+      "ts": 1794476472.317931,
+      "title_norm": "trece ojt u beogradu odbrana osumnjicenih trazi dopunu o izuzecu tuzioca obavesteni smo elektronskom postom",
+      "summary_norm": "trece ojt u beogradu obavestava javnost da je odbrana osumnjicenih elektronskom postom obavestila ovo tuzilastvo da je vjt u beogradu dostavila novu dopunu zahteva za izuzece glavnog javnog tuzioca i postupajuceg javnog tuzioca",
+      "source": "B92"
     }
-  ],
-  "photos": {
-    "50f559ee5d138a92c244ad4c": 1794474084.088928,
-    "20de160d64cade826944af14": 1794474084.088928,
-    "d02a6fbd9719acae2e0aa67a": 1794475929.468675,
-    "763e2034df44cc63a5d1027d": 1794475929.468675
-  },
-  "phashes": {
-    "2ceefee6566d6666": 1794474084.088928,
-    "c6c4d5e161f1b1a7": 1794474084.088928,
-    "8446c2ce8e9e0e6c": 1794475929.468675,
-    "377363e3e1e0a939": 1794475929.468675
-  }
+  ]
 }
