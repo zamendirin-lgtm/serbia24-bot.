@@ -106,7 +106,7 @@ SERBIA_ACTORS = (
 )
 KOSOVO_PLACES = (
     "kosovo", "kosova", "kosov", "zubin potok", "zubinom potoku",
-    "pristin", "mitrovic", "lep osavic", "leposavic",
+    "pristin", "kosovska mitrovica", "lep osavic", "leposavic",
     "ibarski kolasin", "ibarskog kolasina", "drenic",
     "gazivode", "metohij",
 )
@@ -323,9 +323,17 @@ def normal_image_url(raw: str, base: str = "") -> str:
     parts = urlsplit(url)
     if parts.scheme.lower() != "https" or not parts.netloc or parts.username:
         return ""
-    if parts.hostname in {"localhost", "127.0.0.1", "::1"}:
+    host = (parts.hostname or "").lower()
+    if host in {"localhost", "127.0.0.1", "::1"}:
         return ""
-    if parts.path.lower().endswith((".svg", ".gif", ".ico")):
+    # Danas RSS sometimes inserts the SAME YouTube video interview in the
+    # summary of many unrelated news stories. It is NOT their photograph.
+    if (host == "youtu.be" or host == "youtube.com" or
+        host.endswith(".youtube.com") or host.endswith(".youtube-nocookie.com") or
+        host == "vimeo.com" or host.endswith(".vimeo.com") or
+        "/embed/" in parts.path.lower()):
+        return ""
+    if parts.path.lower().endswith((".svg", ".gif", ".ico", ".mp4", ".webm", ".m3u8")):
         return ""
     return url
 
