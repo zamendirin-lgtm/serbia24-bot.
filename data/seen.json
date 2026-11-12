@@ -19,7 +19,8 @@
     "1778097ec83b7a7db39d56a4": 1794477721.782534,
     "9b283b679d5fbd982c3bda12": 1794477721.782534,
     "9d384881ee576a4bfd7e3607": 1794478644.132273,
-    "e9a7b4975efb14f7db590be5": 1794478644.132273
+    "e9a7b4975efb14f7db590be5": 1794478644.132273,
+    "7acedc77c6710201c404c65c": 1794478887.75568
   },
   "photos": {
     "50f559ee5d138a92c244ad4c": 1794474084.088928,
@@ -31,7 +32,8 @@
     "938a4ef2b03e9036895eb9ef": 1794477721.782534,
     "2a2609a98456c468d125dbfd": 1794477721.782534,
     "cb88b86a0acb9b1fc11d08fb": 1794478644.132273,
-    "8879324eaebaa7df498eae06": 1794478644.132273
+    "8879324eaebaa7df498eae06": 1794478644.132273,
+    "2044a4ed06dc4a7e834af5c5": 1794478887.75568
   },
   "phashes": {
     "2ceefee6566d6666": 1794474084.088928,
@@ -43,7 +45,8 @@
     "3cb595d478347474": 1794477721.782534,
     "171e1a3c53076528": 1794477721.782534,
     "7858585844262666": 1794478644.132273,
-    "c7bc2e2eaea6c4f3": 1794478644.132273
+    "c7bc2e2eaea6c4f3": 1794478644.132273,
+    "0d6d5f66796f86db": 1794478887.75568
   },
   "posted": [
     {
@@ -161,6 +164,12 @@
       "title_norm": "uns pronaci i kazniti odgovorne za pretnje bivsim novinarima euronews srbija",
       "summary_norm": "udruzenje novinara srbije uns zatrazilo je od nadleznih organa da pronadu i kazne osobu koja je uputila pretnje bivsim zaposlenima u euronews srbija",
       "source": "N1"
+    },
+    {
+      "ts": 1794478887.75568,
+      "title_norm": "prlainovic igrao sa tri iskljucenja protiv pro reka oglasila se evropska federacija vodenih sportova",
+      "summary_norm": "vaterpolisti radnickog su u kragujevcu u mecu treceg kola lige sampiona pobedili najtrofejniji evropski klub pro reko sa 16 14",
+      "source": "Danas"
     }
   ]
 }
