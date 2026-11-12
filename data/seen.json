@@ -23,7 +23,8 @@
     "7acedc77c6710201c404c65c": 1794478887.75568,
     "b69d2c2252bcca4354ab2602": 1794482656.624037,
     "4b76eddb043524f2bb2431df": 1794486665.521352,
-    "a8a0f3f13e1ad33db61587d4": 1794490982.978052
+    "a8a0f3f13e1ad33db61587d4": 1794490982.978052,
+    "743f66be91409a3faa314b0f": 1794491433.708824
   },
   "photos": {
     "50f559ee5d138a92c244ad4c": 1794474084.088928,
@@ -39,7 +40,8 @@
     "2044a4ed06dc4a7e834af5c5": 1794478887.75568,
     "1648cf1ca1acc64cb42d57e2": 1794482656.624037,
     "6747f236b2b67e9cbe2149b6": 1794486665.521352,
-    "de3abe95d7fc731f9e83d8a5": 1794490982.978052
+    "de3abe95d7fc731f9e83d8a5": 1794490982.978052,
+    "b89de1e5a9273a030711a351": 1794491433.708824
   },
   "phashes": {
     "2ceefee6566d6666": 1794474084.088928,
@@ -55,7 +57,8 @@
     "0d6d5f66796f86db": 1794478887.75568,
     "831e9f9e9e999d15": 1794482656.624037,
     "8faf8f8f8f9de5e5": 1794486665.521352,
-    "676767c7c7e7cc4e": 1794490982.978052
+    "676767c7c7e7cc4e": 1794490982.978052,
+    "07190c5418102c3e": 1794491433.708824
   },
   "posted": [
     {
@@ -197,6 +200,12 @@
       "title_norm": "nis o obustavi proizvodnje zbog janaf a benzinske stanice uredno snabdevene gorivom",
       "summary_norm": "kompanija naftna industrija srbije nis saopstila je da pazljivo prati situaciju nastalu privremenim prekidom transporta sirove nafte jadranskim naftovodom janaf i da raspolaze dovoljnim zalihama naftnih derivata",
       "source": "Danas"
+    },
+    {
+      "ts": 1794491433.708824,
+      "title_norm": "culibrk o povecanju kamatne stope nbs to je signal da ce inflacija biti veca nego sto je planirano",
+      "summary_norm": "glavni urednik nedeljnika radar milan culibrk ocenio je za n1 da odluka narodne banke srbije da poveca referentnu kamatnu stopu na sest odsto signal",
+      "source": "N1"
     }
   ]
 }
