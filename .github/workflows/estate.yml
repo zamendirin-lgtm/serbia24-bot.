@@ -44,6 +44,10 @@ jobs:
           PROPERTY_CHAT_ID: ${{ vars.PROPERTY_CHAT_ID }}
           PROPERTY_ENABLE_4ZIDA: ${{ vars.PROPERTY_ENABLE_4ZIDA }}
           PROPERTY_4ZIDA_MEDIA_LICENSED: ${{ vars.PROPERTY_4ZIDA_MEDIA_LICENSED }}
+          PROPERTY_PARTNER_FEEDS_ENABLED: ${{ vars.PROPERTY_PARTNER_FEEDS_ENABLED }}
+          PROPERTY_PARTNER_LICENSE_CONFIRMED: ${{ vars.PROPERTY_PARTNER_LICENSE_CONFIRMED }}
+          PROPERTY_PARTNER_FEEDS: ${{ vars.PROPERTY_PARTNER_FEEDS }}
+          PROPERTY_PARTNER_FEED_TOKEN: ${{ secrets.PROPERTY_PARTNER_FEED_TOKEN }}
         run: python property_bot.py
       - name: Persist property history (separate from news)
         if: steps.credentials.outputs.ready == 'true'
