@@ -185,6 +185,100 @@ def relevant(article: Article) -> bool:
     )
 
 
+# Newsroom priority: practical impact matters more than publication time.
+# Stems are transliterated Serbian, never free-text from an AI model.
+PRICE_NEWS = (
+    "cen", "poskup", "pojeft", "jeftin", "popust", "tarif",
+    "goriv", "dizel", "benzin", "akciz", "potrosac", "cenovnik",
+    "racun", "struj", "grejanj", "komunal", "stanarin", "kirij",
+)
+EVERYDAY_NEWS = (
+    "plat", "zarad", "penzij", "porez", "minimal", "inflacij",
+    "bank", "zakon", "uredba", "pravil", "subvenc", "podstic",
+    "dokumen", "pasos", "licn kart", "borav", "vrtic", "skol",
+    "zdravstv", "lek", "pregled", "cen", "parkir", "prevoz",
+    "autobus", "stanov", "nekretnin", "zaposl", "radnic",
+)
+PUBLIC_IMPORTANCE = (
+    "upozoren", "opasnost", "nestanak", "restrikc", "obustav",
+    "zatvaranj", "otvaranj", "poplav", "pozar", "saobracajn nesrec",
+    "radov", "nestasic", "hitn", "bezbednost", "kriz",
+)
+LOW_VALUE_TOPICS = (
+    "utakmic", "mec", "fudbal", "odboj", "vaterpol", "kosark",
+    "liga nacij", "rezultat", "gol", "trener", "transfer",
+    "radionic", "seminar", "koncert", "izlozb", "premijer film",
+    "horoskop", "rijaliti",
+)
+# Amounts need units. A year or an arrest count is not a consumer price.
+PRICE_AMOUNT_PATTERN = re.compile(
+    r"(?<!\w)(?:\d[\d., ]{0,14}\s*(?:dinara|dinara\s+po|din|rsd|eur|evra|evra\s+po|€|"
+    r"dinara/l|dinara\s+za\s+litar)|(?:rsd|eur|€)\s*\d[\d., ]{0,14})(?![a-z])",
+    re.I,
+)
+
+
+def price_figure(text: str) -> bool:
+    """A concrete amount explicitly associated with a currency."""
+    return bool(PRICE_AMOUNT_PATTERN.search(text or ""))
+
+
+def is_price_story(article: Article) -> bool:
+    title = normalized_title(article.title)
+    summary = normalized_title(article.summary[:600])
+    return contains_anchor(title, PRICE_NEWS) or (
+        contains_anchor(title, ("trgovin", "maloprodaj", "trzist", "kupovin"))
+        and contains_anchor(summary, PRICE_NEWS)
+    )
+
+
+def news_interest_score(article: Article, now: datetime) -> int:
+    """Prioritize concrete changes affecting daily life.
+
+    Ranking only; relevance, age limit, fact checks and duplicate protection
+    still apply. Do not prioritize a police story solely because it mentions
+    2.7 million dinars of alleged damages.
+    """
+    title = normalized_title(article.title)
+    summary = normalized_title(article.summary[:650])
+    price_story = is_price_story(article)
+    score = 0
+    if price_story:
+        score += 10
+        if price_figure(article.title + " " + article.summary):
+            score += 5
+    if contains_anchor(title, EVERYDAY_NEWS):
+        score += 6
+    elif contains_anchor(summary, EVERYDAY_NEWS):
+        score += 2
+    if contains_anchor(title, PUBLIC_IMPORTANCE):
+        score += 5
+    if contains_anchor(title, LOW_VALUE_TOPICS) and not price_story:
+        score -= 8
+    if any(x in title for x in ("izjavio", "izjava", "intervju", "porucio", "rekao")):
+        score -= 2
+    if contains_anchor(title, ("menj", "promen", "nov", "uvod", "ukida", "objav")):
+        score += 1
+    # Avoid crowding out breaking public-safety news with an old price recap.
+    age_hours = max(0.0, (now.timestamp() - article.published_ts) / 3600)
+    if age_hours > 5:
+        score -= 2
+    return score
+
+
+def rank_news(candidates: list[Article], now: datetime) -> list[Article]:
+    """Highest reader utility first, most recent within each score tier."""
+    return sorted(
+        candidates,
+        key=lambda article: (news_interest_score(article, now),
+                             article.published_ts),
+        reverse=True,
+    )
+
+
+MIN_INTEREST_SCORE = 2  # skip low-value filler when no useful news is available.
+
+
 # Use the original Serbian titles, before translation. This also works across
 # Cyrillic/Latin, because normalized_title() transliterates all text to Latin.
 EVENT_STOPWORDS = frozenset("""
@@ -1074,13 +1168,21 @@ def run() -> None:
     if generic_images:
         LOG.info("Скрываем %s повторяющихся шаблонных изображений RSS", len(generic_images))
     candidates = [a for a in all_articles if recent_enough(a, now) and relevant(a)]
-    candidates.sort(key=lambda a: a.published_ts, reverse=True)
-    LOG.info("Подходящих свежих новостей: %s", len(candidates))
+    candidates = rank_news(candidates, now)
+    LOG.info(
+        "Подходящих свежих новостей: %s; среди них полезных (балл >= %s): %s",
+        len(candidates), MIN_INTEREST_SCORE,
+        sum(news_interest_score(a, now) >= MIN_INTEREST_SCORE for a in candidates),
+    )
     translator = FreeTranslator()
     sent = 0
     for article in candidates:
         if sent >= remaining:
             break
+        score = news_interest_score(article, now)
+        if score < MIN_INTEREST_SCORE:
+            LOG.info("Пропускаем малополезную новость (оценка %s): %s", score, article.title[:90])
+            continue
         if is_duplicate(article, state):
             continue
         try:
