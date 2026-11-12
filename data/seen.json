@@ -1,4 +1,18 @@
 {
-  "seen": {},
-  "posted": []
+  "seen": {
+    "01330b7c8cf1fe49e4693691": 1794442000.315383,
+    "f948a5952f2ac7659a7adc99": 1794442000.315383
+  },
+  "posted": [
+    {
+      "ts": 1794442000.315383,
+      "title_norm": "veliki protesti sirom spanije zbog problema sa stanovanjem samo u madridu 120 000 ljudi",
+      "source": "Danas"
+    },
+    {
+      "ts": 1794442000.315383,
+      "title_norm": "americki casopis forin polisi o pobedi studenata u srbiji srusili su 14 godisnju vlast sns sta sada",
+      "source": "N1"
+    }
+  ]
 }
