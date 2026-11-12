@@ -9,6 +9,7 @@ from bot import (
     Article, canonical_url, format_post, is_duplicate, normalized_title,
     parse_feed, recent_enough, relevant, post_telegram, prepare_summary, photo_caption, rss_photo, normal_image_url,
     same_event_title, event_terms, prune_state, publication_allowed,
+    branded_fallback_photo,
     image_dhash, photo_url_key, is_repeated_photo,
 )
 
@@ -275,23 +276,51 @@ class NewsBotTests(unittest.TestCase):
             self.assertEqual(payload["caption"], "Подпись по-русски")
             self.assertNotIn("link_preview_options", payload)
 
-    def test_fallback_disables_page_preview(self):
+    def test_fallback_uses_real_image_not_text_message(self):
         class Failure:
             status_code = 400
             def json(self):
-                return {"ok": False, "description": "Bad photo"}
+                return {"ok": False, "description": "Bad source photo"}
         class Success:
             status_code = 200
             def json(self):
                 return {"ok": True}
-        with patch("bot.requests.post", side_effect=[Failure(), Success()]) as send:
-            post_telegram(
+
+        with patch("bot.requests.post", side_effect=[Failure(), Success()]) as send, \
+                patch("bot._telegram_channel_avatar", return_value=b""):
+            sent_original = post_telegram(
                 "Тест", "not-a-real-token", "@testchannel",
                 "https://rts.rs/a", "https://rts.rs/photo.jpg", "Подпись по-русски",
             )
+            self.assertFalse(sent_original)
             self.assertEqual(send.call_count, 2)
-            self.assertIn("/sendMessage", send.call_args.args[0])
-            self.assertTrue(send.call_args.kwargs["json"]["link_preview_options"]["is_disabled"])
+            self.assertIn("/sendPhoto", send.call_args.args[0])
+            payload = send.call_args.kwargs
+            self.assertIn("files", payload)
+            self.assertEqual(payload["data"]["caption"], "Подпись по-русски")
+
+    def test_branded_fallback_is_jpeg_16_9(self):
+        from io import BytesIO
+        from PIL import Image
+        with patch("bot._telegram_channel_avatar", return_value=b""):
+            data = branded_fallback_photo("not-a-real-token", "@testchannel")
+        self.assertTrue(data.startswith(b"\xff\xd8"))
+        with Image.open(BytesIO(data)) as im:
+            self.assertEqual(im.size, (1200, 675))
+
+    def test_no_source_photo_never_uses_send_message(self):
+        class Success:
+            status_code = 200
+            def json(self):
+                return {"ok": True}
+        with patch("bot.requests.post", return_value=Success()) as send, \
+                patch("bot._telegram_channel_avatar", return_value=b""):
+            post_telegram(
+                "Текст", "not-a-real-token", "@testchannel",
+                "https://rts.rs/a", "", "Подпись по-русски",
+            )
+            self.assertIn("/sendPhoto", send.call_args.args[0])
+            self.assertNotIn("/sendMessage", send.call_args.args[0])
 
     def test_photo_caption_russian(self):
         item = Article("RTS", "Original", "https://rts.rs/a", "", 0)
