@@ -12,6 +12,7 @@ from bot import (
     branded_fallback_photo, extract_article_paragraphs, select_news_paragraphs,
     translate_article, complete_sentences_for_budget,
     image_dhash, photo_url_key, is_repeated_photo,
+    news_interest_score, rank_news, price_figure, is_price_story, MIN_INTEREST_SCORE,
 )
 
 
@@ -24,6 +25,69 @@ class NewsBotTests(unittest.TestCase):
             canonical_url("https://rts.rs/news/?utm_source=x&id=2#section"),
             "https://rts.rs/news?id=2",
         )
+
+    def test_reader_interest_prioritizes_real_prices_over_sports(self):
+        ts = datetime.now(timezone.utc).timestamp()
+        prices = Article(
+            "Danas", "Nove cene goriva u Srbiji: dizel 236 dinara, benzin 207 dinara",
+            "https://danas.rs/prices", "Cene važe do narednog petka.", ts - 3600,
+        )
+        sports = Article(
+            "B92", "Srbija igra utakmicu protiv Nemačke u Ligi nacija",
+            "https://b92.net/sport", "Prenos utakmice biće danas uveče.", ts - 200,
+        )
+        now = datetime.fromtimestamp(ts, timezone.utc)
+        self.assertTrue(is_price_story(prices))
+        self.assertTrue(price_figure(prices.title))
+        self.assertGreater(news_interest_score(prices, now), news_interest_score(sports, now))
+        self.assertEqual(rank_news([sports, prices], now)[0].url, prices.url)
+        self.assertLess(news_interest_score(sports, now), MIN_INTEREST_SCORE)
+
+    def test_practical_legal_change_more_important_than_seminar(self):
+        ts = datetime.now(timezone.utc).timestamp()
+        practical = Article(
+            "RTS", "Novi zakon u Srbiji menja postupak izdavanja ličnih karata",
+            "https://rts.rs/zakon", "Nove izmene važe od decembra.", ts - 3000,
+        )
+        filler = Article(
+            "Danas", "Radionica o koncentraciji u Omladinskom klubu Kragujevca",
+            "https://danas.rs/radionica", "", ts - 50,
+        )
+        now = datetime.fromtimestamp(ts, timezone.utc)
+        self.assertGreater(news_interest_score(practical, now), news_interest_score(filler, now))
+        self.assertEqual(rank_news([filler, practical], now)[0], practical)
+
+    def test_police_losses_not_misidentified_as_consumer_price(self):
+        ts = datetime.now(timezone.utc).timestamp()
+        story = Article(
+            "RTS", "U Novom Sadu uhapšen direktor zbog zloupotrebe",
+            "https://rts.rs/policija",
+            "Sumnja se na štetu od 2,7 miliona dinara.",
+            ts,
+        )
+        self.assertFalse(is_price_story(story))
+        self.assertFalse(price_figure("Steta 2026. godine"))
+        self.assertTrue(price_figure("Cena je 250 dinara."))
+        self.assertTrue(price_figure("Цена 250 динара."))
+
+    def test_extract_price_amount_even_if_after_first_paragraphs(self):
+        blocks = [
+            "Cene goriva u Srbiji ostaju nepromenjene tokom ove nedelje, saopštilo je ministarstvo nadležno za trgovinu.",
+            "Odluka se odnosi na prodaju benzina i dizela na pumpama u celoj zemlji i važi narednih sedam dana.",
+            "Ministarstvo je navelo da se primenjuje ograničenje najviše maloprodajne cene derivata nafte.",
+            "Maksimalna cena evrodizela biće 236 dinara za litar, dok će benzin BMB 95 koštati 207 dinara po litru.",
+        ]
+        selected = select_news_paragraphs(blocks, "Nove cene goriva u Srbiji")
+        self.assertGreaterEqual(len(selected), 2)
+        self.assertIn("236 dinara", " ".join(selected))
+        self.assertIn("207 dinara", " ".join(selected))
+
+    def test_rank_relevance_prefers_fresh_breaking_changes_over_old_announcement(self):
+        ts = datetime.now(timezone.utc).timestamp()
+        now = datetime.fromtimestamp(ts, timezone.utc)
+        a = Article("Danas", "Cene hrane u Srbiji", "https://danas.rs/old", "", ts - 7*3600)
+        b = Article("N1", "Cene hrane u Srbiji", "https://n1.rs/new", "", ts - 600)
+        self.assertGreater(news_interest_score(b, now), news_interest_score(a, now))
 
     def test_local_filter(self):
         now = datetime.now(timezone.utc).timestamp()
