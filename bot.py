@@ -212,8 +212,8 @@ LOW_VALUE_TOPICS = (
 )
 # Amounts need units. A year or an arrest count is not a consumer price.
 PRICE_AMOUNT_PATTERN = re.compile(
-    r"(?<!\w)(?:\d[\d., ]{0,14}\s*(?:dinara|dinara\s+po|din|rsd|eur|evra|evra\s+po|€|"
-    r"dinara/l|dinara\s+za\s+litar)|(?:rsd|eur|€)\s*\d[\d., ]{0,14})(?![a-z])",
+    r"(?<!\w)(?:\d[\d., ]{0,14}\s*(?:dinara|din|rsd|eur|evra|€|"
+    r"динара|динар|евра|евро|рсд)|(?:rsd|eur|€|рсд)\s*\d[\d., ]{0,14})(?![a-z])",
     re.I,
 )
 
@@ -725,6 +725,24 @@ def select_news_paragraphs(blocks: list[str], headline: str) -> list[str]:
         last_source_index = block_index
         if len(paras) >= 3:
             break
+
+    # For a price-focused article, extract a concrete currency amount when
+    # it appears in the original body but not in the opening paragraphs.
+    # Never estimate prices and never create amounts not found in the source.
+    if contains_anchor(normalized_title(headline), PRICE_NEWS):
+        if not any(price_figure(paragraph) for paragraph in paras):
+            for block in blocks[:12]:
+                extra = next((
+                    sentence for sentence in split_news_sentences(block)
+                    if factual_sentence(sentence, headline)
+                    and price_figure(sentence)
+                ), "")
+                if extra and all(extra not in p for p in paras):
+                    if len(paras) >= 3:
+                        paras[2] = extra
+                    else:
+                        paras.append(extra)
+                    break
 
     if len(paras) < 2 or len(" ".join(paras)) < 165:
         return []
