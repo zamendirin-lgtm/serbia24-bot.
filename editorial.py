@@ -15,6 +15,7 @@ from dataclasses import dataclass
 
 import requests
 from language_guard import ensure_russian, WrongLanguageError
+from context_guard import ensure_resolved_context, MissingContextError
 
 LOG = logging.getLogger("serbia24.editorial")
 
@@ -65,6 +66,13 @@ SYSTEM_RULES = """Ты выпускающий редактор РУССКОЯЗ�
   неожиданность, которые действительно присутствуют в материале.
   Не скрывай суть искусственно, не пиши «Вы не поверите», «ШОК» и ложные сенсации.
   Вопрос в заголовке допустим только тогда, когда текст сразу даёт конкретный ответ.
+- КРИТИЧЕСКИ ВАЖНО: каждый упомянутый фильм, проект, закон, ведомство,
+  мероприятие или человек должен быть понятен читателю. Не оставляй фраз
+  «перед премьерой документального фильма», «по этому проекту»,
+  «новая программа» без названия/объяснения, если это важная часть новости.
+  Если статья касается премьеры фильма, НАЗОВИ ФИЛЬМ в публикации, укажи
+  дату и место показа, когда они есть в источнике. Если первоисточник
+  не даёт идентифицировать фильм, лучше верни publish=false; не угадывай.
 - В ПЕРВОМ абзаце раскрой обещание заголовка (кто, что, где, когда),
   во ВТОРОМ объясни обстоятельства, цифры и последствия. ТРЕТИЙ только если
   добавляет новый полезный факт. Не растягивай интригу и не требуй перехода
@@ -170,6 +178,7 @@ def _basic_checks(title: str, paragraphs: list[str] | tuple[str, ...],
     if any("\n" in p or p.strip().startswith(("-", "•", "#")) for p in parts):
         raise EditorialError("Неверная разметка новости")
     ensure_russian(title, parts)
+    ensure_resolved_context(title, parts)
     return EditedNews(title, tuple(parts), "checked")
 
 
@@ -188,6 +197,7 @@ def conservative_polish(title_ru: str, draft_ru: str) -> EditedNews:
     if not 200 <= len("\n\n".join(unique)) <= 770:
         raise EditorialError("Текст слишком короткий или длинный")
     ensure_russian(title, unique[:3])
+    ensure_resolved_context(title, unique[:3])
     return EditedNews(title, tuple(unique[:3]), "without_ai")
 
 
@@ -223,10 +233,13 @@ def edit_with_groq(source_title: str, source_paragraphs: list[str],
         if attempt:
             payload["messages"][0]["content"] = (
                 SYSTEM_RULES
-                + "\nКРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: ПРЕДЫДУЩИЙ ОТВЕТ БЫЛ НЕ ПО-РУССКИ. "
-                "ПИШИ ИСКЛЮЧИТЕЛЬНО НА РУССКОМ ЯЗЫКЕ. "
-                "ПЕРЕВЕДИ ВСЕ СЕРБСКИЕ СЛОВА И ФРАЗЫ НА ЕСТЕСТВЕННЫЙ РУССКИЙ. "
-                "Не смешивай русский и сербский. Не добавляй новых фактов."
+                + "\nКРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ ПРЕДЫДУЩЕЙ ВЕРСИИ: "
+                "Проверь, что весь текст по-русски. "
+                "Если упоминается премьера документального фильма, "
+                "обязательно назови фильм в связке 'фильм «Название»', "
+                "если это название содержится в предоставленном источнике. "
+                "Ни одно ключевое упоминание нельзя оставлять без объяснения. "
+                "Не придумывай названия, даты или другие факты."
             )
         try:
             response = requests.post(
@@ -244,11 +257,11 @@ def edit_with_groq(source_title: str, source_paragraphs: list[str],
                 parsed.get("title", ""), parsed.get("paragraphs", []), original,
             )
             return EditedNews(edited.title, edited.paragraphs, "groq")
-        except WrongLanguageError:
+        except (WrongLanguageError, MissingContextError) as exc:
             if attempt == 0:
-                LOG.warning("Groq вернул нерусский текст; повторяем редактуру на русском")
+                LOG.warning("Groq не прошёл проверку языка/контекста (%s); повторяем", type(exc).__name__)
                 continue
-            raise EditorialError("Groq дважды вернул не русский текст") from None
+            raise EditorialError("Groq дважды вернул текст с ошибкой языка или недостающим контекстом") from None
         except EditorialError:
             raise
         except (requests.RequestException, KeyError, IndexError, TypeError,
