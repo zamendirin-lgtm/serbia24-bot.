@@ -169,6 +169,9 @@ def pick_cities(now: datetime) -> list[str]:
 
 
 def scan(session: requests.Session, now: datetime) -> list[Offer]:
+    if os.getenv("PROPERTY_ENABLE_4ZIDA", "") != "1":
+        print("4zida source disabled until permission/approved use is confirmed.")
+        return []
     try:
         rules = robots_rules(session)
     except requests.RequestException as exc:
