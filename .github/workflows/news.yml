@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
   push:
     paths:
-      - '.github/workflows/news.yml' # one bootstrap test on setup changes
+      - '.github/workflows/news.yml' # verifies editorial gate and channel publishing on workflow changes
 
 permissions:
   contents: write
