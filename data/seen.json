@@ -1,7 +1,9 @@
 {
   "seen": {
     "01330b7c8cf1fe49e4693691": 1794442000.315383,
-    "f948a5952f2ac7659a7adc99": 1794442000.315383
+    "f948a5952f2ac7659a7adc99": 1794442000.315383,
+    "47084dd88d14d6904adf7859": 1794442501.421553,
+    "8c143a11e8c99eddbd0277dd": 1794442501.421553
   },
   "posted": [
     {
@@ -13,6 +15,16 @@
       "ts": 1794442000.315383,
       "title_norm": "americki casopis forin polisi o pobedi studenata u srbiji srusili su 14 godisnju vlast sns sta sada",
       "source": "N1"
+    },
+    {
+      "ts": 1794442501.421553,
+      "title_norm": "vaterpolisti novog beograda pobedili jadran u ligi sampiona",
+      "source": "Danas"
+    },
+    {
+      "ts": 1794442501.421553,
+      "title_norm": "drekslmajer o zatvaranju fabrike u zrenjaninu odluka nije povezana s promenom vlasti",
+      "source": "Danas"
     }
   ]
 }
