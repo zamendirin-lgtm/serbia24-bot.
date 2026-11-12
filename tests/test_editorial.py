@@ -151,6 +151,43 @@ class EditorialTests(unittest.TestCase):
         groq.assert_called_once()
         gemini.assert_not_called()
 
+    def test_gemini_fallback_when_groq_unavailable(self):
+        def fails(*args, **kwargs):
+            raise EditorialError("Не удалось проверить новость через Groq")
+        with patch.dict(os.environ, {
+                "GROQ_API_KEY": "groq-test", "GEMINI_API_KEY": "gemini-test",
+                "GOOGLE_API_KEY": ""}), \
+             patch("editorial.edit_with_groq", side_effect=fails) as groq, \
+             patch("editorial.edit_with_gemini",
+                   return_value=EditedNews(TITLE, (PARA1, PARA2), "ai")) as gemini:
+            item = edit_news("Novi centar", SERBIAN, TITLE,
+                             PARA1 + "\n\n" + PARA2)
+        self.assertEqual(item.mode, "ai")
+        groq.assert_called_once()
+        gemini.assert_called_once()
+
+    def test_gemini_works_with_google_api_key_secret_alias(self):
+        with patch.dict(os.environ, {
+                "GROQ_API_KEY": "", "GEMINI_API_KEY": "",
+                "GOOGLE_API_KEY": "google-test"}), \
+             patch("editorial.edit_with_gemini",
+                   return_value=EditedNews(TITLE, (PARA1, PARA2), "ai")) as gemini:
+            item = edit_news("Novi centar", SERBIAN, TITLE,
+                             PARA1 + "\n\n" + PARA2)
+        self.assertEqual(item.mode, "ai")
+        gemini.assert_called_once()
+
+    def test_explicit_groq_refusal_not_overridden(self):
+        with patch.dict(os.environ, {
+                "GROQ_API_KEY": "groq-test", "GEMINI_API_KEY": "gemini-test"}), \
+             patch("editorial.edit_with_groq",
+                   side_effect=EditorialError("Groq-редактор отклонил недостаточно содержательную новость")), \
+             patch("editorial.edit_with_gemini") as gemini:
+            with self.assertRaises(EditorialError):
+                edit_news("Novi centar", SERBIAN, TITLE,
+                          PARA1 + "\n\n" + PARA2)
+            gemini.assert_not_called()
+
     def test_model_denial_skips_publication(self):
         with self.assertRaisesRegex(EditorialError, "Неизвестная модель"):
             edit_with_groq("Novi centar", SERBIAN, TITLE,
