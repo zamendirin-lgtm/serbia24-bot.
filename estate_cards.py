@@ -191,7 +191,7 @@ def format_card(offer, now: datetime, translated: str = "") -> str:
         "",
         f"👤 <b>Продавец:</b> {html.escape(offer.advertiser)}",
         f"🗓 Обновлено: {offer.updated} · просмотрено {now:%d.%m.%Y %H:%M} (Белград)",
-        "🔎 Данные из объявления, не юридическая или техническая проверка.",
+        "🔎 Доступность и документы не подтверждены; сведения из объявления, не техническая проверка.",
         f'🔗 <a href="{html.escape(url, quote=True)}">Смотреть оригинал и контакты</a>',
     ]
     # Keep Telegram below 4096 chars, with an intact link and qualification.
