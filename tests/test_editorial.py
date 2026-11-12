@@ -5,7 +5,7 @@ from unittest.mock import patch
 
 from editorial import (
     SYSTEM_RULES, EditedNews, EditorialError,
-    conservative_polish, edit_news, edit_with_gemini, edit_with_groq,
+    conservative_polish, edit_news, edit_with_gemini, edit_with_groq, _numbers, _clean,
 )
 
 TITLE = "В Нови-Саде открыли новый медицинский центр"
@@ -92,6 +92,17 @@ class EditorialTests(unittest.TestCase):
                              PARA1 + "\n\n" + PARA2,
                              api_key="test-secret", model="../../wrong")
 
+
+    def test_hours_normalization_no_fabricated_time(self):
+        self.assertEqual(_numbers("В 19:00"), {"19"})
+        self.assertEqual(_numbers("В 19 часов"), {"19"})
+        self.assertEqual(_numbers("В 19:30"), {"19", "30"})
+        self.assertNotEqual(_numbers("В 19 часов"), _numbers("В 19:30"))
+
+    def test_machine_translation_phrasing_normalized(self):
+        self.assertIn("мастер-класс", _clean("Сегодня workshop по концентрации."))
+        self.assertIn("мероприятий", _clean("Организует серию активностей."))
+        self.assertIn("для молодёжи", _clean("Мероприятие для молодых."))
 
     def test_groq_api_uses_free_model_and_json(self):
         class Response:
