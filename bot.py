@@ -494,8 +494,7 @@ def format_post(article: Article, title_ru: str, summary_ru: str) -> str:
         result += f"{html.escape(summary)}\n\n"
     result += (
         f'🔗 <a href="{html.escape(article.url, quote=True)}">'
-        f"Источник: {html.escape(article.source)}</a>\n\n"
-        "🇷🇸 <b>Сербия 24</b> | #НовостиСербии"
+        f"Источник: {html.escape(article.source)}</a>"
     )
     return result
 
@@ -511,7 +510,6 @@ def photo_caption(article: Article, title_ru: str, summary_ru: str) -> str:
     ending = (
         f'\n\n🔗 <a href="{html.escape(article.url, quote=True)}">'
         f"Источник: {html.escape(article.source)}</a>"
-        "\n🇷🇸 <b>Сербия 24</b> | #НовостиСербии"
     )
     # HTML tags are not counted toward Telegram's visible character limit;
     # 800 visible characters leaves room for all normal source URLs.
