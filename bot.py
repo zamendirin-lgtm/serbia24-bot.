@@ -1056,7 +1056,7 @@ def run() -> None:
 
     now_local_date = now.astimezone(TZ).date()
     daily_limit = max(1, int(os.getenv("DAILY_LIMIT", "40")))
-    per_run_limit = max(1, int(os.getenv("PER_RUN_LIMIT", "2")))
+    per_run_limit = max(1, int(os.getenv("PER_RUN_LIMIT", "1")))
     posted_today = sum(
         1 for p in state["posted"]
         if datetime.fromtimestamp(float(p["ts"]), TZ).date() == now_local_date
