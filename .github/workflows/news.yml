@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
   push:
     paths:
-      - '.github/workflows/news.yml' # verifies Russian-language gate before channel publishing
+      - '.github/workflows/news.yml' # verify reader-first price and public-interest selection in live channel
 
 permissions:
   contents: write
