@@ -2,7 +2,7 @@
 from datetime import datetime, timezone
 import logging
 
-from bot import FreeTranslator, article_photo, fetch_news, fetch_editorial_paragraphs, recent_enough, relevant, translate_article
+from bot import FreeTranslator, article_photo, fetch_news, fetch_editorial_paragraphs, recent_enough, relevant, translate_article, rank_news, news_interest_score, MIN_INTEREST_SCORE
 
 logging.basicConfig(level=logging.INFO)
 articles = fetch_news()
@@ -24,7 +24,13 @@ if not articles:
     raise SystemExit("No RSS articles from any source")
 now = datetime.now(timezone.utc)
 candidates = [a for a in articles if recent_enough(a, now) and relevant(a)]
+candidates = rank_news(candidates, now)
 print("Fresh relevant articles:", len(candidates))
+print("Highest reader-interest picks (no posts):")
+for item in candidates[:12]:
+    score = news_interest_score(item, now)
+    print("Score:", score, "ACCEPT" if score >= MIN_INTEREST_SCORE else "SKIP",
+          item.source, item.title[:135])
 for item in candidates[:4]:
     url = article_photo(item)
     print("News photo", item.source, bool(url), url[:130])
