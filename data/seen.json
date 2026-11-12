@@ -27,7 +27,8 @@
     "743f66be91409a3faa314b0f": 1794491433.708824,
     "33549af0d47a6529ccc2ec0c": 1794491481.337112,
     "6aebbb1143ebecedd04ccf32": 1794494501.125882,
-    "0570e018e8b0def6861b96e0": 1794498100.84124
+    "0570e018e8b0def6861b96e0": 1794498100.84124,
+    "507c89d91559f224fd09bd0d": 1794501924.745252
   },
   "photos": {
     "50f559ee5d138a92c244ad4c": 1794474084.088928,
@@ -46,7 +47,8 @@
     "de3abe95d7fc731f9e83d8a5": 1794490982.978052,
     "b89de1e5a9273a030711a351": 1794491433.708824,
     "3b45fcf67c38d0bbc5383aeb": 1794494501.125882,
-    "7fc4c08dd61a14cdcfa61ef8": 1794498100.84124
+    "7fc4c08dd61a14cdcfa61ef8": 1794498100.84124,
+    "1e1fe1b1044d92e4077eaf9f": 1794501924.745252
   },
   "phashes": {
     "2ceefee6566d6666": 1794474084.088928,
@@ -65,7 +67,8 @@
     "676767c7c7e7cc4e": 1794490982.978052,
     "07190c5418102c3e": 1794491433.708824,
     "e3c7dbd3d24acef5": 1794494501.125882,
-    "091d0d343030382c": 1794498100.84124
+    "091d0d343030382c": 1794498100.84124,
+    "9b9bcd2d393b3313": 1794501924.745252
   },
   "posted": [
     {
@@ -231,6 +234,12 @@
       "title_norm": "kikic pred premijeru dokumentarca o rudarenju u istocnoj srbiji kapital stranog investitora ne sme biti prioritet",
       "summary_norm": "bor majdanpek zajecar i okolina gradovi i sela istocne srbije suocavaju se sa sirenjem rudarskih aktivnosti novim istrazivanjima i planovima za o",
       "source": "N1"
+    },
+    {
+      "ts": 1794501924.745252,
+      "title_norm": "profesori srednje skole unutrasnjih poslova traze smenu direktorke",
+      "summary_norm": "profesori srednje skole unutrasnjih poslova jakov nenadovic iz sremske kamenice zahtevaju da v d direktorka ove obrazovne ustanove vesna durovic bude smenjena zbog kako kazu visestrukih zloupotreba svoje pozicije i nestrucnog rukovodenja skolom koje je rezultiralo nasiljem u skoli ali i krivicnim delima koje cine ucenici i buduci policajci",
+      "source": "Danas"
     }
   ]
 }
