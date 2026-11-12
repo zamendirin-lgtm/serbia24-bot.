@@ -28,7 +28,8 @@
     "33549af0d47a6529ccc2ec0c": 1794491481.337112,
     "6aebbb1143ebecedd04ccf32": 1794494501.125882,
     "0570e018e8b0def6861b96e0": 1794498100.84124,
-    "507c89d91559f224fd09bd0d": 1794501924.745252
+    "507c89d91559f224fd09bd0d": 1794501924.745252,
+    "5c5e40c49f744fe80f89da1f": 1794505165.927597
   },
   "photos": {
     "50f559ee5d138a92c244ad4c": 1794474084.088928,
@@ -48,7 +49,8 @@
     "b89de1e5a9273a030711a351": 1794491433.708824,
     "3b45fcf67c38d0bbc5383aeb": 1794494501.125882,
     "7fc4c08dd61a14cdcfa61ef8": 1794498100.84124,
-    "1e1fe1b1044d92e4077eaf9f": 1794501924.745252
+    "1e1fe1b1044d92e4077eaf9f": 1794501924.745252,
+    "6158d3937bfc3f5404f16853": 1794505165.927597
   },
   "phashes": {
     "2ceefee6566d6666": 1794474084.088928,
@@ -68,7 +70,8 @@
     "07190c5418102c3e": 1794491433.708824,
     "e3c7dbd3d24acef5": 1794494501.125882,
     "091d0d343030382c": 1794498100.84124,
-    "9b9bcd2d393b3313": 1794501924.745252
+    "9b9bcd2d393b3313": 1794501924.745252,
+    "07190c581014343e": 1794505165.927597
   },
   "posted": [
     {
@@ -240,6 +243,12 @@
       "title_norm": "profesori srednje skole unutrasnjih poslova traze smenu direktorke",
       "summary_norm": "profesori srednje skole unutrasnjih poslova jakov nenadovic iz sremske kamenice zahtevaju da v d direktorka ove obrazovne ustanove vesna durovic bude smenjena zbog kako kazu visestrukih zloupotreba svoje pozicije i nestrucnog rukovodenja skolom koje je rezultiralo nasiljem u skoli ali i krivicnim delima koje cine ucenici i buduci policajci",
       "source": "Danas"
+    },
+    {
+      "ts": 1794505165.927597,
+      "title_norm": "culibrk javna preduzeca ce biti ostecena zbog alta banke pitanje je samo koliko treba ispitati i krivicnu odgovornost u nbs",
+      "summary_norm": "urednik nedeljnika radar milan culibrk ocenio je za n1 da ce javna preduzeca koja su drzala novac u alta banci pretrpeti gubitke a da je sada kljucno",
+      "source": "N1"
     }
   ]
 }
