@@ -24,7 +24,8 @@
     "b69d2c2252bcca4354ab2602": 1794482656.624037,
     "4b76eddb043524f2bb2431df": 1794486665.521352,
     "a8a0f3f13e1ad33db61587d4": 1794490982.978052,
-    "743f66be91409a3faa314b0f": 1794491433.708824
+    "743f66be91409a3faa314b0f": 1794491433.708824,
+    "33549af0d47a6529ccc2ec0c": 1794491481.337112
   },
   "photos": {
     "50f559ee5d138a92c244ad4c": 1794474084.088928,
@@ -206,6 +207,12 @@
       "title_norm": "culibrk o povecanju kamatne stope nbs to je signal da ce inflacija biti veca nego sto je planirano",
       "summary_norm": "glavni urednik nedeljnika radar milan culibrk ocenio je za n1 da odluka narodne banke srbije da poveca referentnu kamatnu stopu na sest odsto signal",
       "source": "N1"
+    },
+    {
+      "ts": 1794491481.337112,
+      "title_norm": "burger king otvorio prvi restoran u beogradu koliko kosta whopper i sta je na meniju",
+      "summary_norm": "cene burger king whopper 590 dinara veliki obrok 1040 dinara",
+      "source": "Biznis Kurir"
     }
   ]
 }
