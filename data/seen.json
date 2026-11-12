@@ -30,7 +30,8 @@
     "0570e018e8b0def6861b96e0": 1794498100.84124,
     "507c89d91559f224fd09bd0d": 1794501924.745252,
     "5c5e40c49f744fe80f89da1f": 1794505165.927597,
-    "4967920c6297b35c3035a956": 1794508586.022071
+    "4967920c6297b35c3035a956": 1794508586.022071,
+    "b75a7575382702c4d4ae2d86": 1794512117.194673
   },
   "photos": {
     "50f559ee5d138a92c244ad4c": 1794474084.088928,
@@ -52,7 +53,8 @@
     "7fc4c08dd61a14cdcfa61ef8": 1794498100.84124,
     "1e1fe1b1044d92e4077eaf9f": 1794501924.745252,
     "6158d3937bfc3f5404f16853": 1794505165.927597,
-    "81a1596fc9f182c2a37d01ac": 1794508586.022071
+    "81a1596fc9f182c2a37d01ac": 1794508586.022071,
+    "0f54639847ec7803c7c88cf3": 1794512117.194673
   },
   "phashes": {
     "2ceefee6566d6666": 1794474084.088928,
@@ -74,7 +76,8 @@
     "091d0d343030382c": 1794498100.84124,
     "9b9bcd2d393b3313": 1794501924.745252,
     "07190c581014343e": 1794505165.927597,
-    "1810144c0d119898": 1794508586.022071
+    "1810144c0d119898": 1794508586.022071,
+    "75cd4d3a33f3c7e7": 1794512117.194673
   },
   "posted": [
     {
@@ -258,6 +261,12 @@
       "title_norm": "central bank says fx reserves down",
       "summary_norm": "the national bank of serbia nbs said that its gross fx reserves stood at eur 29 163 9 million at the endo of october down by eur 695 3 million comp",
       "source": "N1"
+    },
+    {
+      "ts": 1794512117.194673,
+      "title_norm": "batut u srbiji 660 000 odraslih ima dijabetes trecina ne zna da ga ima",
+      "summary_norm": "u srbiji 440 000 odraslih osoba ima dijagnostikovan dijabetes i nalazi se u sistemu zdravstvene zastite a njih 220 000 nema postavljenu dijagnozu dijabetesa i ne zna za svoju bolest objavljeno je danas",
+      "source": "Danas"
     }
   ]
 }
