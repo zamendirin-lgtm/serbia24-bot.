@@ -104,6 +104,11 @@ class EditorialTests(unittest.TestCase):
         self.assertIn("мероприятий", _clean("Организует серию активностей."))
         self.assertIn("для молодёжи", _clean("Мероприятие для молодых."))
 
+    def test_singular_news_event_verb_agreement(self):
+        corrected = _clean("В Крагуеваце вечером пройдут мастер‑класс о внимании.")
+        self.assertIn("пройдёт мастер‑класс", corrected)
+        self.assertNotIn("пройдут мастер", corrected)
+
     def test_groq_api_uses_free_model_and_json(self):
         class Response:
             def raise_for_status(self):
