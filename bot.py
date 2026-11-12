@@ -28,6 +28,7 @@ import requests
 from bs4 import BeautifulSoup
 from PIL import Image, ImageDraw, ImageFont, ImageOps, UnidentifiedImageError
 from unidecode import unidecode
+from editorial import edit_news
 
 LOG = logging.getLogger("serbia24")
 STATE_FILE = Path(__file__).parent / "data" / "seen.json"
@@ -734,8 +735,13 @@ def translate_article(article: Article, translator: FreeTranslator) -> tuple[str
 
     if len(translated) < 2 or sum(map(len, translated)) < 200:
         raise ValueError("Недостаточно содержания после перевода")
-    LOG.info("Редакционная выжимка: %s абзаца из %s", len(translated), article.source)
-    return title_ru, "\n\n".join(translated)
+    draft = "\n\n".join(translated)
+    edited = edit_news(article.title, paragraphs_sr, title_ru, draft)
+    LOG.info(
+        "Редакторский выпуск: %s абзаца, режим=%s, источник=%s",
+        len(edited.paragraphs), edited.mode, article.source,
+    )
+    return edited.title, edited.text
 
 
 def news_emoji(article: Article, title_ru: str) -> str:
