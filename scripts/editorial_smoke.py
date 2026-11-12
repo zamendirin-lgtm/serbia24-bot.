@@ -5,6 +5,8 @@ Never print secrets, raw API error responses, or request headers.
 """
 from __future__ import annotations
 import os
+from unittest.mock import patch
+import editorial
 from editorial import edit_with_groq, edit_with_gemini, EditorialError
 
 SOURCE_TITLE = "U Kragujevcu večeras radionica o koncentraciji u doba digitalnih distrakcija"
@@ -23,11 +25,19 @@ def check(label, api_key, call):
     if not api_key:
         print(label + ": no key")
         return False
+    original_check = editorial._basic_checks
+    def debug_check(title, paragraphs, factual_input):
+        # This is a fictional fixture with no private information.
+        print(label + " generated title:", title)
+        for i, paragraph in enumerate(paragraphs, 1):
+            print(label + f" generated paragraph {i}:", paragraph)
+        return original_check(title, paragraphs, factual_input)
     try:
-        result = call(
-            SOURCE_TITLE, SOURCE_PARAS, TITLE_RU, DRAFT_RU,
-            api_key=api_key,
-        )
+        with patch.object(editorial, "_basic_checks", side_effect=debug_check):
+            result = call(
+                SOURCE_TITLE, SOURCE_PARAS, TITLE_RU, DRAFT_RU,
+                api_key=api_key,
+            )
     except EditorialError as exc:
         print(label + ": editorial rejected test:", str(exc))
         return False
