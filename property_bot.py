@@ -23,6 +23,7 @@ from zoneinfo import ZoneInfo
 import requests
 from bs4 import BeautifulSoup
 from estate_cards import details_from_html, format_card, translate_short, send_photos, safe_https_url
+from partner_feeds import fetch_partner_entries
 
 BASE = "https://www.4zida.rs"
 STATE = Path("data/estate_seen.json")
@@ -287,15 +288,9 @@ def send_telegram(session: requests.Session, token: str, chat_id: str, post: str
     return None
 
 
-def load_submitted_offers(now: datetime) -> list[Offer]:
-    """Listings submitted for republication by their authorized owner/agent."""
-    path = Path("data/estate_submissions.json")
-    try:
-        content = json.loads(path.read_text(encoding="utf8"))
-    except (OSError, ValueError):
-        return []
-    if not isinstance(content, list):
-        return []
+
+def parse_authorized_entries(content: list, now: datetime) -> list[Offer]:
+    """A listing is eligible only if the publisher explicitly authorized reuse."""
     approved = []
     for item in content:
         if not isinstance(item, dict) or not (
@@ -336,8 +331,25 @@ def load_submitted_offers(now: datetime) -> list[Offer]:
             photo_urls=photos,
             photos_allowed=bool(item.get("photo_permission") is True),
         ))
+    return approved
+
+def load_submitted_offers(now: datetime) -> list[Offer]:
+    """Local moderated owner or agent submissions."""
+    path = Path("data/estate_submissions.json")
+    try:
+        content = json.loads(path.read_text(encoding="utf8"))
+    except (OSError, ValueError):
+        return []
+    if not isinstance(content, list):
+        return []
+    approved = parse_authorized_entries(content, now)
     print(f"Authorized owner/agent submissions loaded: {len(approved)}")
     return approved
+
+
+def load_partner_offers(session: requests.Session, now: datetime) -> list[Offer]:
+    """Only feeds explicitly authorized by their publisher are imported."""
+    return parse_authorized_entries(fetch_partner_entries(session), now)
 
 
 def load_seen() -> dict:
@@ -361,7 +373,7 @@ def main() -> int:
         return 0
     session = requests.Session()
     session.headers.update({"User-Agent": UA, "Accept-Language": "sr-RS,sr;q=0.9"})
-    offers = scan(session, now) + load_submitted_offers(now)
+    offers = scan(session, now) + load_submitted_offers(now) + load_partner_offers(session, now)
     print(f"Public source candidates parsed: {len(offers)}")
     seen = load_seen()
     picks = shortlist(offers, seen, limit=1)
