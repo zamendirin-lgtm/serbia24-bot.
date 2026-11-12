@@ -70,7 +70,7 @@ jobs:
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHANNEL: '@serbia24live'
-          DAILY_LIMIT: '10'
+          DAILY_LIMIT: '40'
           PER_RUN_LIMIT: '2'
         run: python bot.py
       - name: Persist published article history
