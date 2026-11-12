@@ -7,7 +7,9 @@
     "3f93b449c22a8aa910dc89ae": 1794446263.666197,
     "8da3e7b1676ff0d93fdd43c4": 1794446263.666197,
     "0da8251412288b58a5af8cce": 1794450686.684293,
-    "0b9cd4437ce2e8b860aef2e3": 1794450686.684293
+    "0b9cd4437ce2e8b860aef2e3": 1794450686.684293,
+    "e36311786cc3821fb6ef608b": 1794454213.748193,
+    "f07e4d1e1a4e33fa7cb90cd5": 1794454213.748193
   },
   "posted": [
     {
@@ -53,6 +55,18 @@
       "title_norm": "tramp sad nisu zapocele rat sa iranom teheran vodi rat protiv amerike jos od 1979 godine",
       "summary_norm": "americki predsednik donald tramp izjavio je danas da sjedinjene americke drzave sad nisu zapocele rat sa iranom tvrdeci da teheran vodi rat protiv",
       "source": "N1"
+    },
+    {
+      "ts": 1794454213.748193,
+      "title_norm": "policijska uprava sombor uhapseno pet osoba iz beograda zbog sumnje na iznudu",
+      "summary_norm": "policijska uprava u somboru je saopstila danas da je uhapseno pet osoba iz beograda zbog sumnje da su izvrsili iznudu od vlasnika jednog auto placa",
+      "source": "Danas"
+    },
+    {
+      "ts": 1794454213.748193,
+      "title_norm": "ekspo prilika za promotsiju srbije turistichki radnitsi pripremaju aranzhmane za goste iz tselog sveta",
+      "summary_norm": "medjunarodne manifestatsije po pravilu donose ekonomsku korist zemljama domatshinima ipak ekspo u beogradu prati i negativna reaktsija dela javnosti zbog sumnji u finansijske malverzatsije kako tokom 93 dana trajanja izlozhbe na najbolji nachin predstaviti srbiju privutshi turiste i povetshati prikhode od turizma",
+      "source": "RTS"
     }
   ]
 }
