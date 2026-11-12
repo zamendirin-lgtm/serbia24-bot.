@@ -402,14 +402,20 @@ class NewsBotTests(unittest.TestCase):
             "Prema saopštenju gradske uprave, planira se trideset novih radnih mesta i nekoliko ambulanti za decu.",
             "Ministarstvo je navelo da će se završni radovi finansirati sredstvima iz gradskog budžeta za 2026. godinu.",
         ]
+        translations = {
+            article.title: "В Белграде планируют открыть новое городское учреждение",
+            content[0]: "В Белграде сообщили о планах открыть новое городское учреждение в следующем месяце. Оно будет доступно жителям нескольких районов города.",
+            content[1]: "По информации городской администрации, для работы учреждения предполагается создать тридцать рабочих мест и оборудовать несколько кабинетов для детей.",
+            content[2]: "Министерство уточнило, что завершение строительных работ будет финансироваться из городского бюджета на следующий год. Подготовка помещения уже началась.",
+        }
         class Translator:
             def translate(self, text):
-                return "Перевод текста: " + text
+                return translations[text]
         with patch("bot.fetch_editorial_paragraphs", return_value=content):
             ru_title, ru_content = translate_article(article, Translator())
         self.assertEqual(ru_content.count("\n\n"), 2)
         self.assertTrue(len(ru_content) > 200)
-        self.assertTrue(ru_title.startswith("Перевод"))
+        self.assertIn("Белграде", ru_title)
 
     def test_caption_preserves_paragraphs_without_cutting_word(self):
         article = Article("RTS", "Lokalna vest", "https://rts.rs/a", "", 0)
