@@ -5,6 +5,7 @@ redistribution. A public API alone never implies syndication rights.
 """
 from __future__ import annotations
 
+import json
 import os
 from urllib.parse import urlparse
 
@@ -61,7 +62,7 @@ def fetch_partner_entries(session: requests.Session) -> list[dict]:
                     body.extend(chunk)
                     if len(body) > 524288:
                         raise ValueError("Partner feed exceeds the 512 kB size limit")
-                payload = response.json() if not body else __import__("json").loads(body)
+                payload = json.loads(body)
                 items = payload.get("listings", []) if isinstance(payload, dict) else []
                 if not isinstance(items, list):
                     continue
