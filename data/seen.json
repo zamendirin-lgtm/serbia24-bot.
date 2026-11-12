@@ -22,7 +22,8 @@
     "e9a7b4975efb14f7db590be5": 1794478644.132273,
     "7acedc77c6710201c404c65c": 1794478887.75568,
     "b69d2c2252bcca4354ab2602": 1794482656.624037,
-    "4b76eddb043524f2bb2431df": 1794486665.521352
+    "4b76eddb043524f2bb2431df": 1794486665.521352,
+    "a8a0f3f13e1ad33db61587d4": 1794490982.978052
   },
   "photos": {
     "50f559ee5d138a92c244ad4c": 1794474084.088928,
@@ -37,7 +38,8 @@
     "8879324eaebaa7df498eae06": 1794478644.132273,
     "2044a4ed06dc4a7e834af5c5": 1794478887.75568,
     "1648cf1ca1acc64cb42d57e2": 1794482656.624037,
-    "6747f236b2b67e9cbe2149b6": 1794486665.521352
+    "6747f236b2b67e9cbe2149b6": 1794486665.521352,
+    "de3abe95d7fc731f9e83d8a5": 1794490982.978052
   },
   "phashes": {
     "2ceefee6566d6666": 1794474084.088928,
@@ -52,7 +54,8 @@
     "c7bc2e2eaea6c4f3": 1794478644.132273,
     "0d6d5f66796f86db": 1794478887.75568,
     "831e9f9e9e999d15": 1794482656.624037,
-    "8faf8f8f8f9de5e5": 1794486665.521352
+    "8faf8f8f8f9de5e5": 1794486665.521352,
+    "676767c7c7e7cc4e": 1794490982.978052
   },
   "posted": [
     {
@@ -188,6 +191,12 @@
       "title_norm": "udruzhenje tuzhilatsa srbije trazhi utvrdjivanje odgovornosti zbog nalaza o radu vjt",
       "summary_norm": "nalazi komisije vrkhovnog javnog tuzhilashtva ukazuju na zabrinjavajutshe obrastse postupanja u vishem javnom tuzhilashtvu u beogradu koji bi mogli predstavljati distsiplinske prekrshaje ali i krivichna dela otsenilo je udruzhenje tuzhilatsa srbije istichu da eventualne zloupotrebe ne smeju ostati bez posleditsa",
       "source": "RTS"
+    },
+    {
+      "ts": 1794490982.978052,
+      "title_norm": "nis o obustavi proizvodnje zbog janaf a benzinske stanice uredno snabdevene gorivom",
+      "summary_norm": "kompanija naftna industrija srbije nis saopstila je da pazljivo prati situaciju nastalu privremenim prekidom transporta sirove nafte jadranskim naftovodom janaf i da raspolaze dovoljnim zalihama naftnih derivata",
+      "source": "Danas"
     }
   ]
 }
