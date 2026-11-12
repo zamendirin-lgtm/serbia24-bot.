@@ -36,19 +36,13 @@ FEEDS = {
     "B92": "https://www.b92.net/rss/b92/info",
 }
 
-SERBIA_WORDS = (
-    "srbij", "beograd", "novi sad", "novom sadu", "nis", "kragujevac", "subotic",
-    "pancev", "zrenjanin", "cacak", "leskovac", "uzice", "sombor", "valjev",
-    "kraljev", "vojvodin", "kosov", "vucic", "skupstin", "ministar", "vlada",
-    "predsednik", "opstin", "gradonacel", "policij", "mup", "hapsen",
-    "tuzilast", "sud", "izbor", "protest", "zakon", "propis", "dinara",
-    "dinar", "cene", "cena", "poskup", "jeftin", "inflacij", "privred",
-    "porez", "penzij", "plata", "bank", "kamata", "gorivo", "benzin",
-    "dizel", "struj", "grejanj", "vodovod", "voda za pice", "saobracaj",
-    "autoput", "putarin", "granic", "aerodrom", "voz", "autobus",
-    "skol", "vrtic", "zdravstv", "bolnic", "dom zdravlja", "boravak",
-    "radna dozvola", "nekretnin", "stanovi", "stanarin",
-)
+PUBLISH_START_HOUR = 8
+PUBLISH_END_HOUR = 22  # no posts at or after 22:00 Belgrade local time
+
+
+def publication_allowed(now: datetime) -> bool:
+    """Honor quiet hours even during daylight-saving transitions and manual runs."""
+    return PUBLISH_START_HOUR <= now.astimezone(TZ).hour < PUBLISH_END_HOUR
 
 
 @dataclass(frozen=True)
@@ -90,54 +84,97 @@ def recent_enough(article: Article, now: datetime, hours: int = 8) -> bool:
     return 0 <= now.timestamp() - article.published_ts <= hours * 3600
 
 
-# Serbia's national news sites also publish many foreign-world headlines.
-# The headline must relate to Serbia; a passing reference in a long article
-# is insufficient for our local Russian-language Telegram channel.
-SERBIA_HEADLINE_MARKERS = (
-    "srbij", "beograd", "novi sad", "novom sadu", "novosad",
-    "nisu", "nisa", "nis ", "kragujev", "subotic", "pancev", "zrenjanin",
-    "sombor", "kraljev", "cacak", "leskov", "uzic", "valjev",
-    "lazarevac", "obrenovac", "zemun", "vracar", "vozdovac",
-    "vojvodin", "kosov", "vucic", "brnabic", "dacic", "vulin",
-    "skupstin", "ministarstv", "narodn bank", "poštanska",
-    "postanska", "mup", "dinara", "dinara", "dinari",
+# We cover Serbia proper, not the worldwide-news section of Serbia-based
+# publishers. Exact-word handling avoids confusing "nisu" (= are not) with
+# Niš or a passing mention of a Serbian person in foreign politics.
+SERBIA_LOCATIONS = (
+    "srbij", "beograd", "novosad", "vojvodin", "kragujev", "subotic",
+    "pancev", "zrenjanin", "sombor", "kraljev", "cacak", "leskov",
+    "uzic", "valjev", "lazarevac", "obrenovac", "zemun", "vracar",
+    "vozdovac", "loznic", "pozeg", "arilj", "novipazar", "krusev",
+    "jagod", "vranj", "sremsk", "smederev", "prokupl", "bor",
+    "kikind", "pirot", "ruma", "indjij", "back", "zlatibor",
+    "mladenov", "cukaric", "palilul",
 )
-FOREIGN_TITLE_MARKERS = (
-    "spanij", "madrid", "portugal", "lisabon", "francusk", "pariz",
-    "nemack", "berlin", "italij", "rim", "austrij", "bec ",
-    "britanij", "london", "englesk", "americ", "amerika",
-    "sad ", "vasington", "njujork", "ukrajin", "kijev",
-    "rusij", "moskv", "kin ", "peking", "japan", "tokij",
-    "grck", "atin", "hrvatsk", "zagreb", "slovenij", "ljubljan",
-    "madjarsk", "budimpest", "rumunij", "bukurest",
-    "bugarsk", "sofij", "tursk", "istanbul", "ankara",
-    "albanij", "tiran", "iran", "irak", "izrael", "gaza",
-    "liban", "sirij", "sudan", "egipat", "kanad", "brazil",
-    "indij", "pakistan", "svajcarsk", "brisel", "evropsk unij",
+SERBIA_ACTORS = (
+    "vucic", "brnabic", "dacic", "vulin", "ruzic", "mup srbije",
+    "skupstina srbije", "vlada srbije", "putevi srbije",
+    "narodna banka srbije", "nbs", "eps",
+)
+KOSOVO_PLACES = (
+    "kosovo", "kosova", "kosov", "zubin potok", "zubinom potoku",
+    "pristin", "mitrovic", "lep osavic", "leposavic",
+    "ibarski kolasin", "ibarskog kolasina", "drenic",
+    "gazivode", "metohij",
+)
+FOREIGN_STORIES = (
+    "tramp", "trump", "teheran", "iran", "iranu", "amerika",
+    "americ", "sad", "spanij", "madrid", "ukrajin", "rusij",
+    "putin", "zelensk", "evropsk unij", "bliski istok",
+    "francusk", "italij", "nemack", "kina", "izrael",
+    "gaza", "liban", "sudanu",
 )
 LOCAL_TOPIC_MARKERS = (
     "cen", "porez", "bank", "goriv", "struj", "grejanj", "poskup",
     "plata", "penzij", "policij", "hapsen", "protest", "zakon",
     "izbor", "skol", "vrtic", "saobrac", "put", "stan", "zdrav",
-    "nagrad", "drzav", "radnik", "vlada", "ministar", "grad",
+    "radnik", "vlada", "ministar", "grad", "sport", "fabrika",
 )
 
 
-def relevant(article: Article) -> bool:
-    title = normalized_title(article.title) + " "
-    summary = normalized_title(article.summary[:450]) + " "
-    title_local = any(marker in title for marker in SERBIA_HEADLINE_MARKERS)
-    if title_local:
+def has_anchored_word(text: str, word: str) -> bool:
+    """Match normalized words, not accidental substrings (nisu ≠ Niš)."""
+    return bool(re.search(r"(?<![a-z0-9])" + re.escape(word) + r"(?![a-z0-9])", text))
+
+
+def contains_anchor(text: str, stems: tuple[str, ...]) -> bool:
+    words = text.split()
+    for stem in stems:
+        if " " in stem:
+            if stem in text:
+                return True
+        elif len(stem) <= 3:
+            if has_anchored_word(text, stem):
+                return True
+        elif any(word.startswith(stem) for word in words):
+            return True
+    return False
+
+
+def has_serbia_anchor(text: str) -> bool:
+    words = text.split()
+    if any(w in words for w in ("nis", "nisa", "nisu")):
+        # Only use "Niš" with clearer context; "nisu" always means "are not".
+        if "nis" in words or "nisa" in words:
+            return True
+    if "novi sad" in text or "novom sadu" in text:
         return True
-    # Reject e.g. "Protests in Spain" even if the source's excerpt mentions
-    # Serbia or a local politician in passing.
-    if any(marker in title for marker in FOREIGN_TITLE_MARKERS):
+    return contains_anchor(text, SERBIA_LOCATIONS) or contains_anchor(text, SERBIA_ACTORS)
+
+
+def relevant(article: Article) -> bool:
+    title = normalized_title(article.title)
+    summary = normalized_title(article.summary[:450])
+
+    # Kosovo-only stories require a Serbian state/institutional angle *in
+    # the headline*, not merely an incidental mention of ethnic Serbs.
+    if contains_anchor(title, KOSOVO_PLACES):
+        if not contains_anchor(title, SERBIA_ACTORS):
+            return False
+        return contains_anchor(title, SERBIA_LOCATIONS + SERBIA_ACTORS)
+
+    if has_serbia_anchor(title):
+        return True
+
+    # Worldwide headlines can quote Serbian media in a generic summary.
+    if contains_anchor(title, FOREIGN_STORIES):
         return False
-    # Otherwise require both a relevant local topic and a *clear*
-    # Serbian geographic/person anchor in the short summary.
+
+    # For unanchored titles, allow the story only when local topical news
+    # and a clear Serbia location/institution appear in its short excerpt.
     return (
-        any(marker in title for marker in LOCAL_TOPIC_MARKERS)
-        and any(marker in summary for marker in SERBIA_HEADLINE_MARKERS)
+        contains_anchor(title, LOCAL_TOPIC_MARKERS)
+        and has_serbia_anchor(summary)
     )
 
 
@@ -376,25 +413,28 @@ def fetch_news() -> list[Article]:
 
 
 def prepare_summary(article: Article) -> str:
-    """Select up to three complete sentences from the RSS excerpt.
-
-    Keep original facts, do not invent additional context or summarize an
-    unrelated article. A short RSS entry may produce just one paragraph.
-    """
+    """One or two complete factual sentences; never publish RSS teaser questions."""
     summary = clean_text(article.summary)
     if not summary or normalized_title(summary) == normalized_title(article.title):
         return ""
     summary = re.sub(
-        r"\b(Pročitajte više|Procitajte vise|Čitaj više|Citaj vise)\b.*$",
+        r"\b(Pročitajte više|Procitajte vise|Čitaj više|Citaj vise|Više na)\b.*$",
         "", summary, flags=re.I,
     ).strip()
-    sentences = [s.strip() for s in re.split(r"(?<=[.!?])\s+", summary) if s.strip()]
+    sentences = [x.strip() for x in re.split(r"(?<=[.!?])\s+", summary) if x.strip()]
     selected = []
-    for sentence in sentences[:3]:
-        if len(" ".join(selected + [sentence])) > 420:
+    for sentence in sentences[:4]:
+        # Editorial question/teaser is not factual reporting.
+        if "?" in sentence or "!" in sentence:
+            continue
+        if len(" ".join(selected + [sentence])) > 300:
             break
         selected.append(sentence)
+        if len(selected) >= 2:
+            break
     excerpt = " ".join(selected)
+    if excerpt.endswith((",", ":", ";", "-")):
+        return ""
     return excerpt if len(excerpt) >= 35 else ""
 
 
@@ -643,6 +683,9 @@ def run() -> None:
     token = os.getenv("TELEGRAM_BOT_TOKEN", "").strip()
     channel = os.getenv("TELEGRAM_CHANNEL", "").strip()
     dry_run = os.getenv("DRY_RUN", "0").strip() == "1"
+    if not publication_allowed(now):
+        LOG.info("Тихие часы в Белграде (22:00–08:00): публикаций не будет")
+        return
     if not dry_run and (not token or not channel):
         raise RuntimeError("Задайте TELEGRAM_BOT_TOKEN и TELEGRAM_CHANNEL")
 
