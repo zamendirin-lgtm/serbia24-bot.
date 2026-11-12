@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 import calendar
+from io import BytesIO
 import difflib
 import hashlib
 import html
@@ -23,6 +24,7 @@ from zoneinfo import ZoneInfo
 import feedparser
 import requests
 from bs4 import BeautifulSoup
+from PIL import Image, UnidentifiedImageError
 from unidecode import unidecode
 
 LOG = logging.getLogger("serbia24")
@@ -393,6 +395,61 @@ def article_photo(article: Article) -> str:
     return ""
 
 
+def photo_url_key(url: str) -> str:
+    return hashlib.sha256(canonical_url(url).encode("utf8")).hexdigest()[:24]
+
+
+def image_dhash(image_bytes: bytes) -> str:
+    """64-bit visual fingerprint: resistant to resizing/compression."""
+    with Image.open(BytesIO(image_bytes)) as image:
+        image = image.convert("L").resize((9, 8))
+        pixels = list(image.getdata())
+        bits = 0
+        for y in range(8):
+            for x in range(8):
+                bits = (bits << 1) | int(pixels[y * 9 + x] > pixels[y * 9 + x + 1])
+        return f"{bits:016x}"
+
+
+def fetch_image_fingerprint(photo_url: str) -> str:
+    """Download only a few MB for repeat-photo detection, never save the photo."""
+    try:
+        with requests.get(
+            photo_url,
+            timeout=14,
+            stream=True,
+            headers={"User-Agent": "Mozilla/5.0 (Serbia24/1.0)"},
+        ) as response:
+            response.raise_for_status()
+            if int(response.headers.get("Content-Length") or "0") > 3_000_000:
+                return ""
+            chunks, count = [], 0
+            for chunk in response.iter_content(chunk_size=65536):
+                count += len(chunk)
+                if count > 3_000_000:
+                    return ""
+                chunks.append(chunk)
+        return image_dhash(b"".join(chunks))
+    except (requests.RequestException, OSError, UnidentifiedImageError, ValueError) as exc:
+        LOG.info("Пропускаем визуальное сравнение фото: %s", type(exc).__name__)
+        return ""
+
+
+def is_repeated_photo(photo_url: str, fingerprint: str, state: dict) -> bool:
+    if photo_url_key(photo_url) in state.get("photos", {}):
+        return True
+    if not fingerprint:
+        return False
+    try:
+        bits = int(fingerprint, 16)
+        for prior in state.get("phashes", {}):
+            if (bits ^ int(prior, 16)).bit_count() <= 3:
+                return True
+    except (ValueError, TypeError):
+        return False
+    return False
+
+
 def fetch_news() -> list[Article]:
     session = requests.Session()
     session.headers.update({
@@ -580,7 +637,7 @@ def post_telegram(
     preview_url: str = "",
     photo_url: str = "",
     caption: str = "",
-) -> None:
+) -> bool:
     """Send the source photo with OUR Russian text, not a webpage preview.
 
     Page-title metadata from the publisher (which can be in English) is never
@@ -601,7 +658,7 @@ def post_telegram(
             timeout=30,
         )
         if success:
-            return
+            return True
         LOG.warning("Telegram не принял исходное фото; публикуем текст без предпросмотра: %s", error)
 
     # Do not show auto-generated article previews, which inject foreign
@@ -618,6 +675,7 @@ def post_telegram(
     )
     if not success:
         raise RuntimeError(f"Telegram publication failed: {error}")
+    return False
 
 
 def verify_telegram_bot(token: str, channel: str) -> None:
@@ -655,18 +713,29 @@ def verify_telegram_bot(token: str, channel: str) -> None:
 
 def load_state() -> dict:
     if not STATE_FILE.exists():
-        return {"seen": {}, "posted": []}
+        return {"seen": {}, "posted": [], "photos": {}, "phashes": {}}
     try:
         state = json.loads(STATE_FILE.read_text(encoding="utf8"))
-        return {"seen": dict(state.get("seen", {})), "posted": list(state.get("posted", []))}
+        return {
+            "seen": dict(state.get("seen", {})),
+            "posted": list(state.get("posted", [])),
+            "photos": dict(state.get("photos", {})),
+            "phashes": dict(state.get("phashes", {})),
+        }
     except (ValueError, TypeError) as exc:
         raise RuntimeError("Повреждён файл истории; публикация остановлена") from exc
 
 
 def prune_state(state: dict, now: datetime) -> None:
     threshold = (now - timedelta(days=60)).timestamp()
-    state["seen"] = {k: v for k, v in state["seen"].items() if float(v) > threshold}
-    state["posted"] = [p for p in state["posted"] if float(p.get("ts", 0)) > threshold]
+    for field in ("seen", "photos", "phashes"):
+        state.setdefault(field, {})
+        state[field] = {
+            k: v for k, v in state[field].items() if float(v) > threshold
+        }
+    state["posted"] = [
+        p for p in state["posted"] if float(p.get("ts", 0)) > threshold
+    ]
 
 
 def save_state(state: dict) -> None:
@@ -717,14 +786,34 @@ def run() -> None:
         try:
             title_ru, summary_ru = translate_article(article, translator)
             message = format_post(article, title_ru, summary_ru)
+            sent_image = False
+            image_url = ""
+            fingerprint = ""
             if dry_run:
                 LOG.info("DRY_RUN: %s", message)
             else:
                 image_url = article_photo(article)
+                if image_url:
+                    # Skip repeating a visual from another story, even if its
+                    # article link and headline are different.
+                    if photo_url_key(image_url) in state.get("photos", {}):
+                        LOG.info("Фото уже использовалось: %s", article.source)
+                        image_url = ""
+                    else:
+                        fingerprint = fetch_image_fingerprint(image_url)
+                        if is_repeated_photo(image_url, fingerprint, state):
+                            LOG.info("Повторяющаяся фотография: %s", article.source)
+                            image_url = ""
                 caption = photo_caption(article, title_ru, summary_ru)
-                post_telegram(message, token, channel, article.url, image_url, caption)
+                sent_image = post_telegram(
+                    message, token, channel, article.url, image_url, caption
+                )
             sent += 1
             stamp = now.timestamp()
+            if sent_image and image_url:
+                state.setdefault("photos", {})[photo_url_key(image_url)] = stamp
+                if fingerprint:
+                    state.setdefault("phashes", {})[fingerprint] = stamp
             state["seen"][article_id(article)] = stamp
             state["posted"].append({
                 "ts": stamp,
