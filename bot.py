@@ -300,6 +300,39 @@ def post_telegram(message: str, token: str, channel: str, preview_url: str = "")
         )
 
 
+def verify_telegram_bot(token: str, channel: str) -> None:
+    """Fail safely before publishing if the bot lacks channel post permission."""
+    def api(method: str, params: dict | None = None) -> dict:
+        try:
+            response = requests.get(
+                f"https://api.telegram.org/bot{token}/{method}",
+                params=params or {},
+                timeout=15,
+            )
+            payload = response.json()
+        except (requests.RequestException, ValueError):
+            raise RuntimeError(f"Не удалось связаться с Telegram ({method})") from None
+        if response.status_code != 200 or not payload.get("ok"):
+            description = payload.get("description", "unknown error")
+            raise RuntimeError(f"Telegram {method}: {description}")
+        return payload["result"]
+
+    me = api("getMe")
+    if not me.get("is_bot") or not me.get("id"):
+        raise RuntimeError("Указанный токен не принадлежит Telegram-боту")
+    member = api(
+        "getChatMember", {"chat_id": channel, "user_id": me["id"]}
+    )
+    status = member.get("status")
+    if status == "creator":
+        return
+    if status != "administrator" or not member.get("can_post_messages", False):
+        raise RuntimeError(
+            "Добавьте бота администратором канала с правом «Публиковать сообщения»"
+        )
+    LOG.info("Подтверждены права публикации в канале %s", channel)
+
+
 def load_state() -> dict:
     if not STATE_FILE.exists():
         return {"seen": {}, "posted": []}
@@ -331,7 +364,10 @@ def run() -> None:
     channel = os.getenv("TELEGRAM_CHANNEL", "").strip()
     dry_run = os.getenv("DRY_RUN", "0").strip() == "1"
     if not dry_run and (not token or not channel):
-        raise RuntimeError("Добавьте TELEGRAM_BOT_TOKEN и TELEGRAM_CHANNEL в GitHub Secrets")
+        raise RuntimeError("Задайте TELEGRAM_BOT_TOKEN и TELEGRAM_CHANNEL")
+
+    if not dry_run:
+        verify_telegram_bot(token, channel)
 
     now_local_date = now.astimezone(TZ).date()
     daily_limit = max(1, int(os.getenv("DAILY_LIMIT", "10")))
