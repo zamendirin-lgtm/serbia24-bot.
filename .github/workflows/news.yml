@@ -2,8 +2,11 @@ name: Serbia24 automatic news
 
 on:
   schedule:
-    - cron: '17,47 * * * *' # every ~30 min (UTC); runs can be delayed
+    - cron: '17,47 * * * *' # roughly every 30 min (UTC); can be delayed
   workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/news.yml' # one bootstrap test on setup changes
 
 permissions:
   contents: write
@@ -25,16 +28,31 @@ jobs:
           python-version: '3.12'
       - name: Install dependencies
         run: python -m pip install -r requirements.txt
-      - name: Run tests
+      - name: Run unit tests
         run: python -m unittest discover -s tests -v
-      - name: Find, translate, publish
+      - name: Check Telegram credentials
+        id: credentials
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          TELEGRAM_CHANNEL: ${{ secrets.TELEGRAM_CHANNEL }}
+        shell: bash
+        run: |
+          if [ -z "$TELEGRAM_BOT_TOKEN" ]; then
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::Bot token is missing. Add TELEGRAM_BOT_TOKEN under Settings > Secrets and variables > Actions. Nothing will be posted."
+          else
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+            echo "::notice::Bot token is configured. Testing channel permissions and fetching news."
+          fi
+      - name: Find, translate, publish
+        if: steps.credentials.outputs.ready == 'true'
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHANNEL: '@serbia24live'
           DAILY_LIMIT: '10'
           PER_RUN_LIMIT: '2'
         run: python bot.py
       - name: Persist published article history
+        if: steps.credentials.outputs.ready == 'true'
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
