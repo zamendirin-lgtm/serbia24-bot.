@@ -25,7 +25,7 @@ from zoneinfo import ZoneInfo
 import feedparser
 import requests
 from bs4 import BeautifulSoup
-from PIL import Image, UnidentifiedImageError
+from PIL import Image, ImageDraw, ImageFont, ImageOps, UnidentifiedImageError
 from unidecode import unidecode
 
 LOG = logging.getLogger("serbia24")
@@ -641,6 +641,107 @@ def telegram_api(method: str, token: str, payload: dict, timeout: int = 25) -> t
     return True, ""
 
 
+def _telegram_channel_avatar(token: str, channel: str) -> bytes:
+    """Use the real Telegram channel logo; no user uploads/hosting required."""
+    try:
+        resp = requests.get(
+            f"https://api.telegram.org/bot{token}/getChat",
+            params={"chat_id": channel}, timeout=12,
+        )
+        payload = resp.json()
+        if not payload.get("ok"):
+            return b""
+        photo = payload.get("result", {}).get("photo", {})
+        file_id = photo.get("big_file_id") or photo.get("small_file_id")
+        if not file_id:
+            return b""
+        info = requests.get(
+            f"https://api.telegram.org/bot{token}/getFile",
+            params={"file_id": file_id}, timeout=12,
+        ).json()
+        path = info.get("result", {}).get("file_path", "")
+        if not info.get("ok") or not path:
+            return b""
+        img = requests.get(f"https://api.telegram.org/file/bot{token}/{path}", timeout=15)
+        img.raise_for_status()
+        if len(img.content) > 2_000_000:
+            return b""
+        return img.content
+    except (requests.RequestException, ValueError, KeyError):
+        return b""
+
+
+def branded_fallback_photo(token: str, channel: str) -> bytes:
+    """Landscape 16:9 fallback featuring the actual channel profile logo."""
+    w, h = 1200, 675
+    im = Image.new("RGB", (w, h), (3, 22, 59))
+    px = im.load()
+    for y in range(h):
+        for x in range(w):
+            # Dark broadcast-news blue background, subtle luminous center.
+            dx, dy = (x - w / 2) / w, (y - h / 2) / h
+            glow = max(0, int(35 * (1 - (dx * dx * 3 + dy * dy * 2))))
+            px[x, y] = (4 + glow // 8, 20 + glow, 57 + glow * 2)
+    draw = ImageDraw.Draw(im)
+    for width, y, color in (
+        (38, 37, (190, 18, 41)), (18, 75, (29, 90, 184)),
+        (25, 615, (230, 237, 248)), (29, 648, (191, 26, 42)),
+    ):
+        draw.line([(0, y + 42), (w, y - 38)], fill=color, width=width)
+    for radius in (220, 270):
+        x0, y0 = w // 2 - radius, 310 - radius
+        draw.ellipse([x0, y0, x0 + radius * 2, y0 + radius * 2],
+                     outline=(27, 87, 160), width=3)
+    draw.ellipse((415, 122, 785, 492), fill=(13, 42, 93), outline=(229, 232, 242), width=11)
+    draw.arc((412, 119, 788, 495), 185, 360, fill=(215, 30, 44), width=15)
+    draw.arc((412, 119, 788, 495), 0, 170, fill=(45, 110, 221), width=13)
+    avatar = _telegram_channel_avatar(token, channel)
+    if avatar:
+        try:
+            with Image.open(BytesIO(avatar)) as picture:
+                portrait = ImageOps.fit(picture.convert("RGB"), (328, 328), method=Image.Resampling.LANCZOS)
+            mask = Image.new("L", (328, 328), 0)
+            ImageDraw.Draw(mask).ellipse((0, 0, 327, 327), fill=255)
+            im.paste(portrait, (436, 143), mask)
+        except (OSError, ValueError):
+            LOG.warning("Аватарку Telegram не удалось открыть; используем текстовый логотип")
+    try:
+        font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 88)
+    except OSError:
+        font = ImageFont.load_default()
+    draw = ImageDraw.Draw(im)
+    word = "Сербия 24"
+    box = draw.textbbox((0, 0), word, font=font, stroke_width=1)
+    tw = box[2] - box[0]
+    text_x = (w - tw) / 2
+    draw.rounded_rectangle(
+        (max(40, text_x - 35), 502, min(w - 40, text_x + tw + 35), 619),
+        radius=20, fill=(151, 19, 37), outline=(238, 242, 250), width=4,
+    )
+    draw.text((text_x, 510), word, fill=(255, 255, 255), font=font,
+              stroke_width=2, stroke_fill=(8, 22, 54))
+    out = BytesIO()
+    im.save(out, format="JPEG", quality=88, optimize=True)
+    return out.getvalue()
+
+
+def send_branded_fallback(token: str, channel: str, caption: str) -> None:
+    """Never publish a text-only item if the user requested photo-only posts."""
+    image = branded_fallback_photo(token, channel)
+    try:
+        response = requests.post(
+            f"https://api.telegram.org/bot{token}/sendPhoto",
+            data={"chat_id": channel, "caption": caption, "parse_mode": "HTML"},
+            files={"photo": ("serbia24.jpg", BytesIO(image), "image/jpeg")},
+            timeout=35,
+        )
+        payload = response.json()
+    except (requests.RequestException, ValueError):
+        raise RuntimeError("Не получилось отправить резервное фото в Telegram") from None
+    if not payload.get("ok") or response.status_code != 200:
+        raise RuntimeError("Telegram не принял резервное фото; новость пропущена")
+
+
 def post_telegram(
     message: str,
     token: str,
@@ -649,12 +750,7 @@ def post_telegram(
     photo_url: str = "",
     caption: str = "",
 ) -> bool:
-    """Send the source photo with OUR Russian text, not a webpage preview.
-
-    Page-title metadata from the publisher (which can be in English) is never
-    displayed. If the photograph itself contains letters, they remain part of
-    the original image; this code does not manipulate or fabricate imagery.
-    """
+    """Send real article picture or branded fallback, NEVER plain text."""
     if photo_url and caption:
         success, error = telegram_api(
             "sendPhoto",
@@ -670,22 +766,9 @@ def post_telegram(
         )
         if success:
             return True
-        LOG.warning("Telegram не принял исходное фото; публикуем текст без предпросмотра: %s", error)
-
-    # Do not show auto-generated article previews, which inject foreign
-    # title/description above or below the post.
-    success, error = telegram_api(
-        "sendMessage",
-        token,
-        {
-            "chat_id": channel,
-            "text": message,
-            "parse_mode": "HTML",
-            "link_preview_options": {"is_disabled": True},
-        },
-    )
-    if not success:
-        raise RuntimeError(f"Telegram publication failed: {error}")
+        LOG.warning("Источник не дал отправить фото (%s); используем логотип", error)
+    send_branded_fallback(token, channel, caption or message)
+    LOG.info("Опубликована новость с резервным логотипом канала")
     return False
 
 
