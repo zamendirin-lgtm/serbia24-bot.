@@ -1,0 +1,25 @@
+[
+  {
+    "_comment": "Example only: the item below is illustrative, NOT a real listing. Delete it and add real permissioned submissions.",
+    "approved": false,
+    "permission_to_publish": false,
+    "url": "https://example.com/estate/approved-listing",
+    "city": "Белград",
+    "kind": "izdavanje-stanova",
+    "title": "Двухкомнатная квартира, район Новый Белград",
+    "price_eur": 420,
+    "area_m2": 52,
+    "updated": "2026-11-13",
+    "advertiser": "Собственник (по заявлению)",
+    "location": "Белград, Новый Белград",
+    "description_ru": "Светлая квартира с отдельной спальней и оборудованной кухней. Указанные сведения требуют подтверждения.",
+    "pros": ["Отдельная спальня", "Указана оборудованная кухня"],
+    "cons": ["Размер депозита уточняется", "Коммунальные платежи уточняются"],
+    "photo_urls": [
+      "https://example.com/property/photo1.jpg",
+      "https://example.com/property/photo2.jpg",
+      "https://example.com/property/photo3.jpg"
+    ],
+    "photo_permission": false
+  }
+]
