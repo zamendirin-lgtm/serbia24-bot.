@@ -286,13 +286,24 @@ def edit_news(source_title: str, source_paragraphs: list[str],
     Without a key use conservative editing and honest quality limitations.
     """
     groq_key = os.getenv("GROQ_API_KEY", "").strip()
+    gemini_key = (
+        os.getenv("GEMINI_API_KEY", "") or os.getenv("GOOGLE_API_KEY", "")
+    ).strip()
     if groq_key:
-        return edit_with_groq(
-            source_title, source_paragraphs, title_ru, draft_ru,
-            api_key=groq_key,
-            model=os.getenv("GROQ_MODEL", "openai/gpt-oss-120b"),
-        )
-    gemini_key = os.getenv("GEMINI_API_KEY", "").strip()
+        try:
+            return edit_with_groq(
+                source_title, source_paragraphs, title_ru, draft_ru,
+                api_key=groq_key,
+                model=os.getenv("GROQ_MODEL", "openai/gpt-oss-120b"),
+            )
+        except EditorialError as exc:
+            # An explicit content rejection is a quality decision:
+            # don't solicit another model to override it.
+            if "отклонил недостаточно содержательную" in str(exc):
+                raise
+            if not gemini_key:
+                raise
+            LOG.info("Groq не прошёл проверку, пробуем резервный Gemini")
     if gemini_key:
         return edit_with_gemini(
             source_title, source_paragraphs, title_ru, draft_ru,
