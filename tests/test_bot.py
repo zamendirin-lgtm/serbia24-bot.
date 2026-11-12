@@ -10,6 +10,7 @@ from bot import (
     parse_feed, recent_enough, relevant, post_telegram, prepare_summary, photo_caption, rss_photo, normal_image_url,
     same_event_title, event_terms, prune_state, publication_allowed,
     branded_fallback_photo, extract_article_paragraphs, select_news_paragraphs,
+    film_premiere_context,
     translate_article, complete_sentences_for_budget,
     image_dhash, photo_url_key, is_repeated_photo,
     news_interest_score, rank_news, price_figure, is_price_story, MIN_INTEREST_SCORE,
@@ -421,6 +422,29 @@ class NewsBotTests(unittest.TestCase):
           <media:content url="https://rts.rs/photos/a.jpg" type="image/jpeg"/>
           </item></channel></rss>""").entries[0]
         self.assertEqual(rss_photo(entry, "https://rts.rs/article"), "https://rts.rs/photos/a.jpg")
+
+    def test_film_title_from_later_article_paragraph_is_preserved(self):
+        headline = ("Kikić pred premijeru dokumentarca o rudarenju u istočnoj Srbiji: "
+                    "Kapital stranog investitora ne sme biti prioritet")
+        body = [
+            "Jelena Kikić, autorka dokumentarca, govorila je o rudarstvu na istoku Srbije, u gradovima Bor i Majdanpek.",
+            "U regionu se planiraju nova istraživanja, otvaranje rudnika i moguće preseljenje pojedinih naselja.",
+            "Prema njenim rečima, rudarska kompanija radi tokom cele godine, zbog čega su stanovnici zabrinuti.",
+            "Film „Kineska četvrt: Rudarska kolonija istok“ govori o životu ljudi u okolini rudnika u istočnoj Srbiji.",
+        ]
+        context = film_premiere_context(body, headline)
+        self.assertIn("Kineska četvrt", context)
+        picked = select_news_paragraphs(body, headline)
+        self.assertTrue(any("Kineska četvrt" in p for p in picked))
+        self.assertLessEqual(len(picked), 3)
+
+    def test_missing_original_film_name_is_not_guessed(self):
+        headline = "Kikić pred premijeru dokumentarca o rudarenju u istočnoj Srbiji"
+        body = [
+            "Jelena Kikić govorila je o rudarenju u Boru i Majdanpeku, ističući probleme meštana.",
+            "Novi dokumentarni film govori o širenju rudarskih aktivnosti i mogućem preseljenju sela.",
+        ]
+        self.assertEqual(film_premiere_context(body, headline), "")
 
     def test_extraction_avoids_navigation_and_related_articles(self):
         article_html = """<html><body><nav>Newsletter - click here!</nav><article>
