@@ -23,6 +23,7 @@ from urllib.parse import parse_qsl, urlencode, urljoin, urlsplit, urlunsplit
 from zoneinfo import ZoneInfo
 
 import feedparser
+import trafilatura
 import requests
 from bs4 import BeautifulSoup
 from PIL import Image, ImageDraw, ImageFont, ImageOps, UnidentifiedImageError
@@ -506,6 +507,139 @@ def prepare_summary(article: Article) -> str:
     return excerpt if len(excerpt) >= 35 else ""
 
 
+EDITORIAL_SKIP_PHRASES = (
+    "procitajte vise", "citajte vise", "pogledajte video", "pratite nas",
+    "podelite vest", "pretplatite se", "vise informacija",
+    "povezane vesti", "izvor fotografije", "procitajte jos",
+    "pise danas", "najnovije vesti", "pratite uzivo", "saznajte",
+    "kliknite", "pogledajte galeriju", "na nasem portalu",
+)
+
+
+def split_news_sentences(text: str) -> list[str]:
+    """Split prose conservatively, retaining complete sentences only."""
+    pieces = re.split(r"(?<=[.!?])\s+", clean_text(text))
+    return [s.strip() for s in pieces if s.strip()]
+
+
+def factual_sentence(sentence: str, title: str = "") -> bool:
+    norm = normalized_title(sentence)
+    if not 48 <= len(sentence) <= 370 or "?" in sentence:
+        return False
+    if any(phrase in norm for phrase in EDITORIAL_SKIP_PHRASES):
+        return False
+    if sentence[-1] not in ".!…":
+        return False
+    if re.search(r"https?://|www\.|@\w+", sentence, re.I):
+        return False
+    if title and difflib.SequenceMatcher(None, norm, normalized_title(title)).ratio() > 0.92:
+        return False
+    return True
+
+
+def extract_article_paragraphs(article_html: str) -> list[str]:
+    """Prefer real story body; exclude menu, site ads, related news, footer."""
+    try:
+        body = trafilatura.extract(
+            article_html,
+            include_comments=False,
+            include_tables=False,
+            include_links=False,
+            favor_precision=True,
+        )
+    except Exception:
+        body = None
+    if body:
+        blocks = [clean_text(p) for p in re.split(r"\n+", body) if clean_text(p)]
+        if blocks:
+            return blocks
+
+    # Conservative fallback for publishers not handled by extraction engine.
+    soup = BeautifulSoup(article_html, "html.parser")
+    for tag in soup(["script", "style", "nav", "footer", "aside", "form", "iframe"]):
+        tag.decompose()
+    for selector in (
+        "article", "[itemprop='articleBody']", ".article-body",
+        ".entry-content", ".post-content",
+    ):
+        container = soup.select_one(selector)
+        if container:
+            paragraphs = [clean_text(p.get_text(" ", strip=True)) for p in container.select("p")]
+            if len(paragraphs) >= 3:
+                return [x for x in paragraphs if x]
+    return []
+
+
+def select_news_paragraphs(blocks: list[str], headline: str) -> list[str]:
+    """Build a readable, source-grounded 2-3 paragraph news digest.
+
+    Do not manufacture analysis, conclusions or interpretation. Discard articles
+    where no useful factual body was extracted.
+    """
+    facts = []
+    seen = set()
+    for block in blocks[:16]:
+        for sentence in split_news_sentences(block):
+            if not factual_sentence(sentence, headline):
+                continue
+            key = normalized_title(sentence)
+            if key in seen:
+                continue
+            seen.add(key)
+            facts.append(sentence)
+            if len(facts) >= 7:
+                break
+        if len(facts) >= 7:
+            break
+    if len(facts) < 3:
+        return []
+
+    paragraphs = []
+    i = 0
+    for _ in range(3):
+        if i >= len(facts):
+            break
+        part = []
+        while i < len(facts) and len(" ".join(part + [facts[i]])) <= 240:
+            part.append(facts[i])
+            i += 1
+            if len(part) >= 2:
+                break
+        if not part:
+            # Skip extremely long sentences rather than cutting them mid-phrase.
+            i += 1
+            continue
+        paragraphs.append(" ".join(part))
+    if len(paragraphs) < 2 or len(" ".join(paragraphs)) < 240:
+        return []
+    return paragraphs
+
+
+def fetch_editorial_paragraphs(article: Article) -> list[str]:
+    """Read the publisher story for context, not just a short RSS teaser."""
+    try:
+        response = requests.get(
+            article.url, timeout=16,
+            headers={
+                "User-Agent": "Mozilla/5.0 (compatible; Serbia24NewsReader/1.1)",
+                "Accept-Language": "sr-RS,sr;q=0.9",
+            },
+        )
+        response.raise_for_status()
+        if "html" not in response.headers.get("Content-Type", "").lower():
+            return []
+        # Avoid huge pages; text article extraction handles first few MB.
+        body = response.content[:2_000_000].decode(response.encoding or "utf-8", errors="replace")
+        paragraphs = extract_article_paragraphs(body)
+        result = select_news_paragraphs(paragraphs, article.title)
+        if result:
+            return result
+        LOG.info("Недостаточно фактов в тексте статьи: %s", article.source)
+    except (requests.RequestException, UnicodeError, ValueError) as exc:
+        LOG.info("Недоступен текст статьи %s: %s", article.source, type(exc).__name__)
+    return []
+
+
 class FreeTranslator:
     """Free keyless translation with a secondary provider as fallback.
 
@@ -556,16 +690,31 @@ class FreeTranslator:
 
 
 def translate_article(article: Article, translator: FreeTranslator) -> tuple[str, str]:
-    title = translator.translate(article.title)
-    if not title:
+    """Require a substantive, readable story, otherwise skip the article."""
+    paragraphs_sr = fetch_editorial_paragraphs(article)
+
+    # Emergency fallback: complete factual RSS sentences only, never teaser.
+    if not paragraphs_sr:
+        fallback = prepare_summary(article)
+        paragraphs_sr = select_news_paragraphs([fallback], article.title) if fallback else []
+    if len(paragraphs_sr) < 2:
+        raise ValueError("Слишком мало проверяемых фактов для полноценной новости")
+
+    title_ru = translator.translate(article.title)
+    if not title_ru or title_ru.strip() == article.title.strip():
         raise ValueError("Не удалось перевести заголовок")
-    summary_sr = prepare_summary(article)
-    try:
-        summary_ru = translator.translate(summary_sr) if summary_sr else ""
-    except Exception:
-        LOG.warning("Не удалось перевести анонс — публикуем только заголовок")
-        summary_ru = ""
-    return title, summary_ru
+
+    translated = []
+    for paragraph in paragraphs_sr:
+        ru = (translator.translate(paragraph) or "").strip()
+        if not ru or ru == paragraph.strip():
+            raise ValueError("Не удалось перевести содержание новости")
+        translated.append(ru)
+
+    if len(translated) < 2 or sum(map(len, translated)) < 200:
+        raise ValueError("Недостаточно содержания после перевода")
+    LOG.info("Редакционная выжимка: %s абзаца из %s", len(translated), article.source)
+    return title_ru, "\n\n".join(translated)
 
 
 def news_emoji(article: Article, title_ru: str) -> str:
@@ -588,18 +737,28 @@ def news_emoji(article: Article, title_ru: str) -> str:
     return "🇷🇸"
 
 
+def complete_sentences_for_budget(text: str, length_budget: int) -> str:
+    """Do not truncate a post inside a sentence or source quotation."""
+    if len(text) <= length_budget:
+        return text.strip()
+    result = []
+    for block in text.split("\n\n"):
+        sentences = split_news_sentences(block)
+        for sentence in sentences:
+            candidate = "\n\n".join(result + [sentence]) if not result else (
+                "\n\n".join(result + [sentence])
+            )
+            if len(candidate) > length_budget:
+                break
+            result.append(sentence)
+    return " ".join(result).strip()
+
+
 def format_post(article: Article, title_ru: str, summary_ru: str) -> str:
-    """Brand-consistent Telegram post, HTML escaped and linked to its source."""
     emoji = news_emoji(article, title_ru)
     result = f"{emoji} <b>{html.escape(title_ru)}</b>\n\n"
     if summary_ru.strip():
-        # Use real sentence boundaries only; a short excerpt stays one paragraph.
-        summary = summary_ru.strip()
-        sentences = re.split(r"(?<=[.!?])\s+", summary)
-        if len(sentences) >= 3:
-            split = len(sentences) // 2
-            summary = " ".join(sentences[:split]) + "\n\n" + " ".join(sentences[split:])
-        result += f"{html.escape(summary)}\n\n"
+        result += f"{html.escape(summary_ru.strip())}\n\n"
     result += (
         f'🔗 <a href="{html.escape(article.url, quote=True)}">'
         f"Источник: {html.escape(article.source)}</a>"
@@ -608,22 +767,35 @@ def format_post(article: Article, title_ru: str, summary_ru: str) -> str:
 
 
 def photo_caption(article: Article, title_ru: str, summary_ru: str) -> str:
-    """Telegram photo captions are limited to 1024 visible characters.
-
-    Keep source attribution, the Russian headline and as much summary as fits.
-    """
-    title = title_ru.strip()[:220]
+    """Readable photo post, constrained to Telegram's 1024 visible characters."""
+    title = title_ru.strip()
     emoji = news_emoji(article, title_ru)
-    first = f"{emoji} <b>{html.escape(title)}</b>\n\n"
-    ending = (
+    start = f"{emoji} <b>{html.escape(title)}</b>\n\n"
+    source = (
         f'\n\n🔗 <a href="{html.escape(article.url, quote=True)}">'
         f"Источник: {html.escape(article.source)}</a>"
     )
-    # HTML tags are not counted toward Telegram's visible character limit;
-    # 800 visible characters leaves room for all normal source URLs.
-    budget = max(0, 800 - len(title) - len(article.source))
-    summary = (summary_ru or "").strip()[:budget]
-    return first + html.escape(summary) + ending
+    # HTML escapes are not visible characters; Telegram limits the decoded text.
+    visible_reserve = len(title) + len(article.source) + 38
+    budget = max(0, min(770, 1024 - visible_reserve))
+    content = summary_ru.strip()
+    if len(content) > budget:
+        # Never publish a dangling piece of a sentence. If the whole text
+        # cannot fit, retain the first complete sentences.
+        paragraphs = []
+        remaining = budget
+        for paragraph in content.split("\n\n"):
+            if len(paragraph) <= remaining:
+                paragraphs.append(paragraph)
+                remaining -= len(paragraph) + 2
+                continue
+            if not paragraphs:
+                clip = complete_sentences_for_budget(paragraph, remaining)
+                if clip:
+                    paragraphs.append(clip)
+            break
+        content = "\n\n".join(paragraphs)
+    return start + html.escape(content) + source
 
 
 def telegram_api(method: str, token: str, payload: dict, timeout: int = 25) -> tuple[bool, str]:
