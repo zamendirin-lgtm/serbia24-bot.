@@ -2,7 +2,7 @@ name: Serbia24 automatic news
 
 on:
   schedule:
-    - cron: '17,47 6-20 * * *' # UTC; actual 08:00-22:00 Europe/Belgrade enforced by bot
+    - cron: '7,22,37,52 6-21 * * *' # every 15 min UTC; bot enforces 08:00-22:00 Belgrade DST-safe
   workflow_dispatch:
   push:
     paths:
@@ -76,7 +76,7 @@ jobs:
           GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
           EDITOR_MODEL: 'gemini-3.5-flash-lite'
           DAILY_LIMIT: '40'
-          PER_RUN_LIMIT: '2'
+          PER_RUN_LIMIT: '1'
         run: python bot.py
       - name: Persist published article history safely
         if: steps.credentials.outputs.ready == 'true'
