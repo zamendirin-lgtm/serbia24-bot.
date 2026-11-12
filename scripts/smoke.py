@@ -2,7 +2,7 @@
 from datetime import datetime, timezone
 import logging
 
-from bot import FreeTranslator, article_photo, fetch_news, fetch_editorial_paragraphs, recent_enough, relevant, translate_article, rank_news, news_interest_score, MIN_INTEREST_SCORE
+from bot import FreeTranslator, article_photo, fetch_news, fetch_editorial_paragraphs, recent_enough, relevant, translate_article, rank_news, news_interest_score, MIN_INTEREST_SCORE, film_premiere_context, extract_article_paragraphs, select_news_paragraphs, normalized_title
 
 logging.basicConfig(level=logging.INFO)
 articles = fetch_news()
@@ -37,6 +37,13 @@ for item in candidates[:4]:
 if not candidates:
     raise SystemExit("No fresh relevant articles")
 
+print("Context-completeness check for today's film premiere story (no posting):")
+kikic = [a for a in articles if "kikic" in normalized_title(a.title)
+         and ("dokumentar" in normalized_title(a.title) or "premijer" in normalized_title(a.title))]
+for film_story in kikic[:1]:
+    print("Film story:", film_story.source, film_story.title[:160])
+    print("Film source URL:", film_story.url)
+    print("Film selected context:", fetch_editorial_paragraphs(film_story))
 print("Editorial extraction by source (no Telegram posts):")
 for source in ("RTS", "N1", "Danas", "B92"):
     available = [a for a in candidates if a.source == source]
