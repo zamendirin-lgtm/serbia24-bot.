@@ -5,7 +5,9 @@
     "47084dd88d14d6904adf7859": 1794442501.421553,
     "8c143a11e8c99eddbd0277dd": 1794442501.421553,
     "3f93b449c22a8aa910dc89ae": 1794446263.666197,
-    "8da3e7b1676ff0d93fdd43c4": 1794446263.666197
+    "8da3e7b1676ff0d93fdd43c4": 1794446263.666197,
+    "0da8251412288b58a5af8cce": 1794450686.684293,
+    "0b9cd4437ce2e8b860aef2e3": 1794450686.684293
   },
   "posted": [
     {
@@ -39,6 +41,18 @@
       "title_norm": "branko ruzic nova partija crvena linija nece biti rekonstruisani sps",
       "summary_norm": "osnivac partije crvena linija socijaldemokrate i nekadasnji funkcioner socijalisticke partije srbije branko ruzic izjavio je da vec oko dva meseca zajedno sa istomisljenicima radi na formiranju nove politicke partije pod nazivom crvena linija",
       "source": "B92"
+    },
+    {
+      "ts": 1794450686.684293,
+      "title_norm": "putevi srbije upozorili vozace magla oko loznice pozege arilja",
+      "summary_norm": "putevi srbije su veceras upozorili vozace da budu osrezni zbog magle koje ima na cetiri putna pravca",
+      "source": "N1"
+    },
+    {
+      "ts": 1794450686.684293,
+      "title_norm": "tramp sad nisu zapocele rat sa iranom teheran vodi rat protiv amerike jos od 1979 godine",
+      "summary_norm": "americki predsednik donald tramp izjavio je danas da sjedinjene americke drzave sad nisu zapocele rat sa iranom tvrdeci da teheran vodi rat protiv",
+      "source": "N1"
     }
   ]
 }
