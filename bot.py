@@ -98,7 +98,7 @@ SERBIA_LOCATIONS = (
     "vozdovac", "loznic", "pozeg", "arilj", "novipazar", "krusev",
     "jagod", "vranj", "sremsk", "smederev", "prokupl", "bor",
     "kikind", "pirot", "ruma", "indjij", "back", "zlatibor",
-    "mladenov", "cukaric", "palilul",
+    "mladenov", "cukaric", "palilul", "kosjer",
 )
 SERBIA_ACTORS = (
     "vucic", "brnabic", "dacic", "vulin", "ruzic", "mup srbije",
@@ -585,7 +585,8 @@ def select_news_paragraphs(blocks: list[str], headline: str) -> list[str]:
     title_terms = event_terms(headline) - COMMON_NEWS_TERMS
     paras = []
     first_terms = set()
-    for block in blocks[:7]:
+    last_source_index = -1
+    for block_index, block in enumerate(blocks[:9]):
         sentences = []
         for sentence in split_news_sentences(block):
             if not factual_sentence(sentence, headline):
@@ -616,14 +617,17 @@ def select_news_paragraphs(blocks: list[str], headline: str) -> list[str]:
             if len(title_terms) >= 3 and len(overlap) < 1:
                 continue
             first_terms = event_terms(paragraph)
-        elif len(paras) >= 2:
-            # A third, more distant paragraph must clearly develop the
-            # headline; the first two often introduce facts using synonyms.
+        else:
+            # Follow-up sentences from *adjacent* source paragraphs may use
+            # synonyms or pronouns. Distant material needs explicit matching
+            # headline terms, otherwise it risks joining unrelated topics.
+            distance = block_index - last_source_index
             common = event_terms(paragraph) & title_terms
             required = 2 if len(title_terms) >= 5 else 1
-            if len(common) < required:
+            if (distance > 1 or len(paras) >= 2) and len(common) < required:
                 continue
         paras.append(paragraph)
+        last_source_index = block_index
         if len(paras) >= 3:
             break
 
