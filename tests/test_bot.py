@@ -110,7 +110,10 @@ class NewsBotTests(unittest.TestCase):
         b = BytesIO()
         im.save(a, format="PNG")
         im.save(b, format="JPEG", quality=80)
-        self.assertEqual(image_dhash(a.getvalue()), image_dhash(b.getvalue()))
+        # JPEG compression can flip one or two dHash bits; near-identical
+        # photographs must still count as duplicates.
+        distance = (int(image_dhash(a.getvalue()), 16) ^ int(image_dhash(b.getvalue()), 16)).bit_count()
+        self.assertLessEqual(distance, 3)
 
     def test_repeated_photo_url_and_hash(self):
         now = datetime.now(timezone.utc).timestamp()
