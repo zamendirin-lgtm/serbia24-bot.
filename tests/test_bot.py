@@ -1,12 +1,15 @@
 import unittest
+from unittest.mock import Mock
 from datetime import timedelta
 from unittest.mock import patch
 from datetime import datetime, timezone
+from zoneinfo import ZoneInfo
 
 from bot import (
     Article, canonical_url, format_post, is_duplicate, normalized_title,
     parse_feed, recent_enough, relevant, post_telegram, prepare_summary, photo_caption, rss_photo,
-    same_event_title, event_terms, prune_state,
+    same_event_title, event_terms, prune_state, publication_allowed,
+    image_dhash, photo_url_key, is_repeated_photo,
 )
 
 
@@ -44,6 +47,94 @@ class NewsBotTests(unittest.TestCase):
             Article("N1", "Američki časopis o pobedi studenata u Srbiji",
                     "https://n1info.rs/a", "", now)
         ))
+
+    def test_no_night_publications_belgrade_winter(self):
+        zone = ZoneInfo("Europe/Belgrade")
+        for hour in (22, 23, 0, 1, 7):
+            local = datetime(2026, 11, 12 if hour > 7 else 13, hour, 30, tzinfo=zone)
+            self.assertFalse(publication_allowed(local), f"should block {hour}")
+        for hour in (8, 9, 21):
+            local = datetime(2026, 11, 12, hour, 30, tzinfo=zone)
+            self.assertTrue(publication_allowed(local), f"should permit {hour}")
+
+    def test_no_night_publications_belgrade_summer(self):
+        zone = ZoneInfo("Europe/Belgrade")
+        for hour in (0, 7, 22, 23):
+            self.assertFalse(publication_allowed(datetime(2026, 7, 12, hour, 0, tzinfo=zone)))
+        for hour in (8, 20, 21):
+            self.assertTrue(publication_allowed(datetime(2026, 7, 12, hour, 0, tzinfo=zone)))
+
+    def test_trump_iran_not_serbia(self):
+        a = Article("N1",
+            "Tramp: SAD nisu započele rat sa Iranom, Teheran vodi rat protiv Amerike",
+            "https://n1info.rs/iran", "Donald Trump je izjavio.", 0)
+        self.assertFalse(relevant(a))
+
+    def test_nis_is_not_nisu(self):
+        a = Article("N1", "U Nišu počela izgradnja nove bolnice",
+                    "https://n1info.rs/nis", "", 0)
+        self.assertTrue(relevant(a))
+        unrelated = Article("N1", "Političari nisu zadovoljni novim izborima u Francuskoj",
+                            "https://n1info.rs/a", "", 0)
+        self.assertFalse(relevant(unrelated))
+
+    def test_kosovo_local_protest_excluded(self):
+        a = Article("Danas",
+            "U Zubinom Potoku na severu Kosova protest porodica uhapšenih Srba u slučaju Dosije 23",
+            "https://www.danas.rs/kosovo", "U Srbiji su svi pratili vest", 0)
+        self.assertFalse(relevant(a))
+
+    def test_kosovo_official_serbian_statement_allowed(self):
+        a = Article("RTS", "Vučić o situaciji na Kosovu: Vlada Srbije objavila mere",
+                    "https://www.rts.rs/vest", "", 0)
+        self.assertTrue(relevant(a))
+
+    def test_summary_discards_source_questions(self):
+        a = Article("RTS", "Ekspo u Srbiji", "https://rts.rs/a",
+             "Međunarodne manifestacije donose ekonomsku korist. "
+             "Međutim, neki građani kritikuju troškove izložbe. "
+             "Kako za 93 dana predstaviti Srbiju i privući turiste?", 0)
+        summary = prepare_summary(a)
+        self.assertNotIn("Kako za", summary)
+        self.assertNotIn("?", summary)
+        self.assertIn("Međutim", summary)
+
+    def test_image_identical_pixels_different_file_encodings(self):
+        from io import BytesIO
+        from PIL import Image
+        im = Image.new("RGB", (42, 30), "white")
+        for y in range(12):
+            for x in range(26):
+                im.putpixel((x, y), (20, 30, 70))
+        a = BytesIO()
+        b = BytesIO()
+        im.save(a, format="PNG")
+        im.save(b, format="JPEG", quality=80)
+        self.assertEqual(image_dhash(a.getvalue()), image_dhash(b.getvalue()))
+
+    def test_repeated_photo_url_and_hash(self):
+        now = datetime.now(timezone.utc).timestamp()
+        url = "https://www.danas.rs/images/interview.png"
+        state = {"photos": {photo_url_key(url): now}, "phashes": {"abcda98765ef4321": now}}
+        self.assertTrue(is_repeated_photo(url, "", state))
+        self.assertTrue(is_repeated_photo(
+            "https://www.danas.rs/images/another.jpg", "abcda98765ef4321", state
+        ))
+        self.assertFalse(is_repeated_photo(
+            "https://www.danas.rs/images/new.jpg", "1234567890abcdef", state
+        ))
+
+    def test_prune_photo_history(self):
+        now = datetime.now(timezone.utc)
+        state = {"seen": {}, "posted": [], "photos": {
+                    "recent": (now - timedelta(days=15)).timestamp(),
+                    "old": (now - timedelta(days=70)).timestamp()},
+                 "phashes": {
+                    "abcda98765ef4321": (now - timedelta(days=8)).timestamp(),
+                    "abcda98765ef4320": (now - timedelta(days=90)).timestamp()}}
+        prune_state(state, now)
+        self.assertEqual(list(state["photos"]), ["recent"])
+        self.assertEqual(list(state["phashes"]), ["abcda98765ef4321"])
 
     def test_recent_articles(self):
         now = datetime.now(timezone.utc)
