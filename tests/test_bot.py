@@ -1,10 +1,12 @@
 import unittest
+from datetime import timedelta
 from unittest.mock import patch
 from datetime import datetime, timezone
 
 from bot import (
     Article, canonical_url, format_post, is_duplicate, normalized_title,
     parse_feed, recent_enough, relevant, post_telegram, prepare_summary, photo_caption, rss_photo,
+    same_event_title, event_terms, prune_state,
 )
 
 
@@ -62,6 +64,76 @@ class NewsBotTests(unittest.TestCase):
             ), "ts": now}],
         }
         self.assertTrue(is_duplicate(a, state))
+
+    def test_duplicate_same_news_different_order(self):
+        now = datetime.now(timezone.utc).timestamp()
+        previous = Article(
+            "RTS", "Drekslmajer zatvara fabriku u Zrenjaninu",
+            "https://www.rts.rs/vesti/stara", "", now,
+        )
+        later = Article(
+            "Danas", "U Zrenjaninu kompanija Drekslmajer zatvara fabriku",
+            "https://www.danas.rs/vesti/nova", "", now,
+        )
+        state = {"seen": {}, "posted": [
+            {"ts": now, "title_norm": normalized_title(previous.title), "source": "RTS"}
+        ]}
+        self.assertTrue(is_duplicate(later, state))
+
+    def test_duplicate_same_news_reordered_price_headline(self):
+        self.assertTrue(same_event_title(
+            normalized_title("Cene goriva u Srbiji povećane od petka"),
+            normalized_title("Od petka povećane cene goriva u Srbiji"),
+        ))
+
+    def test_cyrillic_vs_latin_duplicate(self):
+        self.assertTrue(same_event_title(
+            normalized_title("Зрењанин: Дрекслмајер затвара фабрику"),
+            normalized_title("Drekslmajer zatvara fabriku u Zrenjaninu"),
+        ))
+
+    def test_different_prices_are_not_duplicated(self):
+        self.assertFalse(same_event_title(
+            normalized_title("Cena dizela u Srbiji 195 dinara"),
+            normalized_title("Cena dizela u Srbiji 199 dinara"),
+        ))
+
+    def test_denial_is_not_same_as_affirmation(self):
+        self.assertFalse(same_event_title(
+            normalized_title("Fabrika u Zrenjaninu neće se zatvoriti"),
+            normalized_title("Fabrika u Zrenjaninu se zatvoriti"),
+        ))
+
+    def test_different_accidents_same_city(self):
+        self.assertFalse(same_event_title(
+            normalized_title("Saobraćajna nesreća u Beogradu: troje povređeno"),
+            normalized_title("Nova saobraćajna nesreća u Beogradu, dve osobe povređene"),
+        ))
+
+    def test_similar_topic_but_different_event(self):
+        self.assertFalse(same_event_title(
+            normalized_title("U Beogradu otvorena nova bolnica"),
+            normalized_title("U Beogradu zatvorena nova bolnica"),
+        ))
+
+    def test_store_history_60_days(self):
+        now = datetime.now(timezone.utc)
+        recent = (now - timedelta(days=45)).timestamp()
+        old = (now - timedelta(days=62)).timestamp()
+        state = {
+            "seen": {"recent": recent, "old": old},
+            "posted": [{"ts": recent, "title_norm": "recent"},
+                       {"ts": old, "title_norm": "old"}],
+        }
+        prune_state(state, now)
+        self.assertEqual(list(state["seen"]), ["recent"])
+        self.assertEqual([item["title_norm"] for item in state["posted"]], ["recent"])
+
+    def test_low_information_titles_not_false_duplicate(self):
+        self.assertFalse(same_event_title(
+            normalized_title("Novi zakon u Srbiji o porezu"),
+            normalized_title("Novi zakon u Srbiji o platama"),
+        ))
 
     def test_html_escape(self):
         a = Article(
