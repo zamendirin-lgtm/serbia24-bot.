@@ -40,7 +40,7 @@ class RealEstateTests(unittest.TestCase):
     def test_rent_and_sale_price_thresholds(self):
         o1 = Offer(URL, "Белград", "izdavanje-stanova", "Test", 400, 50, "2026-11-12")
         o2 = Offer("https://www.4zida.rs/prodaja-stanova/bg/a/"+"b"*24,
-                   "Ниш", "prodaja-stanova", "Test", 90000, 55, "2026-11-12")
+                   "Ниш", "prodaja-stanova", "Test", 75000, 55, "2026-11-12")
         self.assertEqual(shortlist([o1, o2], {}, 2), [o1, o2])
         self.assertEqual(shortlist([o1], {o1.key: {"posted_at": NOW.isoformat()}}), [])
 
@@ -48,7 +48,7 @@ class RealEstateTests(unittest.TestCase):
         offer = parse_offer(HTML, URL, "beograd", "izdavanje-stanova", NOW)
         output = format_post(offer, NOW)
         self.assertIn("500 €", output)
-        self.assertIn("Не указан", output)
+        self.assertIn("Агентство / посредник", output)
         self.assertIn("Доступность и документы не подтверждены", output)
         self.assertIn("https://www.4zida.rs/", output)
 
