@@ -98,7 +98,11 @@ def _basic_checks(title: str, paragraphs: list[str] | tuple[str, ...],
         raise EditorialError("Неполный, слишком длинный или пустой абзац")
     if any("?" in p or re.search(r"https?://|www\.", p, re.I) for p in parts):
         raise EditorialError("В тексте вопрос, ссылка или рекламная вставка")
-    if any(_too_similar(p, title) for p in parts):
+    # A factual opening naturally repeats headline entities (city, person,
+    # institution). Reject only a near-verbatim headline, not useful context.
+    if any(difflib.SequenceMatcher(
+        None, p.lower(), title.lower()
+    ).ratio() > .84 for p in parts):
         raise EditorialError("Текст повторяет заголовок")
     if any(_too_similar(parts[i], parts[j])
            for i in range(len(parts)) for j in range(i + 1, len(parts))):
