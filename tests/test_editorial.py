@@ -103,6 +103,7 @@ class EditorialTests(unittest.TestCase):
         self.assertIn("мастер-класс", _clean("Сегодня workshop по концентрации."))
         self.assertIn("мероприятий", _clean("Организует серию активностей."))
         self.assertIn("для молодёжи", _clean("Мероприятие для молодых."))
+        self.assertIn("Молодёжным клубом", _clean("организовано ОМЛАДЕНЧЕСКИМ КЛУБОМ SKC."))
 
     def test_singular_news_event_verb_agreement(self):
         corrected = _clean("В Крагуеваце вечером пройдут мастер‑класс о внимании.")
