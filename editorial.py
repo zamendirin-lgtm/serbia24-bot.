@@ -172,7 +172,7 @@ def edit_with_groq(source_title: str, source_paragraphs: list[str],
         "max_completion_tokens": 1000,
         "response_format": {"type": "json_object"},
         "reasoning_effort": "low",
-        "reasoning_format": "hidden",
+        "include_reasoning": False,
         "stream": False,
     }
     try:
@@ -201,7 +201,7 @@ def edit_with_groq(source_title: str, source_paragraphs: list[str],
 
 def edit_with_gemini(source_title: str, source_paragraphs: list[str],
                      translated_title: str, translated_draft: str,
-                     *, api_key: str, model: str = "gemini-2.5-flash-lite") -> EditedNews:
+                     *, api_key: str, model: str = "gemini-3.5-flash-lite") -> EditedNews:
     """Optional Gemini free-tier editing; never pass the key in query or logs."""
     payload = {
         "systemInstruction": {"parts": [{"text": SYSTEM_RULES}]},
@@ -279,6 +279,6 @@ def edit_news(source_title: str, source_paragraphs: list[str],
         return edit_with_gemini(
             source_title, source_paragraphs, title_ru, draft_ru,
             api_key=gemini_key,
-            model=os.getenv("EDITOR_MODEL", "gemini-2.5-flash-lite"),
+            model=os.getenv("EDITOR_MODEL", "gemini-3.5-flash-lite"),
         )
     return conservative_polish(title_ru, draft_ru)
