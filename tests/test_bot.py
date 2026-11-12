@@ -27,6 +27,22 @@ class NewsBotTests(unittest.TestCase):
             Article("N1", "New York sports match", "https://n1info.rs/b", "", now)
         ))
 
+    def test_spain_news_is_not_serbian_news(self):
+        now = datetime.now(timezone.utc).timestamp()
+        self.assertFalse(relevant(
+            Article("Danas",
+                    "Veliki protesti širom Španije zbog problema sa stanovanjem, samo u Madridu 120.000 ljudi",
+                    "https://www.danas.rs/a",
+                    "U Srbiji se takođe govori o protestima i pravima građana.", now)
+        ))
+
+    def test_serbian_story_quoting_foreign_media_is_local(self):
+        now = datetime.now(timezone.utc).timestamp()
+        self.assertTrue(relevant(
+            Article("N1", "Američki časopis o pobedi studenata u Srbiji",
+                    "https://n1info.rs/a", "", now)
+        ))
+
     def test_recent_articles(self):
         now = datetime.now(timezone.utc)
         self.assertTrue(recent_enough(
