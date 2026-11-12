@@ -176,7 +176,7 @@ class EditorialTests(unittest.TestCase):
         self.assertEqual(item.title, TITLE)
         self.assertEqual(post.call_count, 2)
         self.assertIn(
-            "ПРЕДЫДУЩИЙ ОТВЕТ БЫЛ НЕ ПО-РУССКИ",
+            "КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ ПРЕДЫДУЩЕЙ ВЕРСИИ",
             post.call_args_list[1].kwargs["json"]["messages"][0]["content"],
         )
 
