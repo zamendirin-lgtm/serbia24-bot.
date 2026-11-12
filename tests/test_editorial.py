@@ -5,7 +5,7 @@ from unittest.mock import patch
 
 from editorial import (
     SYSTEM_RULES, EditedNews, EditorialError,
-    conservative_polish, edit_news, edit_with_gemini,
+    conservative_polish, edit_news, edit_with_gemini, edit_with_groq,
 )
 
 TITLE = "В Нови-Саде открыли новый медицинский центр"
@@ -91,6 +91,61 @@ class EditorialTests(unittest.TestCase):
             edit_with_gemini("Novi centar", SERBIAN, TITLE,
                              PARA1 + "\n\n" + PARA2,
                              api_key="test-secret", model="../../wrong")
+
+
+    def test_groq_api_uses_free_model_and_json(self):
+        class Response:
+            def raise_for_status(self):
+                pass
+            def json(self):
+                return {"choices": [{"message": {"content": json.dumps({
+                    "publish": True,
+                    "title": TITLE,
+                    "paragraphs": [PARA1, PARA2]
+                }, ensure_ascii=False)}}]}
+        with patch("editorial.requests.post", return_value=Response()) as post:
+            item = edit_with_groq("Novi centar", SERBIAN, TITLE,
+                                  PARA1 + "\n\n" + PARA2,
+                                  api_key="fake-secret")
+        self.assertEqual(item.mode, "groq")
+        self.assertEqual(len(item.paragraphs), 2)
+        request = post.call_args.kwargs
+        self.assertEqual(request["json"]["model"], "openai/gpt-oss-120b")
+        self.assertEqual(request["json"]["response_format"], {"type": "json_object"})
+        self.assertIn("Bearer fake-secret", request["headers"]["Authorization"])
+        self.assertIn("интригующий", request["json"]["messages"][0]["content"])
+        self.assertIn("ПЕРВОМ абзаце", request["json"]["messages"][0]["content"])
+
+    def test_groq_unsubstantiated_numbers_rejected(self):
+        class Response:
+            def raise_for_status(self):
+                pass
+            def json(self):
+                return {"choices": [{"message": {"content": json.dumps({
+                    "publish": True, "title": TITLE,
+                    "paragraphs": [PARA1 + " Потрачено 9999 евро.", PARA2]
+                }, ensure_ascii=False)}}]}
+        with patch("editorial.requests.post", return_value=Response()):
+            with self.assertRaisesRegex(EditorialError, "цифры"):
+                edit_with_groq("Novi centar", SERBIAN, TITLE,
+                               PARA1 + "\n\n" + PARA2, api_key="fake-secret")
+
+    def test_groq_prioritized_over_gemini(self):
+        with patch.dict(os.environ, {"GROQ_API_KEY": "groq-test", "GEMINI_API_KEY": "gemini-test"}), \
+             patch("editorial.edit_with_groq", return_value=EditedNews(TITLE, (PARA1, PARA2), "groq")) as groq, \
+             patch("editorial.edit_with_gemini") as gemini:
+            item = edit_news("Novi centar", SERBIAN, TITLE,
+                             PARA1 + "\n\n" + PARA2)
+        self.assertEqual(item.mode, "groq")
+        groq.assert_called_once()
+        gemini.assert_not_called()
+
+    def test_model_denial_skips_publication(self):
+        with self.assertRaisesRegex(EditorialError, "Неизвестная модель"):
+            edit_with_groq("Novi centar", SERBIAN, TITLE,
+                           PARA1 + "\n\n" + PARA2,
+                           api_key="fake-secret", model="../../other")
+
 
 
 if __name__ == "__main__":
