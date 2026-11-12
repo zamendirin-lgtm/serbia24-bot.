@@ -2,7 +2,7 @@ name: Serbia24 automatic news
 
 on:
   schedule:
-    - cron: '17,47 * * * *' # checks twice an hour, GitHub may delay schedules
+    - cron: '17,47 * * * *' # checks twice hourly, GitHub may delay scheduled jobs
   workflow_dispatch:
   push:
     paths:
