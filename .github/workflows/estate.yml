@@ -43,6 +43,7 @@ jobs:
           PROPERTY_BOT_TOKEN: ${{ secrets.PROPERTY_BOT_TOKEN }}
           PROPERTY_CHAT_ID: ${{ vars.PROPERTY_CHAT_ID }}
           PROPERTY_ENABLE_4ZIDA: ${{ vars.PROPERTY_ENABLE_4ZIDA }}
+          PROPERTY_4ZIDA_MEDIA_LICENSED: ${{ vars.PROPERTY_4ZIDA_MEDIA_LICENSED }}
         run: python property_bot.py
       - name: Persist property history (separate from news)
         if: steps.credentials.outputs.ready == 'true'
