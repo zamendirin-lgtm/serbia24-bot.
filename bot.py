@@ -141,13 +141,113 @@ def relevant(article: Article) -> bool:
     )
 
 
+# Use the original Serbian titles, before translation. This also works across
+# Cyrillic/Latin, because normalized_title() transliterates all text to Latin.
+EVENT_STOPWORDS = frozenset("""
+    a ako ali bi bila bilo bio biti ce cemo ces da do dok i ili iz kao kada
+    ko koja koje koji koliko kod kome li na nakon naj naje ne nego njen njegov
+    njihov njima niko niti njom o od oko on ona oni ono ove ovaj ovo ovim
+    pa po posle pre prema pri protiv sa se si smo su sam ste sto sta tako te
+    time to tokom u uz vec vise za zbog kako gde gde god sada danas juce
+    rekao rekla receno kazao saopstio saopstila izjavio izjavila najavio
+    najavila prenosi prenose navodi navela vesti vest foto video godine
+    godinu godina novi nova novo novog novim najnovije sve svih svih
+""".split())
+# These terms recur in many unrelated Serbian headlines; overlapping only
+# on "Belgrade / police / accident" must never mark a different event as a copy.
+COMMON_NEWS_TERMS = frozenset("""
+    srbij beogr novog novi grad vucic vlada izbor zakon minist saobr
+    nesre povre polici osobe osobi ljudi protes radni banka cen goriv
+    vlast drzav javno vest stude zdrav sport fabri stanov
+""".split())
+NEGATION_WORDS = frozenset(("ne", "nije", "nisu", "nema", "nismo", "bez", "nikad"))
+
+
+def event_terms(title: str) -> set[str]:
+    """Lightweight, free keyword fingerprint tolerant of Serbian inflections."""
+    text = normalized_title(title)
+    result = set()
+    for word in text.split():
+        if word in EVENT_STOPWORDS or word.isdigit():
+            continue
+        if len(word) < 4 and word not in {"sns", "nis", "mup", "eps", "nbs", "eu"}:
+            continue
+        # e.g. fabrika/fabrike, Zrenjanin/Zrenjaninu, Srbiji/Srbija.
+        result.add(word[:5] if len(word) > 5 else word)
+    return result
+
+
+def same_event_title(a: str, b: str, threshold: float = 0.86) -> bool:
+    """Detect very similar headlines and substantially reworded same stories.
+
+    Conservative with numbers and negation so a price change, new court
+    decision or reverse statement can remain a separate development.
+    """
+    if not a or not b:
+        return False
+    if a == b:
+        return True
+    a_words, b_words = set(a.split()), set(b.split())
+    a_neg = bool(a_words & NEGATION_WORDS)
+    b_neg = bool(b_words & NEGATION_WORDS)
+    if a_neg != b_neg:
+        return False
+    numbers_a = {w for w in a_words if w.isdigit()}
+    numbers_b = {w for w in b_words if w.isdigit()}
+    if numbers_a and numbers_b and numbers_a != numbers_b:
+        return False
+    if difflib.SequenceMatcher(None, a, b).ratio() >= threshold:
+        return True
+    first, second = event_terms(a), event_terms(b)
+    if not first or not second:
+        return False
+    shared = first & second
+    if len(shared) < 3:
+        return False
+    jaccard = len(shared) / len(first | second)
+    containment = len(shared) / min(len(first), len(second))
+    if jaccard >= 0.78 and containment >= 0.85:
+        return True
+    if len(shared) < 4:
+        return False
+    if jaccard >= 0.69 and containment >= 0.75:
+        return True
+    distinctive = shared - COMMON_NEWS_TERMS
+    return (
+        len(distinctive) >= 1
+        and jaccard >= 0.47
+        and containment >= 0.72
+    )
+
+
+def same_event_summary(article: Article, record: dict, title_norm: str) -> bool:
+    """Use RSS excerpts only as a confirmation of already overlapping titles."""
+    old_summary = record.get("summary_norm", "")
+    if not old_summary or not article.summary:
+        return False
+    old_title = record.get("title_norm", "")
+    intersection = event_terms(title_norm) & event_terms(old_title)
+    if len(intersection) < 2:
+        return False
+    summary_norm = normalized_title(article.summary[:500])
+    a, b = event_terms(summary_norm), event_terms(old_summary)
+    if len(a & b) < 6 or not a or not b:
+        return False
+    return (
+        len(a & b) / len(a | b) >= 0.76
+        and len(a & b) / min(len(a), len(b)) >= 0.84
+    )
+
+
 def is_duplicate(article: Article, state: dict, threshold: float = 0.86) -> bool:
+    """Catch repeated URLs and reworded coverage across all RSS sources."""
     if article_id(article) in state.get("seen", {}):
         return True
     title = normalized_title(article.title)
     for record in state.get("posted", []):
-        old = record.get("title_norm", "")
-        if old and difflib.SequenceMatcher(None, title, old).ratio() >= threshold:
+        if same_event_title(title, record.get("title_norm", ""), threshold):
+            return True
+        if same_event_summary(article, record, title):
             return True
     return False
 
@@ -503,7 +603,7 @@ def load_state() -> dict:
 
 
 def prune_state(state: dict, now: datetime) -> None:
-    threshold = (now - timedelta(days=14)).timestamp()
+    threshold = (now - timedelta(days=60)).timestamp()
     state["seen"] = {k: v for k, v in state["seen"].items() if float(v) > threshold}
     state["posted"] = [p for p in state["posted"] if float(p.get("ts", 0)) > threshold]
 
@@ -565,6 +665,7 @@ def run() -> None:
             state["posted"].append({
                 "ts": stamp,
                 "title_norm": normalized_title(article.title),
+                "summary_norm": normalized_title(article.summary[:500]),
                 "source": article.source,
             })
             if not dry_run:
