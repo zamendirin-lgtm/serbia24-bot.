@@ -517,14 +517,23 @@ EDITORIAL_SKIP_PHRASES = (
 
 
 def split_news_sentences(text: str) -> list[str]:
-    """Split prose conservatively, retaining complete sentences only."""
-    pieces = re.split(r"(?<=[.!?])\s+", clean_text(text))
-    return [s.strip() for s in pieces if s.strip()]
+    """Respect Serbian years/initials to avoid detached 'godine' fragments."""
+    text = clean_text(text)
+    text = re.sub(r"(\d{4})\.(?=\s+godine\b)", r"\1<YEAR_DOT>", text, flags=re.I)
+    text = re.sub(
+        r"\b([A-ZА-Я])\.\s*([A-ZА-Я])\.",
+        r"\1<INITIAL_DOT> \2<INITIAL_DOT>", text,
+    )
+    pieces = re.split(r"(?<=[.!?])\s+", text)
+    return [
+        s.replace("<YEAR_DOT>", ".").replace("<INITIAL_DOT>", ".").strip()
+        for s in pieces if s.strip()
+    ]
 
 
 def factual_sentence(sentence: str, title: str = "") -> bool:
     norm = normalized_title(sentence)
-    if not 48 <= len(sentence) <= 370 or "?" in sentence:
+    if not 45 <= len(sentence) <= 440 or "?" in sentence:
         return False
     if any(phrase in norm for phrase in EDITORIAL_SKIP_PHRASES):
         return False
@@ -537,8 +546,8 @@ def factual_sentence(sentence: str, title: str = "") -> bool:
     return True
 
 
-def extract_article_paragraphs(article_html: str) -> list[str]:
-    """Prefer real story body; exclude menu, site ads, related news, footer."""
+def extract_article_paragraphs(article_html: str | bytes) -> list[str]:
+    """Read real publisher prose, preserving encoding and excluding site chrome."""
     try:
         body = trafilatura.extract(
             article_html,
@@ -553,8 +562,6 @@ def extract_article_paragraphs(article_html: str) -> list[str]:
         blocks = [clean_text(p) for p in re.split(r"\n+", body) if clean_text(p)]
         if blocks:
             return blocks
-
-    # Conservative fallback for publishers not handled by extraction engine.
     soup = BeautifulSoup(article_html, "html.parser")
     for tag in soup(["script", "style", "nav", "footer", "aside", "form", "iframe"]):
         tag.decompose()
@@ -565,54 +572,55 @@ def extract_article_paragraphs(article_html: str) -> list[str]:
         container = soup.select_one(selector)
         if container:
             paragraphs = [clean_text(p.get_text(" ", strip=True)) for p in container.select("p")]
-            if len(paragraphs) >= 3:
+            if len(paragraphs) >= 2:
                 return [x for x in paragraphs if x]
     return []
 
 
 def select_news_paragraphs(blocks: list[str], headline: str) -> list[str]:
-    """Build a readable, source-grounded 2-3 paragraph news digest.
-
-    Do not manufacture analysis, conclusions or interpretation. Discard articles
-    where no useful factual body was extracted.
-    """
-    facts = []
-    seen = set()
-    for block in blocks[:16]:
+    """Keep the opening, closely related facts; never stitch distant topics."""
+    title_terms = event_terms(headline) - COMMON_NEWS_TERMS
+    paras = []
+    first_terms = set()
+    for block in blocks[:7]:
+        sentences = []
         for sentence in split_news_sentences(block):
             if not factual_sentence(sentence, headline):
                 continue
-            key = normalized_title(sentence)
-            if key in seen:
+            if not sentences and len(sentence) > 360:
                 continue
-            seen.add(key)
-            facts.append(sentence)
-            if len(facts) >= 7:
+            trial = " ".join(sentences + [sentence])
+            if len(trial) > 330:
                 break
-        if len(facts) >= 7:
-            break
-    if len(facts) < 3:
-        return []
-
-    paragraphs = []
-    i = 0
-    for _ in range(3):
-        if i >= len(facts):
-            break
-        part = []
-        while i < len(facts) and len(" ".join(part + [facts[i]])) <= 240:
-            part.append(facts[i])
-            i += 1
-            if len(part) >= 2:
+            if sentence not in sentences:
+                sentences.append(sentence)
+            if len(sentences) >= 2:
                 break
-        if not part:
-            # Skip extremely long sentences rather than cutting them mid-phrase.
-            i += 1
+        if not sentences:
             continue
-        paragraphs.append(" ".join(part))
-    if len(paragraphs) < 2 or len(" ".join(paragraphs)) < 240:
+        paragraph = " ".join(sentences)
+        norm = normalized_title(paragraph)
+        if not paras:
+            # Opening a post with 'he said' or 'according to him' makes it
+            # impossible to understand who is speaking.
+            if re.match(r"^(po njegovim recima|po njenim recima|on je|ona je|dodao je|kako je naveo)", norm):
+                continue
+            overlap = event_terms(paragraph) & title_terms
+            if len(title_terms) >= 3 and len(overlap) < 1:
+                continue
+            first_terms = event_terms(paragraph)
+        elif len(paras) >= 2:
+            # A third paragraph must clearly concern the SAME headline,
+            # not a loosely related local event further down the article.
+            if len(event_terms(paragraph) & title_terms) < 2:
+                continue
+        paras.append(paragraph)
+        if len(paras) >= 3:
+            break
+
+    if len(paras) < 2 or len(" ".join(paras)) < 220:
         return []
-    return paragraphs
+    return paras
 
 
 def fetch_editorial_paragraphs(article: Article) -> list[str]:
@@ -629,8 +637,8 @@ def fetch_editorial_paragraphs(article: Article) -> list[str]:
         if "html" not in response.headers.get("Content-Type", "").lower():
             return []
         # Avoid huge pages; text article extraction handles first few MB.
-        body = response.content[:2_000_000].decode(response.encoding or "utf-8", errors="replace")
-        paragraphs = extract_article_paragraphs(body)
+        # Let the extractor detect HTML charset from the original bytes.
+        paragraphs = extract_article_paragraphs(response.content[:2_000_000])
         result = select_news_paragraphs(paragraphs, article.title)
         if result:
             return result
