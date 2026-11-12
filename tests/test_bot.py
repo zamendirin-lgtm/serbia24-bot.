@@ -4,7 +4,7 @@ from datetime import datetime, timezone
 
 from bot import (
     Article, canonical_url, format_post, is_duplicate, normalized_title,
-    parse_feed, recent_enough, relevant, post_telegram, prepare_summary,
+    parse_feed, recent_enough, relevant, post_telegram, prepare_summary, photo_caption, rss_photo,
 )
 
 
@@ -76,19 +76,55 @@ class NewsBotTests(unittest.TestCase):
         self.assertIn("\n\n", post)
         self.assertNotIn("https://example.com", post)
 
-    def test_telegram_preview_above_text(self):
+    def test_telegram_sends_photo_without_english_page_preview(self):
         class FakeResponse:
             status_code = 200
-
             def json(self):
                 return {"ok": True}
-
         with patch("bot.requests.post", return_value=FakeResponse()) as send:
-            post_telegram("Тест", "not-a-real-token", "@testchannel", "https://rts.rs/a")
+            post_telegram(
+                "Тест", "not-a-real-token", "@testchannel",
+                "https://rts.rs/a", "https://rts.rs/photo.jpg", "Подпись по-русски",
+            )
+            self.assertIn("/sendPhoto", send.call_args.args[0])
             payload = send.call_args.kwargs["json"]
-            self.assertTrue(payload["link_preview_options"]["show_above_text"])
-            self.assertTrue(payload["link_preview_options"]["prefer_large_media"])
-            self.assertEqual(payload["link_preview_options"]["url"], "https://rts.rs/a")
+            self.assertEqual(payload["photo"], "https://rts.rs/photo.jpg")
+            self.assertEqual(payload["caption"], "Подпись по-русски")
+            self.assertNotIn("link_preview_options", payload)
+
+    def test_fallback_disables_page_preview(self):
+        class Failure:
+            status_code = 400
+            def json(self):
+                return {"ok": False, "description": "Bad photo"}
+        class Success:
+            status_code = 200
+            def json(self):
+                return {"ok": True}
+        with patch("bot.requests.post", side_effect=[Failure(), Success()]) as send:
+            post_telegram(
+                "Тест", "not-a-real-token", "@testchannel",
+                "https://rts.rs/a", "https://rts.rs/photo.jpg", "Подпись по-русски",
+            )
+            self.assertEqual(send.call_count, 2)
+            self.assertIn("/sendMessage", send.call_args.args[0])
+            self.assertTrue(send.call_args.kwargs["json"]["link_preview_options"]["is_disabled"])
+
+    def test_photo_caption_russian(self):
+        item = Article("RTS", "Original", "https://rts.rs/a", "", 0)
+        caption = photo_caption(item, "Заголовок", "Первое предложение.")
+        self.assertIn("Заголовок", caption)
+        self.assertIn("Сербия 24", caption)
+        self.assertIn("Источник: RTS", caption)
+        self.assertNotIn("Original", caption)
+
+    def test_rss_media_image(self):
+        import feedparser
+        entry = feedparser.parse("""<rss xmlns:media="http://search.yahoo.com/mrss/" version="2.0">
+          <channel><item><title>Test</title><link>https://rts.rs/article</link>
+          <media:content url="https://rts.rs/photos/a.jpg" type="image/jpeg"/>
+          </item></channel></rss>""").entries[0]
+        self.assertEqual(rss_photo(entry, "https://rts.rs/article"), "https://rts.rs/photos/a.jpg")
 
     def test_long_rss_excerpt_remains_concise(self):
         item = Article("RTS", "Novi zakon", "https://rts.rs/a",
