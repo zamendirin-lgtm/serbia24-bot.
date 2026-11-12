@@ -7,7 +7,7 @@ from zoneinfo import ZoneInfo
 
 from bot import (
     Article, canonical_url, format_post, is_duplicate, normalized_title,
-    parse_feed, recent_enough, relevant, post_telegram, prepare_summary, photo_caption, rss_photo,
+    parse_feed, recent_enough, relevant, post_telegram, prepare_summary, photo_caption, rss_photo, normal_image_url,
     same_event_title, event_terms, prune_state, publication_allowed,
     image_dhash, photo_url_key, is_repeated_photo,
 )
@@ -301,6 +301,24 @@ class NewsBotTests(unittest.TestCase):
         self.assertNotIn("#НовостиСербии", caption)
         self.assertIn("Источник: RTS", caption)
         self.assertNotIn("Original", caption)
+
+    def test_reject_youtube_embed_as_news_photo(self):
+        fake = "https://www.youtube.com/embed/XNxSvHuHthQ"
+        self.assertEqual(normal_image_url(fake), "")
+        import feedparser
+        entry = feedparser.parse("""<rss version="2.0"><channel><item>
+          <title>U Beogradu uhapšena tri lica</title>
+          <link>https://www.danas.rs/vesti/beograd/123</link>
+          <description><![CDATA[<iframe src="https://www.youtube.com/embed/XNxSvHuHthQ"></iframe>
+          <img src="https://www.youtube.com/embed/XNxSvHuHthQ">]]></description>
+          </item></channel></rss>""").entries[0]
+        self.assertEqual(rss_photo(entry, "https://www.danas.rs/vesti/beograd/123"), "")
+
+    def test_regular_publisher_photo_still_allowed(self):
+        self.assertEqual(
+            normal_image_url("https://www.danas.rs/wp-content/uploads/2026/11/photo.jpg"),
+            "https://www.danas.rs/wp-content/uploads/2026/11/photo.jpg",
+        )
 
     def test_rss_media_image(self):
         import feedparser
