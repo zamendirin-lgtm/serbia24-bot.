@@ -7,6 +7,19 @@ from bot import FreeTranslator, article_photo, fetch_news, recent_enough, releva
 logging.basicConfig(level=logging.INFO)
 articles = fetch_news()
 print("RSS articles:", len(articles))
+
+from collections import Counter
+
+danas_items = [a for a in articles if a.source == "Danas"]
+rss_repeats = Counter(a.image_url for a in danas_items if a.image_url)
+print("Danas RSS repeated image URLs:", [(url[:130], count) for url, count in rss_repeats.most_common(4) if count > 1])
+samples = [a for a in danas_items if any(x in a.title.lower() for x in ("sombor", "zubinom", "policajca", "dosije 23"))]
+samples += danas_items[:3]
+for sample in samples[:6]:
+    print("Danas article:", sample.title[:100])
+    print("Danas RSS image:", sample.image_url[:180])
+    print("Danas selected photo:", article_photo(sample)[:180])
+
 if not articles:
     raise SystemExit("No RSS articles from any source")
 now = datetime.now(timezone.utc)
