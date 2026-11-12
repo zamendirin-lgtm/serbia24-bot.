@@ -2,7 +2,7 @@
 from datetime import datetime, timezone
 import logging
 
-from bot import FreeTranslator, article_photo, fetch_news, recent_enough, relevant, translate_article
+from bot import FreeTranslator, article_photo, fetch_news, fetch_editorial_paragraphs, recent_enough, relevant, translate_article
 
 logging.basicConfig(level=logging.INFO)
 articles = fetch_news()
@@ -30,6 +30,25 @@ for item in candidates[:4]:
     print("News photo", item.source, bool(url), url[:130])
 if not candidates:
     raise SystemExit("No fresh relevant articles")
+
+print("Editorial extraction by source (no Telegram posts):")
+for source in ("RTS", "N1", "Danas", "B92"):
+    available = [a for a in candidates if a.source == source]
+    if not available:
+        print(source, ": no matching fresh articles")
+        continue
+    good = 0
+    for sample in available[:3]:
+        blocks = fetch_editorial_paragraphs(sample)
+        if blocks:
+            print(source, "article:", sample.title[:120])
+            print(source, "paragraphs:", len(blocks))
+            for i, p in enumerate(blocks, 1):
+                print(source, "paragraph", i, ":", p[:240])
+            good += 1
+            break
+    if not good:
+        print(source, ": unable to extract factual body from sampled articles")
 
 translator = FreeTranslator()
 for a in candidates[:6]:
