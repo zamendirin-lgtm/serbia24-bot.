@@ -17,7 +17,9 @@
     "80c33318b8b29fe60de06733": 1794476472.317931,
     "f3b962c45b02b0e7f0fe835d": 1794476472.317931,
     "1778097ec83b7a7db39d56a4": 1794477721.782534,
-    "9b283b679d5fbd982c3bda12": 1794477721.782534
+    "9b283b679d5fbd982c3bda12": 1794477721.782534,
+    "9d384881ee576a4bfd7e3607": 1794478644.132273,
+    "e9a7b4975efb14f7db590be5": 1794478644.132273
   },
   "photos": {
     "50f559ee5d138a92c244ad4c": 1794474084.088928,
@@ -27,7 +29,9 @@
     "1e167c36e03478fe716489a8": 1794476472.317931,
     "df12afac38d42b1787b63645": 1794476472.317931,
     "938a4ef2b03e9036895eb9ef": 1794477721.782534,
-    "2a2609a98456c468d125dbfd": 1794477721.782534
+    "2a2609a98456c468d125dbfd": 1794477721.782534,
+    "cb88b86a0acb9b1fc11d08fb": 1794478644.132273,
+    "8879324eaebaa7df498eae06": 1794478644.132273
   },
   "phashes": {
     "2ceefee6566d6666": 1794474084.088928,
@@ -37,7 +41,9 @@
     "342c0c0c1c9c9637": 1794476472.317931,
     "04050109436307d3": 1794476472.317931,
     "3cb595d478347474": 1794477721.782534,
-    "171e1a3c53076528": 1794477721.782534
+    "171e1a3c53076528": 1794477721.782534,
+    "7858585844262666": 1794478644.132273,
+    "c7bc2e2eaea6c4f3": 1794478644.132273
   },
   "posted": [
     {
@@ -143,6 +149,18 @@
       "title_norm": "zastupnik udruzhenja gradjana ukhapshen zbog sumnje na zloupotrebu polozhaja",
       "summary_norm": "po nalogu visheg javnog tuzhilashtva u novom sadu politsija je ukhapsila i b zbog sumnje da je kao zastupnik udruzhenja gradjana zloupotrebom svog polozhaja oshtetio budzhet novog sada za 2 7 miliona dinara",
       "source": "RTS"
+    },
+    {
+      "ts": 1794478644.132273,
+      "title_norm": "mitropolit bachki irinej u teshkom zdravstvenom stanju spts pozvala vernike na molitvu",
+      "summary_norm": "mitropolit bachki irinej bulovitsh je u indukovanoj komi na institutu u sremskoj kamenitsi zbog ozbiljnog zdravstvenog stanja u kojem se nalazi posle nedavnog operativnog zakhvata potvrdjeno je radio televiziji srbije",
+      "source": "RTS"
+    },
+    {
+      "ts": 1794478644.132273,
+      "title_norm": "uns pronaci i kazniti odgovorne za pretnje bivsim novinarima euronews srbija",
+      "summary_norm": "udruzenje novinara srbije uns zatrazilo je od nadleznih organa da pronadu i kazne osobu koja je uputila pretnje bivsim zaposlenima u euronews srbija",
+      "source": "N1"
     }
   ]
 }
