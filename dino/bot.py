@@ -442,39 +442,15 @@ def main():
         except (RuntimeError, requests.RequestException) as exc:
             print("POST_BLOCKED: cannot verify Telegram destination:", type(exc).__name__)
             return
-    from media_auto import main_media
-    # Media is the primary output. News only every fifth slot or when no
-    # relevant reusable media was discovered.
-    slot = now.hour * 4 + now.minute // 15
-    if slot % 5 != 4:
-        media_kind = main_media(state, now, dry_run=DRY_RUN)
-        if media_kind:
-            if not DRY_RUN:
-                state["daily_count"] = count + 1
-                save_state(state)
-            print("MEDIA_CYCLE_COMPLETE", media_kind)
-            return
-    candidates = discover_news(state, now)
-    if candidates:
-        item = candidates[0]
-        publish_news(item, state, now)
-        if not DRY_RUN:
-            state.setdefault("seen", {})[item["key"]] = time.time()
-            state["daily_count"] = count + 1
-            save_state(state)
-        print("NEWS_CYCLE_COMPLETE", item["title"])
-        return
-    # If there were no recent stories, try licensed media instead of filler.
-    media_kind = main_media(state, now, dry_run=DRY_RUN)
-    if media_kind:
+    from video_only import publish_video_only
+    # The user wants only genuine, relevant in-chat videos, ideally portrait
+    # 9:16. No news cards, photos, GIFs, cartoons or filler posts.
+    if publish_video_only(state, now, dry_run=DRY_RUN):
         if not DRY_RUN:
             state["daily_count"] = count + 1
-            save_state(state)
-        print("MEDIA_FALLBACK_COMPLETE", media_kind)
-    else:
-        print("NO_ELIGIBLE_MEDIA_OR_NEWS")
-        if not DRY_RUN:
-            save_state(state)
+        print("VIDEO_ONLY_CYCLE_COMPLETE")
+    if not DRY_RUN:
+        save_state(state)
 
 
 if __name__ == "__main__":
