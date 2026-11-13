@@ -22,10 +22,11 @@ BODY = (
     "понять, где искать её возможные следы."
 )
 def content(add_media_credit=None):
-    source = '<a href="' + html.escape(SOURCE, quote=True) + '">ScienceDaily · 12.11.2026</a>'
-    caption = '<b>' + html.escape(TITLE) + '</b>\n\n' + html.escape(BODY) + '\n\nИсточник: ' + source
+    caption = '<b>' + html.escape(TITLE) + '</b>\n\n' + html.escape(BODY)
     if add_media_credit:
-        caption += "\n" + bot.credit_line(add_media_credit)
+        caption += "\n\n" + bot.compact_source_line(SOURCE, add_media_credit)
+    else:
+        caption += '\n\n🔗 <a href="' + html.escape(SOURCE, quote=True) + '">Источник</a>'
     return caption
 
 def main():
