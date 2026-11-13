@@ -79,6 +79,20 @@ class RegionTests(unittest.TestCase):
         self.assertIn("Фестивал", e.title)
         self.assertTrue(select(events, {}, NOW))
 
+    def test_same_multi_day_exhibition_not_published_repeatedly(self):
+        from dataclasses import replace
+        from afisha_bot import event_series_key
+        today = parse_belgrade_cards(BELGRADE, NOW)[1]
+        another_date = replace(
+            today,
+            url="https://www.runbgd.com/whats-on/exhibition-2026-11-21",
+            start=datetime(2026, 11, 21, tzinfo=NOW.tzinfo),
+        )
+        self.assertEqual(event_series_key(today.url), event_series_key(another_date.url))
+        self.assertEqual(len(select([today, another_date], {}, NOW)), 1)
+        seen = {"already": {"url": today.url, "published_at": NOW.isoformat(), "topic": "exhibition"}}
+        self.assertEqual(select([another_date], seen, NOW), [])
+
     def test_no_untrusted_ticket_or_bad_date(self):
         unsafe = BELGRADE.replace(
             "https://tickets.rs/event/tribute_maraton_serbia__28395",
