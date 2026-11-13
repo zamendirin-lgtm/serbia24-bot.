@@ -2,7 +2,7 @@ name: Serbia24 Afisha events
 
 on:
   schedule:
-    - cron: '17 7,11,15,19 * * *' # 08/12/16/20 winter Belgrade; 09/13/17/21 summer
+    - cron: '17 7,9,11,14,17,19 * * *' # 08/10/12/15/18/20 winter; 09/11/13/16/19/21 summer
   workflow_dispatch:
   push:
     paths:
@@ -59,6 +59,8 @@ jobs:
           AFISHA_BOT_TOKEN: ${{ secrets.AFISHA_BOT_TOKEN || secrets.PROPERTY_BOT_TOKEN }}
           AFISHA_CHAT_ID: ${{ vars.AFISHA_CHAT_ID || secrets.AFISHA_CHAT_ID || vars.PROPERTY_CHAT_ID || secrets.PROPERTY_CHAT_ID || '@Serbia24Afisha' }}
           AFISHA_ENABLE_TONS: '1'
+          AFISHA_ENABLE_BELGRADE: '1'
+          AFISHA_ENABLE_SUBOTICA: '1'
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
           GROQ_MODEL: 'openai/gpt-oss-120b'
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
