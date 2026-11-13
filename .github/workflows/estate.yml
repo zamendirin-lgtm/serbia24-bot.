@@ -1,9 +1,7 @@
 name: Serbia24 real estate
 
 on:
-  schedule:
-    - cron: '11 * * * *' # hourly; code enforces 08:00-22:00 Belgrade time
-  workflow_dispatch:
+  workflow_dispatch: # archived: former real estate channel is now an Afisha channel
 
 permissions:
   contents: write
