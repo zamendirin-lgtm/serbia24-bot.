@@ -1,0 +1,36 @@
+name: DinoDvij - first licensed video
+on:
+  push:
+    paths:
+      - 'dino/.send-video-once'
+permissions:
+  contents: write
+concurrency:
+  group: dinodvij-publisher
+  cancel-in-progress: false
+jobs:
+  send_video:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    env:
+      DINO_BOT_TOKEN: ${{ secrets.DINO_BOT_TOKEN }}
+      DINO_CHAT_ID: "-1002244148588"
+      DINO_TIMEZONE: Europe/Belgrade
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install -r dino/requirements.txt
+      - name: Upload MP4 video into Telegram group
+        run: python dino/send_first_video.py
+      - name: Remember uploaded video
+        run: |
+          git add dino/state.json
+          if ! git diff --cached --quiet; then
+            git config user.name "dinodvij-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git commit -m "chore(dino): record video post [skip ci]"
+            git pull --rebase origin main
+            git push origin HEAD:main
+          fi
