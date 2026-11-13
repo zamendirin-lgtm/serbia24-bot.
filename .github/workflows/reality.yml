@@ -3,6 +3,9 @@ name: Reality — science, mysteries and NASA media
 on:
   schedule:
     - cron: '11,31,51 * * * *'
+  push:
+    paths:
+      - 'reality/.test-trigger'
   workflow_dispatch:
     inputs:
       dry_run:
@@ -24,7 +27,7 @@ jobs:
     env:
       REALITY_BOT_TOKEN: ${{ secrets.REALITY_BOT_TOKEN }}
       REALITY_CHAT_ID: '@priroda_realnosti'
-      REALITY_DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run || 'false' }}
+      REALITY_DRY_RUN: ${{ github.event_name == 'push' && 'true' || (github.event_name == 'workflow_dispatch' && inputs.dry_run || 'false') }}
     steps:
       - name: Check credentials and test mode
         id: ready
