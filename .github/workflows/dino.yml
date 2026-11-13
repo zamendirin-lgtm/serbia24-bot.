@@ -26,7 +26,7 @@ jobs:
     timeout-minutes: 8
     env:
       DINO_BOT_TOKEN: ${{ secrets.DINO_BOT_TOKEN }}
-      DINO_CHAT_ID: ${{ secrets.DINO_CHAT_ID }}
+      DINO_CHAT_ID: "-1002244148588"
       PIXABAY_API_KEY: ${{ secrets.PIXABAY_API_KEY }}
       DINO_MAX_DAILY: "50"
       DINO_TIMEZONE: "Europe/Belgrade"
