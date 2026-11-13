@@ -1,4 +1,4 @@
-"""DinoDvij: auto-publish relevant videos only, in Telegram-native 9:16 MP4."""
+"""DinoDvij: auto-publish relevant videos as Telegram MP4, original aspect."""
 from __future__ import annotations
 
 import html
@@ -148,8 +148,7 @@ def lookup_candidates(state, now):
         for hit in query_catalog(term):
             candidates[hit["id"]] = hit
     hits = list(candidates.values())
-    # Portrait / near-9:16 is first choice; landscape is allowed only when
-    # the video is relevant, and the output itself is always 9:16.
+    # Prefer portrait / near 9:16; horizontal is welcome and kept horizontal.
     def score(hit):
         w, h = hit["width"], hit["height"]
         ratio = w / h if w and h else 1.777
@@ -184,24 +183,18 @@ def download_limited(url):
     return buf.getvalue()
 
 
-def to_vertical(source, dest):
-    # Preserve the whole source frame; blur the margins when original footage
-    # is not portrait. Result is 720x1280 (9:16) for Telegram playback.
-    filter_graph = (
-        "[0:v]split=2[base][fg];"
-        "[base]scale=720:1280:force_original_aspect_ratio=increase,"
-        "crop=720:1280,boxblur=12:2[blur];"
-        "[fg]scale=720:1280:force_original_aspect_ratio=decrease[front];"
-        "[blur][front]overlay=(W-w)/2:(H-h)/2,format=yuv420p[v]"
-    )
+def to_mp4_original_ratio(source, dest):
+    """Convert to streamable MP4, without cropping or adding sidebars."""
     cmd = [
         "ffmpeg", "-y", "-hide_banner", "-loglevel", "error",
-        "-i", str(source), "-t", str(MAX_SECONDS), "-filter_complex", filter_graph,
-        "-map", "[v]", "-map", "0:a:0?", "-r", "24",
+        "-i", str(source), "-t", str(MAX_SECONDS),
+        # 1280x1280 is only a bounding box; original aspect is preserved.
+        "-vf", "scale=1280:1280:force_original_aspect_ratio=decrease:force_divisible_by=2,setsar=1",
+        "-map", "0:v:0", "-map", "0:a:0?", "-r", "24",
         "-c:v", "libx264", "-pix_fmt", "yuv420p",
         "-preset", "ultrafast", "-crf", "28",
         "-c:a", "aac", "-b:a", "96k",
-        "-movflags", "+faststart", str(dest)
+        "-movflags", "+faststart", str(dest),
     ]
     subprocess.run(cmd, check=True, timeout=120)
     size = dest.stat().st_size
@@ -223,7 +216,7 @@ def minimal_caption(hit):
         " · " + html.escape(rights["label"]) +
         ' · <a href="' + html.escape(rights["url"], quote=True) + '">лицензия</a>' +
         ' · <a href="' + html.escape(source_url, quote=True) + '">·</a>' +
-        "\nФормат адаптирован: 9:16."
+        "\nПерекодировано в MP4."
     )
 
 
@@ -235,9 +228,9 @@ def post_hit(hit, dry_run=False):
     source_bytes = download_limited(hit["url"])
     with tempfile.TemporaryDirectory(prefix="dinovideo-") as tmp:
         original = Path(tmp) / "source.webm"
-        mp4 = Path(tmp) / "vertical.mp4"
+        mp4 = Path(tmp) / "video.mp4"
         original.write_bytes(source_bytes)
-        to_vertical(original, mp4)
+        to_mp4_original_ratio(original, mp4)
         payload = {
             "chat_id": bot.CHAT_ID,
             "supports_streaming": "true",
@@ -255,7 +248,7 @@ def post_hit(hit, dry_run=False):
             )
         if not response.get("message_id"):
             raise RuntimeError("Telegram did not confirm upload")
-        print("VIDEO_POSTED_OK", response["message_id"], "format 720x1280")
+        print("VIDEO_POSTED_OK", response["message_id"], "original aspect retained")
         return True
 
 
