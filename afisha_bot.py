@@ -512,7 +512,7 @@ def event_topic(event: Event) -> str:
 def posted_today(seen: dict, now: datetime) -> list[dict]:
     result = []
     for row in seen.values():
-        if not isinstance(row, dict):
+        if not isinstance(row, dict) or row.get("corrected_test") is True:
             continue
         stamp = parse_date(row.get("published_at"))
         if stamp and stamp.astimezone(TZ).date() == now.astimezone(TZ).date():
