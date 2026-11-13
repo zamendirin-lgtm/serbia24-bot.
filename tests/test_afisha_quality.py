@@ -31,7 +31,7 @@ def event(name="International jazz concert", description=None,
 class AfishaDailyQualityTests(unittest.TestCase):
     def test_quality_event_beats_weak_announcement(self):
         strong = event(url_id=1)
-        weak = event("Generic event", description="Event.", price="Стоимость уточняется",
+        weak = event("Generic event", description="Event.", price="не указана",
                      venue="", day=18, url_id=2)
         self.assertGreater(interest_score(strong, NOW), interest_score(weak, NOW))
         self.assertGreaterEqual(interest_score(strong, NOW), MIN_INTEREST_SCORE)
@@ -54,8 +54,14 @@ class AfishaDailyQualityTests(unittest.TestCase):
             item["published_at"] = (NOW - timedelta(days=1)).isoformat()
         self.assertEqual(select([new], seen, NOW), [new])
 
+    def test_interest_does_not_depend_on_known_price(self):
+        known = event(price="от 300 дин.", url_id=31)
+        unknown = event(price="не указана", url_id=32)
+        self.assertEqual(interest_score(known, NOW), interest_score(unknown, NOW))
+        self.assertIn(unknown, select([unknown], {}, NOW))
+
     def test_selection_is_ranked_not_earliest_first(self):
-        weak = event("Exhibition", "An exhibition with art.", price="Стоимость уточняется",
+        weak = event("Exhibition", "An exhibition with art.", price="не указана",
                      venue="", day=1, url_id=3)
         strong = event(day=4, url_id=4)
         self.assertEqual(select([weak, strong], {}, NOW), [strong])
