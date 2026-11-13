@@ -26,20 +26,37 @@ jobs:
       REALITY_CHAT_ID: '@priroda_realnosti'
       REALITY_DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run || 'false' }}
     steps:
+      - name: Check credentials and test mode
+        id: ready
+        shell: bash
+        run: |
+          if [ -n "$REALITY_BOT_TOKEN" ] || [ "$REALITY_DRY_RUN" = "true" ]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::notice::Add REALITY_BOT_TOKEN to repository Actions Secrets. No publication attempted."
+            echo "run=false" >> "$GITHUB_OUTPUT"
+          fi
       - uses: actions/checkout@v4
+        if: ${{ steps.ready.outputs.run == 'true' }}
         with:
           persist-credentials: true
       - uses: actions/setup-python@v5
+        if: ${{ steps.ready.outputs.run == 'true' }}
         with:
           python-version: '3.12'
       - name: Install science-feed dependencies
+        if: ${{ steps.ready.outputs.run == 'true' }}
         run: python -m pip install -r reality/requirements.txt
       - name: Install ffmpeg for NASA videos
+        if: ${{ steps.ready.outputs.run == 'true' }}
         run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
       - name: Find one relevant, reusable item
-        run: python reality/bot.py
+        if: ${{ steps.ready.outputs.run == 'true' }}
+        run: |
+          python -m py_compile reality/bot.py
+          python reality/bot.py
       - name: Remember posted content only on actual publications
-        if: ${{ env.REALITY_DRY_RUN != 'true' }}
+        if: ${{ steps.ready.outputs.run == 'true' && env.REALITY_DRY_RUN != 'true' }}
         run: |
           git add reality/state.json
           if ! git diff --cached --quiet; then
