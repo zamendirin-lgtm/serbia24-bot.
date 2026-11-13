@@ -89,7 +89,7 @@ def _validate(response: dict, event, provider: str) -> EditedEvent:
     if any(token in (title + summary).lower() for token in ("https://", "http://", "<script", "code fences")):
         raise EditRejected("AI output contains unsupported formatting")
     if event.start.date() > datetime.now(TZ).date():
-        if re.search(r"\\b(?:проходит|идёт|идет|состоялся|состоялась|состоялись|начался|началась|прошёл|прошла|завершился)\\b", title + " " + summary, re.IGNORECASE):
+        if re.search(r"\b(?:проходит|идёт|идет|состоялся|состоялась|состоялись|начался|началась|прошёл|прошла|завершился)\b", title + " " + summary, re.IGNORECASE):
             raise EditRejected("AI described a future event as already happening")
     original = " ".join(str(v) for v in _facts(event).values())
     if _numbers(title + " " + summary) - _numbers(original):
