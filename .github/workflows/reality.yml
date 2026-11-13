@@ -43,8 +43,8 @@ jobs:
           if [ -n "$REALITY_BOT_TOKEN" ] || [ "$REALITY_DRY_RUN" = "true" ]; then
             echo "run=true" >> "$GITHUB_OUTPUT"
           else
-            echo "::notice::Add REALITY_BOT_TOKEN to repository Actions Secrets. No publication attempted."
-            echo "run=false" >> "$GITHUB_OUTPUT"
+            echo "::error::REALITY_BOT_TOKEN missing. Create it in Settings > Secrets and variables > Actions."
+            exit 1
           fi
       - uses: actions/checkout@v4
         if: ${{ steps.ready.outputs.run == 'true' }}
@@ -59,7 +59,7 @@ jobs:
         run: python -m pip install -r reality/requirements.txt
       - name: Install ffmpeg for NASA videos
         if: ${{ steps.ready.outputs.run == 'true' }}
-        run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
+        run: command -v ffmpeg >/dev/null || (sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg)
       - name: Check bot credentials and channel administrator permissions
         if: ${{ steps.ready.outputs.run == 'true' }}
         run: python reality/verify.py
