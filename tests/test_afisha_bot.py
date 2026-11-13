@@ -77,7 +77,8 @@ class AfishaTests(unittest.TestCase):
         self.assertIn("<b>Город:</b> Нови-Сад", card)
         self.assertIn("<b>Место проведения:</b> Novosadski sajam", card)
         self.assertNotIn("Нови-Сад · ", card)
-        self.assertIn("Подробности и билеты", card)
+        self.assertIn(">Подробности</a>", card)
+        self.assertNotIn("Купить билеты", card)
         self.assertNotIn("ℹ️ Время и цену проверьте", card)
         self.assertNotIn("Бесплатно", card)
 
@@ -88,6 +89,29 @@ class AfishaTests(unittest.TestCase):
         card = format_event(e, "Фестиваль", "На сцене выступят музыкальные коллективы.")
         self.assertIn("Место проведения:</b> SKCNS Fabrika", card)
         self.assertIn("Bulevar despota Stefana 5", card)
+
+    def test_separate_links_when_real_tickets_available(self):
+        from dataclasses import replace
+        item = parse_jsonld_events(PAGE, URL)[0]
+        only_details = format_event(item, "Выставка украшений", "На выставке представят украшения ювелиров.")
+        self.assertIn(">Подробности</a>", only_details)
+        self.assertNotIn("Купить билеты", only_details)
+        with_tickets = replace(item, ticket_url="https://tickets.rs/event/sjaj_2026_123")
+        text = format_event(with_tickets, "Выставка украшений", "На выставке представят украшения ювелиров.")
+        self.assertIn(">Подробности</a>", text)
+        self.assertIn('href="https://tickets.rs/event/sjaj_2026_123">Купить билеты</a>', text)
+        self.assertNotIn("Подробности и билеты", text)
+
+    def test_ticket_link_only_when_explicitly_labeled(self):
+        from afisha_bot import find_ticket_link, safe_ticket_url
+        from bs4 import BeautifulSoup
+        html = '<main><a href="/en/kalendar-dogadjaja/sjaj-2026">Tickets</a><a href="https://tickets.rs/event/sjaj_2026">Kupi kartu</a></main>'
+        self.assertEqual(find_ticket_link(BeautifulSoup(html, "html.parser"), {}, URL),
+                         "https://tickets.rs/event/sjaj_2026")
+        html = '<main><a href="/en/kalendar-dogadjaja/sjaj-2026">More details</a><span>Tickets available</span></main>'
+        self.assertEqual(find_ticket_link(BeautifulSoup(html, "html.parser"), {}, URL), "")
+        self.assertEqual(safe_ticket_url("https://tickets.rs/", URL), "")
+        self.assertEqual(safe_ticket_url("http://tickets.rs/event/test", URL), "")
 
     def test_dedupe_by_event_date(self):
         events = parse_jsonld_events(PAGE, URL)
