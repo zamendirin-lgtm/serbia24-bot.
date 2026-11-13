@@ -141,8 +141,11 @@ def translate(raw):
 
 def story_topics(title):
     t = title.lower()
+    prefixes = {"archaeolog", "fung", "bacter"}
     for word, topic in IMAGE_TOPICS.items():
-        if word in t:
+        pattern = (r"\b" + re.escape(word) + r"[a-z]*\b" if word in prefixes
+                   else r"\b" + re.escape(word) + r"(?:s|es)?\b")
+        if re.search(pattern, t):
             return topic
     return None
 
@@ -216,7 +219,7 @@ def license_info(meta):
 def commons_image(query, state):
     params = {"action": "query", "format": "json", "formatversion": "2",
               "generator": "search", "gsrnamespace": "6",
-              "gsrsearch": query + " filetype:bitmap", "gsrlimit": "25",
+              "gsrsearch": query, "gsrlimit": "25",
               "prop": "imageinfo", "iiprop": "url|size|mime|extmetadata",
               "iiurlwidth": "1280"}
     try:
