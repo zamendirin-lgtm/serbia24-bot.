@@ -36,7 +36,8 @@
     "b8d9f648604fdf2fe433b733": 1794562303.8545,
     "df7406229f6ad5fe62c56a1a": 1794569413.144807,
     "a9b8dc50c595ebe9d718d54a": 1794577694.288527,
-    "2180a8aa66497fbec3ce0274": 1794583907.367809
+    "2180a8aa66497fbec3ce0274": 1794583907.367809,
+    "a798931e81104ea604c83ce1": 1794590922.071784
   },
   "photos": {
     "50f559ee5d138a92c244ad4c": 1794474084.088928,
@@ -308,6 +309,12 @@
       "title_norm": "srbiji sve potrebniji stranci nedostatak radnika izazvao rat platama",
       "summary_norm": "ekonomska situacija u srbiji je skolski primer privrede sa dva lica jer su kompanije u stranom vlasnistvu znatno produktivnije tehnoloski naprednije i finansijski stabilnije od domaceg privatnog sektora koji hronicno pati od nedostatka kapitalnih ulaganja pise mesecnik biznis i finansije",
       "source": "Danas"
+    },
+    {
+      "ts": 1794590922.071784,
+      "title_norm": "novinar o mogucem otvaranju data centra na mestu azotare pancevo pod znakom pitanja voda struja grejanje zivotna sredina",
+      "summary_norm": "azotara pancevo presla je u ruke mileva data technologies pise forbes srbija dodajuci da je azotara regulacionim planom videna kao adresa buduceg da",
+      "source": "N1"
     }
   ]
 }
