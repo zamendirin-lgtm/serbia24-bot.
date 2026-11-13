@@ -18,7 +18,7 @@
 1. **Важно:** если токен уже публиковался в чате, его необходимо отозвать через BotFather (Revoke) и получить новый.
 2. Перейди в GitHub → репозиторий zamendirin-lgtm/serbia24-bot. → Settings → Secrets and variables → Actions → New repository secret.
 3. Создай секрет **DINO_BOT_TOKEN** с новым токеном. Никому его не отправляй.
-4. Создай секрет **DINO_CHAT_ID** со значением **@AVQ_GO** (для публичной группы с таким username; иначе нужен числовой ID группы).
+4. Чат уже определён автоматически: **-1002244148588**. Он задан в файле workflow, секрет DINO_CHAT_ID теперь не нужен.
 5. Для фотографий и видео создай ключ на https://pixabay.com/api/docs/ и добавь его секретом **PIXABAY_API_KEY**. Это необязательно для текстовых новостных карточек, но нужно для настоящих медиа.
 6. Проверь, что @DinoDvij_bot назначен администратором группы и может отправлять фото и видео.
 7. Открой GitHub → Actions → DinoDvij — themed news and videos → Run workflow; сначала проверь с dry_run = true, затем с false.
