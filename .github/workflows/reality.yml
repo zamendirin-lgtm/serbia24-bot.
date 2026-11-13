@@ -7,6 +7,7 @@ on:
     paths:
       - 'reality/.test-trigger'
       - 'reality/.start-trigger'
+      - 'reality/.publish-now'
   workflow_dispatch:
     inputs:
       dry_run:
@@ -28,7 +29,8 @@ jobs:
     env:
       REALITY_BOT_TOKEN: ${{ secrets.REALITY_BOT_TOKEN }}
       REALITY_CHAT_ID: '@priroda_realnosti'
-      REALITY_DRY_RUN: ${{ github.event_name == 'push' && github.event.head_commit.message != 'start(reality): verify and enable live bot' && 'true' || (github.event_name == 'workflow_dispatch' && inputs.dry_run || 'false') }}
+      REALITY_DRY_RUN: ${{ github.event_name == 'push' && github.event.head_commit.message != 'start(reality): verify and enable live bot' && github.event.head_commit.message != 'publish-now(reality): curated Mars discovery' && 'true' || (github.event_name == 'workflow_dispatch' && inputs.dry_run || 'false') }}
+      REALITY_PUBLISH_NOW: ${{ github.event_name == 'push' && github.event.head_commit.message == 'publish-now(reality): curated Mars discovery' && 'true' || 'false' }}
     steps:
       - name: Check credentials and test mode
         id: ready
@@ -60,8 +62,12 @@ jobs:
       - name: Find one relevant, reusable item
         if: ${{ steps.ready.outputs.run == 'true' }}
         run: |
-          python -m py_compile reality/bot.py
-          python reality/bot.py
+          python -m py_compile reality/bot.py reality/verify.py reality/publish_now.py
+          if [ "$REALITY_PUBLISH_NOW" = "true" ]; then
+            python reality/publish_now.py
+          else
+            python reality/bot.py
+          fi
       - name: Remember posted content only on actual publications
         if: ${{ steps.ready.outputs.run == 'true' && env.REALITY_DRY_RUN != 'true' }}
         run: |
