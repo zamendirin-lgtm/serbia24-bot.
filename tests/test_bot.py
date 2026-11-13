@@ -9,6 +9,7 @@ from bot import (
     Article, canonical_url, format_post, is_duplicate, normalized_title,
     parse_feed, recent_enough, relevant, post_telegram, prepare_summary, photo_caption, rss_photo, normal_image_url,
     same_event_title, event_terms, prune_state, publication_allowed,
+    interval_allows_publication, next_eligible_publication, MIN_PUBLICATION_INTERVAL_MINUTES,
     branded_fallback_photo, extract_article_paragraphs, select_news_paragraphs,
     film_premiere_context,
     translate_article, complete_sentences_for_budget,
@@ -114,6 +115,45 @@ class NewsBotTests(unittest.TestCase):
             Article("N1", "Američki časopis o pobedi studenata u Srbiji",
                     "https://n1info.rs/a", "", now)
         ))
+
+    def test_90_minute_gap_after_latest_post(self):
+        now = datetime(2026, 11, 13, 12, 0, tzinfo=timezone.utc)
+        prior = now.timestamp() - 89 * 60
+        state = {"posted": [{"ts": prior, "title_norm": "news", "source": "RTS"}]}
+        self.assertEqual(MIN_PUBLICATION_INTERVAL_MINUTES, 90)
+        self.assertFalse(interval_allows_publication(state, now))
+        self.assertEqual(
+            next_eligible_publication(state, now),
+            datetime.fromtimestamp(prior + 90 * 60, timezone.utc)
+        )
+        later = now + timedelta(minutes=1)
+        self.assertTrue(interval_allows_publication(state, later))
+
+    def test_gap_is_based_on_most_recent_successful_post(self):
+        now = datetime(2026, 11, 13, 12, 0, tzinfo=timezone.utc)
+        state = {"posted": [
+            {"ts": now.timestamp() - 240 * 60, "source": "RTS"},
+            {"ts": now.timestamp() - 45 * 60, "source": "N1"},
+            {"ts": now.timestamp() - 110 * 60, "source": "Danas"},
+        ]}
+        self.assertFalse(interval_allows_publication(state, now))
+        self.assertTrue(interval_allows_publication(state, now + timedelta(minutes=45)))
+
+    def test_empty_history_allows_publication(self):
+        now = datetime(2026, 11, 13, 12, 0, tzinfo=timezone.utc)
+        self.assertTrue(interval_allows_publication({"posted": []}, now))
+        self.assertIsNone(next_eligible_publication({"posted": []}, now))
+
+    def test_overnight_gap_and_quiet_hours_both_apply(self):
+        zone = ZoneInfo("Europe/Belgrade")
+        last_evening = datetime(2026, 11, 12, 21, 50, tzinfo=zone)
+        state = {"posted": [{"ts": last_evening.timestamp(), "source": "N1"}]}
+        at_seven = datetime(2026, 11, 13, 7, 30, tzinfo=zone)
+        at_eight = datetime(2026, 11, 13, 8, 0, tzinfo=zone)
+        self.assertTrue(interval_allows_publication(state, at_seven))
+        self.assertFalse(publication_allowed(at_seven))
+        self.assertTrue(interval_allows_publication(state, at_eight))
+        self.assertTrue(publication_allowed(at_eight))
 
     def test_no_night_publications_belgrade_winter(self):
         zone = ZoneInfo("Europe/Belgrade")
