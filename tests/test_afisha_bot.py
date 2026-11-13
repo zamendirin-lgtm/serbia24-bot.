@@ -77,7 +77,8 @@ class AfishaTests(unittest.TestCase):
         self.assertIn("<b>Город:</b> Нови-Сад", card)
         self.assertIn("<b>Место проведения:</b> Novosadski sajam", card)
         self.assertNotIn("Нови-Сад · ", card)
-        self.assertIn("Подробности и билеты", card)
+        self.assertIn(">Подробности</a>", card)
+        self.assertNotIn("Купить билеты", card)
         self.assertNotIn("ℹ️ Время и цену проверьте", card)
         self.assertNotIn("Бесплатно", card)
 
