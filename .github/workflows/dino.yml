@@ -22,12 +22,12 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 8
     env:
-      DINO_BOT_TOKEN: \${{ secrets.DINO_BOT_TOKEN }}
-      DINO_CHAT_ID: \${{ secrets.DINO_CHAT_ID }}
-      PIXABAY_API_KEY: \${{ secrets.PIXABAY_API_KEY }}
+      DINO_BOT_TOKEN: ${{ secrets.DINO_BOT_TOKEN }}
+      DINO_CHAT_ID: ${{ secrets.DINO_CHAT_ID }}
+      PIXABAY_API_KEY: ${{ secrets.PIXABAY_API_KEY }}
       DINO_MAX_DAILY: "50"
       DINO_TIMEZONE: "Europe/Moscow"
-      DINO_DRY_RUN: \${{ inputs.dry_run || 'false' }}
+      DINO_DRY_RUN: ${{ inputs.dry_run || 'false' }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -40,7 +40,7 @@ jobs:
       - name: Find and post one eligible item
         run: python dino/bot.py
       - name: Save state only when changed
-        if: \${{ env.DINO_DRY_RUN != 'true' }}
+        if: ${{ env.DINO_DRY_RUN != 'true' }}
         run: |
           git add dino/state.json
           if ! git diff --cached --quiet; then
