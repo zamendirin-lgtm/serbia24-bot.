@@ -30,7 +30,7 @@ jobs:
       PIXABAY_API_KEY: ${{ secrets.PIXABAY_API_KEY }}
       DINO_MAX_DAILY: "50"
       DINO_TIMEZONE: "Europe/Belgrade"
-      DINO_VERIFY_ONLY: ${{ github.event_name == 'push' && 'true' || 'false' }}
+      DINO_VERIFY_ONLY: "false"
       DINO_DRY_RUN: ${{ github.event_name == 'push' && 'true' || inputs.dry_run || 'false' }}
     steps:
       - uses: actions/checkout@v4
@@ -41,6 +41,8 @@ jobs:
           python-version: "3.12"
       - name: Install standalone DinoDvij dependencies
         run: python -m pip install -r dino/requirements.txt
+      - name: Install ffmpeg for inline Telegram clips
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
       - name: Find and post one eligible item
         run: python dino/bot.py
       - name: Save state only when changed
