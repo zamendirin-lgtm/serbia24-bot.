@@ -37,7 +37,8 @@
     "df7406229f6ad5fe62c56a1a": 1794569413.144807,
     "a9b8dc50c595ebe9d718d54a": 1794577694.288527,
     "2180a8aa66497fbec3ce0274": 1794583907.367809,
-    "a798931e81104ea604c83ce1": 1794590922.071784
+    "a798931e81104ea604c83ce1": 1794590922.071784,
+    "ad387031a56f9e0fdf0b3f6f": 1794598353.337854
   },
   "photos": {
     "50f559ee5d138a92c244ad4c": 1794474084.088928,
@@ -63,7 +64,8 @@
     "0f54639847ec7803c7c88cf3": 1794512117.194673,
     "f6ccc7a6962382b4203a910a": 1794556275.799295,
     "96857a0137890ab264e605a8": 1794577694.288527,
-    "7b578cc018cd43979833f283": 1794583907.367809
+    "7b578cc018cd43979833f283": 1794583907.367809,
+    "a3e946114d247c4084582329": 1794598353.337854
   },
   "phashes": {
     "2ceefee6566d6666": 1794474084.088928,
@@ -89,7 +91,8 @@
     "75cd4d3a33f3c7e7": 1794512117.194673,
     "c68cce795b1c1736": 1794556275.799295,
     "132601a332b2b1a9": 1794577694.288527,
-    "6b83cbcdcd0d9894": 1794583907.367809
+    "6b83cbcdcd0d9894": 1794583907.367809,
+    "84606371060a1800": 1794598353.337854
   },
   "posted": [
     {
@@ -315,6 +318,12 @@
       "title_norm": "novinar o mogucem otvaranju data centra na mestu azotare pancevo pod znakom pitanja voda struja grejanje zivotna sredina",
       "summary_norm": "azotara pancevo presla je u ruke mileva data technologies pise forbes srbija dodajuci da je azotara regulacionim planom videna kao adresa buduceg da",
       "source": "N1"
+    },
+    {
+      "ts": 1794598353.337854,
+      "title_norm": "zatvaranje fabrike vali u valjevu sve blizhe ponude ima ali je loznitsa za mnoge predaleko",
+      "summary_norm": "nakon najave zatvaranja fabrike vali u valjevu i otpushtanja 737 zaposlenikh u detsembru trazhe se reshenja za pomotsh radnitsima finansijska podrshka i zaposhljavanje u drugim kompanijama razgovor radnika valija sa potentsijalnim novim poslodavtsima organizovali su sindikati i lokalna samouprava",
+      "source": "RTS"
     }
   ]
 }
