@@ -43,6 +43,31 @@ FEEDS = {
 
 PUBLISH_START_HOUR = 8
 PUBLISH_END_HOUR = 22  # no posts at or after 22:00 Belgrade local time
+MIN_PUBLICATION_INTERVAL_MINUTES = 90  # 1.5 hours between actual posts
+
+
+def next_eligible_publication(state: dict, now: datetime, interval_minutes: int = MIN_PUBLICATION_INTERVAL_MINUTES) -> datetime | None:
+    """Earliest allowed publication time based on persisted Telegram history.
+
+    Applies to manual and scheduled runs; no forced posting if there are no
+    suitable, verified stories.
+    """
+    if interval_minutes < 1:
+        raise ValueError("Publication interval must be positive")
+    latest = max(
+        (float(item["ts"]) for item in state.get("posted", [])
+         if isinstance(item, dict) and item.get("ts") is not None),
+        default=None,
+    )
+    if latest is None:
+        return None
+    return datetime.fromtimestamp(latest, timezone.utc) + timedelta(minutes=interval_minutes)
+
+
+def interval_allows_publication(state: dict, now: datetime,
+                                interval_minutes: int = MIN_PUBLICATION_INTERVAL_MINUTES) -> bool:
+    next_allowed = next_eligible_publication(state, now, interval_minutes)
+    return next_allowed is None or now >= next_allowed
 
 
 def publication_allowed(now: datetime) -> bool:
@@ -1200,8 +1225,9 @@ def run() -> None:
         verify_telegram_bot(token, channel)
 
     now_local_date = now.astimezone(TZ).date()
-    daily_limit = max(1, int(os.getenv("DAILY_LIMIT", "40")))
-    per_run_limit = max(1, int(os.getenv("PER_RUN_LIMIT", "1")))
+    # Never exceed 10 news posts in a Belgrade-local calendar day.
+    daily_limit = min(10, max(1, int(os.getenv("DAILY_LIMIT", "10"))))
+    per_run_limit = 1
     posted_today = sum(
         1 for p in state["posted"]
         if datetime.fromtimestamp(float(p["ts"]), TZ).date() == now_local_date
@@ -1209,6 +1235,15 @@ def run() -> None:
     remaining = min(per_run_limit, daily_limit - posted_today)
     if remaining <= 0:
         LOG.info("Дневной лимит %s достигнут", daily_limit)
+        return
+    # Frequent RSS checks do not mean frequent channel posts:
+    # wait at least 90 minutes after the LAST successfully recorded post.
+    if not interval_allows_publication(state, now):
+        due = next_eligible_publication(state, now)
+        LOG.info(
+            "Интервал 90 минут ещё не прошёл. Следующий возможный пост: %s по Белграду",
+            due.astimezone(TZ).strftime("%Y-%m-%d %H:%M") if due else "сейчас",
+        )
         return
 
     all_articles = fetch_news()
