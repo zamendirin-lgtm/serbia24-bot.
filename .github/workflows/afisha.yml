@@ -4,6 +4,9 @@ on:
   schedule:
     - cron: '17 7,11,15,19 * * *' # 08/12/16/20 winter Belgrade; 09/13/17/21 summer
   workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/afisha.yml' # credentials and deployment smoke when adapter changes
 
 permissions:
   contents: write
@@ -28,20 +31,26 @@ jobs:
       - name: Check Telegram destination
         id: dest
         env:
-          AFISHA_BOT_TOKEN: ${{ secrets.AFISHA_BOT_TOKEN }}
-          AFISHA_CHAT_ID: ${{ vars.AFISHA_CHAT_ID }}
+          AFISHA_BOT_TOKEN: ${{ secrets.AFISHA_BOT_TOKEN || secrets.PROPERTY_BOT_TOKEN }}
+          AFISHA_CHAT_ID: ${{ vars.AFISHA_CHAT_ID || vars.PROPERTY_CHAT_ID }}
         run: |
           if [ -n "$AFISHA_BOT_TOKEN" ] && [ -n "$AFISHA_CHAT_ID" ]; then
             echo 'ready=true' >> "$GITHUB_OUTPUT"
           else
             echo 'ready=false' >> "$GITHUB_OUTPUT"
-            echo '::notice::Afisha is not connected yet. Add AFISHA_BOT_TOKEN secret and AFISHA_CHAT_ID variable.'
+            echo '::notice::Afisha destination missing. Reusing PROPERTY_BOT_TOKEN / PROPERTY_CHAT_ID is supported. To finish, add AFISHA_CHAT_ID (or PROPERTY_CHAT_ID) as an Actions variable.'
           fi
+      - name: Verify existing Telegram bot and Afisha channel (no posting)
+        if: steps.dest.outputs.ready == 'true'
+        env:
+          AFISHA_BOT_TOKEN: ${{ secrets.AFISHA_BOT_TOKEN || secrets.PROPERTY_BOT_TOKEN }}
+          AFISHA_CHAT_ID: ${{ vars.AFISHA_CHAT_ID || vars.PROPERTY_CHAT_ID }}
+        run: python scripts/check_afisha_telegram.py
       - name: Discover and publish selected events
         if: steps.dest.outputs.ready == 'true'
         env:
-          AFISHA_BOT_TOKEN: ${{ secrets.AFISHA_BOT_TOKEN }}
-          AFISHA_CHAT_ID: ${{ vars.AFISHA_CHAT_ID }}
+          AFISHA_BOT_TOKEN: ${{ secrets.AFISHA_BOT_TOKEN || secrets.PROPERTY_BOT_TOKEN }}
+          AFISHA_CHAT_ID: ${{ vars.AFISHA_CHAT_ID || vars.PROPERTY_CHAT_ID }}
           AFISHA_ENABLE_TONS: '1'
         run: python afisha_bot.py
       - name: Safely persist Afisha history
