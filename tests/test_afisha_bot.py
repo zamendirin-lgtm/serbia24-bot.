@@ -74,9 +74,20 @@ class AfishaTests(unittest.TestCase):
         self.assertIn("<b>Цена:</b> не указана", card)
         self.assertIn("14.11.2026–15.11.2026", card)
         self.assertIn("Нови-Сад", card)
+        self.assertIn("<b>Город:</b> Нови-Сад", card)
+        self.assertIn("<b>Место проведения:</b> Novosadski sajam", card)
+        self.assertNotIn("Нови-Сад · ", card)
         self.assertIn("Подробности и билеты", card)
         self.assertNotIn("ℹ️ Время и цену проверьте", card)
         self.assertNotIn("Бесплатно", card)
+
+    def test_fabrika_venue_has_verified_address(self):
+        e = parse_jsonld_events(PAGE, URL)[0]
+        from dataclasses import replace
+        e = replace(e, venue="SKCNS Fabrika")
+        card = format_event(e, "Фестиваль", "На сцене выступят музыкальные коллективы.")
+        self.assertIn("Место проведения:</b> SKCNS Fabrika", card)
+        self.assertIn("Bulevar despota Stefana 5", card)
 
     def test_dedupe_by_event_date(self):
         events = parse_jsonld_events(PAGE, URL)

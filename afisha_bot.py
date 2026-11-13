@@ -403,7 +403,12 @@ def format_event(event: Event, title_ru: str = "", description_ru: str = "") -> 
         when = event.start.strftime("%d.%m.%Y")
         if event.start.hour or event.start.minute:
             when += event.start.strftime(" в %H:%M")
-    venue = " · " + html.escape(event.venue) if event.venue else ""
+    venue = ""
+    if event.venue:
+        location_name = event.venue.strip()
+        venue = "\n🏛 <b>Место проведения:</b> " + html.escape(location_name)
+        if "skcns" in location_name.casefold() and "fabrika" in location_name.casefold():
+            venue += "\n🗺 <b>Адрес:</b> Bulevar despota Stefana 5"
     link = html.escape(event.url, quote=True)
     return (
         f"🎭 <b>{title}</b>\n\n"
