@@ -353,6 +353,27 @@ def publish_video(hit):
         Path(path).unlink(missing_ok=True)
 
 
+def telegram_group_candidates():
+    """Expose group chat IDs only; never expose messages or user identities."""
+    try:
+        events = telegram_send("getUpdates", data={"limit": 100, "timeout": 0})
+    except (RuntimeError, requests.RequestException):
+        print("GROUP_DISCOVERY: unavailable; send /start in the Telegram group")
+        return
+    found = {}
+    for event in events:
+        for event_name in ("message", "my_chat_member", "chat_member", "channel_post"):
+            obj = event.get(event_name, {})
+            chat = obj.get("chat", {}) if isinstance(obj, dict) else {}
+            if chat.get("type") in ("group", "supergroup"):
+                found[chat.get("id")] = chat.get("title", "")[:80]
+    if found:
+        for group_id, title in found.items():
+            print("GROUP_CANDIDATE:", group_id, "title:", title)
+    else:
+        print("GROUP_DISCOVERY: no group events visible; send /start@DinoDvij_bot in the group")
+
+
 def verify_config():
     """Diagnostics: report only booleans and harmless Telegram metadata."""
     print("SECRET_PRESENT DINO_BOT_TOKEN:", bool(BOT_TOKEN))
@@ -366,6 +387,10 @@ def verify_config():
         chat = telegram_send("getChat", data={"chat_id": CHAT_ID})
         print("CONFIG_CHECK: OK; bot_username:", me.get("username", "unknown"))
         print("CHAT_CHECK: OK; type:", chat.get("type", "unknown"))
+        if chat.get("type") not in ("group", "supergroup"):
+            print("CHAT_CHECK: INVALID TARGET — expected group or supergroup")
+            telegram_group_candidates()
+            return
         try:
             member = telegram_send("getChatMember", data={
                 "chat_id": CHAT_ID, "user_id": me["id"]
@@ -406,6 +431,15 @@ def main():
         if not CHAT_ID:
             missing.append("DINO_CHAT_ID")
         print("Missing GitHub Secrets (names only):", ", ".join(missing))
+        return
+    # Never deliver group content to a personal DM or channel by mistake.
+    try:
+        target = telegram_send("getChat", data={"chat_id": CHAT_ID})
+        if target.get("type") not in ("group", "supergroup"):
+            print("POST_BLOCKED: DINO_CHAT_ID does not identify a Telegram group")
+            return
+    except (RuntimeError, requests.RequestException) as exc:
+        print("POST_BLOCKED: cannot verify Telegram destination:", type(exc).__name__)
         return
     # Video every seventh post, but only when a fresh licensed clip is available.
     if PIXABAY_KEY and count % 7 == 6:
