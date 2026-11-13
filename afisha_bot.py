@@ -31,6 +31,7 @@ SOURCE = BASE + "/en/kalendar-dogadjaja/kategorija/calendar-of-events/list/"
 UA = "Serbia24Afisha/1.0 (+https://github.com/zamendirin-lgtm/serbia24-bot.)"
 MAX_LINKS = 32
 MAX_POSTS = 1  # only one good event per run
+PRICE_UNKNOWN = "не указана"
 MAX_DAILY_POSTS = 3
 SELECTION_POOL = 5
 MIN_INTEREST_SCORE = 52
@@ -62,7 +63,7 @@ class Event:
     end: datetime | None = None
     description: str = ""
     category: str = ""
-    price: str = "Стоимость уточняется"
+    price: str = PRICE_UNKNOWN
     image: str = ""
     image_permission: bool = False
 
@@ -151,7 +152,7 @@ def event_price(item: dict, body: str) -> str:
         number = match.group(1).strip()
         units = "дин." if match.group(2).lower() not in ("€", "eur") else "€"
         return f"{number} {units} (по данным источника)"
-    return "Стоимость уточняется"
+    return PRICE_UNKNOWN
 
 
 def visible_event_dates(soup: BeautifulSoup) -> tuple[date | None, date | None]:
@@ -356,7 +357,7 @@ def load_curated_events(now: datetime) -> list[Event]:
                 start=start, end=end,
                 description=clean(row.get("description", ""), 430),
                 category=clean(row.get("category", ""), 50),
-                price=clean(row.get("price", ""), 75) or "Стоимость уточняется",
+                price=(lambda p: PRICE_UNKNOWN if p.casefold() in ("", "стоимость уточняется", "цена не указана", "не указана") else p)(clean(row.get("price", ""), 75)),
                 image=str(row.get("image", "")),
                 image_permission=row.get("image_permission") is True,
             )
@@ -404,7 +405,7 @@ def format_event(event: Event, title_ru: str = "", description_ru: str = "") -> 
         f"🎭 <b>{title}</b>\n\n"
         f"📅 <b>Дата:</b> {when}\n"
         f"📍 <b>Город:</b> {html.escape(event.city)}{venue}\n"
-        f"🎟 <b>Стоимость:</b> {html.escape(event.price)}\n\n"
+        f"🎟 <b>Цена:</b> {html.escape(event.price)}\n\n"
         f"📝 {description[:500]}\n\n"
         f'🔗 <a href="{link}">Подробности и билеты — первоисточник</a>\n'
         f"ℹ️ Время и цену проверьте перед посещением."
@@ -464,8 +465,6 @@ def interest_score(event: Event, now: datetime) -> int:
         score += 12
     else:
         score -= 4
-    if event.price != "Стоимость уточняется":
-        score += 8
     topic = event_topic(event)
     score += {
         "family": 14, "festival": 15, "concert": 14,
