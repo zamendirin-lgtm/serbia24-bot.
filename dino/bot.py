@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+import html
 import io
 import json
 import os
@@ -241,7 +242,11 @@ def telegram_send(method, **kwargs):
 
 def publish_news(item, state, now):
     title = item["title"]
-    caption = "🦖 " + title + "\n\n" + random.choice(QUESTIONS)
+    # The unobtrusive dot is an ordinary clickable article link.
+    # For content requiring explicit author attribution, show that instead.
+    source = item.get("url", "")
+    source_dot = ('\n\n<a href="' + html.escape(source, quote=True) + '">·</a>') if source.startswith(("https://", "http://")) else ""
+    caption = "🦖 " + html.escape(title) + "\n\n" + html.escape(random.choice(QUESTIONS)) + source_dot
     media = choose_media(state, "photo", now)
     path = poster(title, media.get("webformatURL") if media else None)
     try:
@@ -249,7 +254,7 @@ def publish_news(item, state, now):
             print("PREVIEW NEWS:", caption)
         else:
             with open(path, "rb") as f:
-                telegram_send("sendPhoto", data={"chat_id": CHAT_ID, "caption": caption[:1000]},
+                telegram_send("sendPhoto", data={"chat_id": CHAT_ID, "caption": caption[:1000], "parse_mode": "HTML"},
                               files={"photo": ("news.jpg", f, "image/jpeg")})
             if media:
                 state.setdefault("used_media", []).append(str(media["id"]))
