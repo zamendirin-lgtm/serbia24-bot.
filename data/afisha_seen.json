@@ -43,5 +43,12 @@
     "published_at": "2026-11-13T13:00:45.339230+01:00",
     "topic": "festival",
     "ai_editor": "groq"
+  },
+  "ff69080e364b4f3393bed70867c16ad4be6f9e146a8f1cad1c7fbc4597e58d96": {
+    "url": "https://www.runbgd.com/whats-on/tribute-maraton-serbia-2026-11-14",
+    "event_start": "2026-11-14T00:00:00+01:00",
+    "published_at": "2026-11-13T15:57:00.574146+01:00",
+    "topic": "other",
+    "ai_editor": "groq"
   }
 }
