@@ -679,10 +679,12 @@ def main() -> int:
         print(f"Daily Afisha cap reached: {daily_count}/{MAX_DAILY_POSTS}.")
         return 0
     from belgrade_events import collect_belgrade_events
+    from subotica_events import collect_subotica_events
     events = (
         load_curated_events(now)
         + collect_official_events(session, now)
         + collect_belgrade_events(session, now)
+        + collect_subotica_events(session, now)
     )
     shortlisted = select(events, seen, now)
     print(f"Event candidates: {len(events)}, ranked shortlist: {len(shortlisted)}, "
