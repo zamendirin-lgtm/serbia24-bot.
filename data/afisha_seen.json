@@ -20,5 +20,14 @@
     "published_at": "2026-11-13T08:39:27.967122+01:00",
     "topic": "other",
     "ai_editor": "groq"
+  },
+  "9bd994c3f6cd55e11814f308e40c7c41e5184c20892de02f3d7b147d22afedbd": {
+    "url": "https://msub.org.rs/exhibition/prekretnice-ka-modernosti-umetnost-drustva-1900-1945/",
+    "published_at": "2026-11-13T11:05:57.831027+01:00",
+    "event_start": "2026-11-13T11:05:57.831027+01:00",
+    "topic": "exhibition",
+    "corrected_test": true,
+    "message_id": 14,
+    "replaces": "https://www.runbgd.com/whats-on/prekretnice-ka-modernosti"
   }
 }
