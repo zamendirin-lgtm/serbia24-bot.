@@ -14,6 +14,10 @@ on:
         description: 'Preview candidates; send nothing to Telegram'
         type: boolean
         default: true
+      publish_now:
+        description: 'Publish the verified Mars article immediately (even at night)'
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -29,8 +33,8 @@ jobs:
     env:
       REALITY_BOT_TOKEN: ${{ secrets.REALITY_BOT_TOKEN }}
       REALITY_CHAT_ID: '@priroda_realnosti'
-      REALITY_DRY_RUN: ${{ github.event_name == 'push' && github.event.head_commit.message != 'start(reality): verify and enable live bot' && github.event.head_commit.message != 'publish-now(reality): curated Mars discovery' && 'true' || (github.event_name == 'workflow_dispatch' && inputs.dry_run || 'false') }}
-      REALITY_PUBLISH_NOW: ${{ github.event_name == 'push' && github.event.head_commit.message == 'publish-now(reality): curated Mars discovery' && 'true' || 'false' }}
+      REALITY_DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.publish_now && 'false' || github.event_name == 'push' && github.event.head_commit.message != 'start(reality): verify and enable live bot' && github.event.head_commit.message != 'publish-now(reality): curated Mars discovery' && 'true' || github.event_name == 'workflow_dispatch' && inputs.dry_run && 'true' || 'false' }}
+      REALITY_PUBLISH_NOW: ${{ (github.event_name == 'push' && github.event.head_commit.message == 'publish-now(reality): curated Mars discovery' || github.event_name == 'workflow_dispatch' && inputs.publish_now) && 'true' || 'false' }}
     steps:
       - name: Check credentials and test mode
         id: ready
