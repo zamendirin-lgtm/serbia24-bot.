@@ -19,9 +19,9 @@ class MuseumRepostTests(unittest.TestCase):
         self.assertEqual(len(REPOST_KEY), 64)
 
     def test_photo_magic_bytes_required(self):
-        self.assertTrue(check_photo(b"\\xff\\xd8\\xff" + b"a" * 12000))
+        self.assertTrue(check_photo(b"\xff\xd8\xff" + b"a" * 12000))
         self.assertFalse(check_photo(b"<html>" + b"a" * 12000))
-        self.assertFalse(check_photo(b"\\xff\\xd8\\xfftiny"))
+        self.assertFalse(check_photo(b"\xff\xd8\xfftiny"))
 
 
 if __name__ == "__main__":
