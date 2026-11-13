@@ -22,7 +22,7 @@ from PIL import Image, ImageDraw, ImageFont
 
 ROOT = Path(__file__).resolve().parent
 STATE = ROOT / "state.json"
-TZ = ZoneInfo(os.getenv("DINO_TIMEZONE", "Europe/Moscow"))
+TZ = ZoneInfo(os.getenv("DINO_TIMEZONE", "Europe/Belgrade"))
 MAX_POSTS = max(1, min(50, int(os.getenv("DINO_MAX_DAILY", "50"))))
 BOT_TOKEN = os.getenv("DINO_BOT_TOKEN", "")
 CHAT_ID = os.getenv("DINO_CHAT_ID", "")
@@ -355,7 +355,7 @@ def publish_video(hit):
 
 def main():
     now = datetime.now(TZ)
-    if not 8 <= now.hour < 23:
+    if not 8 <= now.hour < 24:
         print("Quiet hours in", TZ, now.isoformat())
         return
     state = load_state()
