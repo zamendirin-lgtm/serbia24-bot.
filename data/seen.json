@@ -33,7 +33,8 @@
     "4967920c6297b35c3035a956": 1794508586.022071,
     "b75a7575382702c4d4ae2d86": 1794512117.194673,
     "06e0224b26d4080c61fed271": 1794556275.799295,
-    "b8d9f648604fdf2fe433b733": 1794562303.8545
+    "b8d9f648604fdf2fe433b733": 1794562303.8545,
+    "df7406229f6ad5fe62c56a1a": 1794569413.144807
   },
   "photos": {
     "50f559ee5d138a92c244ad4c": 1794474084.088928,
@@ -282,6 +283,12 @@
       "ts": 1794562303.8545,
       "title_norm": "jovanovic za probijanje rokova infrastrukturnih radova u beogradu odgovorna gradska uprava i njen prvi covek",
       "summary_norm": "centar za lokalnu samoupravu cls upozorio je da brojni infrastrukturni projekti u beogradu znacajno kasne i da su rokovi za njihov zavrsetak probije",
+      "source": "N1"
+    },
+    {
+      "ts": 1794569413.144807,
+      "title_norm": "vlada produzila privremeno smanjenje akciza na derivate nafte do 22 novembra",
+      "summary_norm": "vlada srbije u tehnickom mandatu danas ce na sednici u 15 casova odlucivati o produzenju privremenog smanjenja akciza na derivate nafte od 25 odsto r",
       "source": "N1"
     }
   ]
