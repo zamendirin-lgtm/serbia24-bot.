@@ -36,5 +36,12 @@
     "published_at": "2026-11-13T11:06:20.347971+01:00",
     "topic": "concert",
     "ai_editor": "groq"
+  },
+  "f365b8e457d5e240a835ac28fa3dcd6f3ee6af0e14eba7edea08791acb9d65be": {
+    "url": "https://visitsubotica.rs/events/xvi-festival-mlade-rakije",
+    "event_start": "2026-11-14T10:00:00+01:00",
+    "published_at": "2026-11-13T13:00:45.339230+01:00",
+    "topic": "festival",
+    "ai_editor": "groq"
   }
 }
