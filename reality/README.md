@@ -3,7 +3,7 @@
 Канал: https://t.me/priroda_realnosti
 Бот: https://t.me/priroda_realnosti_bot
 
-Не зависит от \`news.yml\`, \`dino.yml\` и других рабочих процессов.
+Не зависит от `news.yml`, `dino.yml` и других рабочих процессов.
 
 ## Публикации
 
@@ -23,8 +23,8 @@
 
 1. Добавьте @priroda_realnosti_bot администратором канала @priroda_realnosti с разрешением **Публикация сообщений**.
 2. Откройте Settings → Secrets and variables → Actions в репозитории zamendirin-lgtm/serbia24-bot.
-3. New repository secret: Name \`REALITY_BOT_TOKEN\`, Secret — новый токен BotFather.
-4. Actions → Reality — science, mysteries and NASA media → Run workflow. \`dry_run=true\` — тест без публикации, \`dry_run=false\` — реальный запуск.
+3. New repository secret: Name `REALITY_BOT_TOKEN`, Secret — новый токен BotFather.
+4. Actions → Reality — science, mysteries and NASA media → Run workflow. `dry_run=true` — тест без публикации, `dry_run=false` — реальный запуск.
 5. При ошибке сохранения истории: Settings → Actions → General → Workflow permissions → Read and write permissions.
 
 GitHub scheduled jobs may run late or be skipped during service congestion. Only one successful message is sent per run.
