@@ -28,11 +28,12 @@ jobs:
         run: python -m pip install -r requirements.txt
       - name: Run Afisha tests
         run: python -m unittest discover -s tests -p 'test_afisha_bot.py' -v
+      # Verified Telegram @Serbia24Afisha with the existing bot; reuse it as safe default.
       - name: Check Telegram destination
         id: dest
         env:
           AFISHA_BOT_TOKEN: ${{ secrets.AFISHA_BOT_TOKEN || secrets.PROPERTY_BOT_TOKEN }}
-          AFISHA_CHAT_ID: ${{ vars.AFISHA_CHAT_ID || secrets.AFISHA_CHAT_ID || vars.PROPERTY_CHAT_ID || secrets.PROPERTY_CHAT_ID }}
+          AFISHA_CHAT_ID: ${{ vars.AFISHA_CHAT_ID || secrets.AFISHA_CHAT_ID || vars.PROPERTY_CHAT_ID || secrets.PROPERTY_CHAT_ID || '@Serbia24Afisha' }}
         run: |
           if [ -n "$AFISHA_BOT_TOKEN" ] && [ -n "$AFISHA_CHAT_ID" ]; then
             echo 'ready=true' >> "$GITHUB_OUTPUT"
@@ -50,13 +51,13 @@ jobs:
         if: steps.dest.outputs.ready == 'true'
         env:
           AFISHA_BOT_TOKEN: ${{ secrets.AFISHA_BOT_TOKEN || secrets.PROPERTY_BOT_TOKEN }}
-          AFISHA_CHAT_ID: ${{ vars.AFISHA_CHAT_ID || secrets.AFISHA_CHAT_ID || vars.PROPERTY_CHAT_ID || secrets.PROPERTY_CHAT_ID }}
+          AFISHA_CHAT_ID: ${{ vars.AFISHA_CHAT_ID || secrets.AFISHA_CHAT_ID || vars.PROPERTY_CHAT_ID || secrets.PROPERTY_CHAT_ID || '@Serbia24Afisha' }}
         run: python scripts/check_afisha_telegram.py
       - name: Discover and publish selected events
         if: steps.dest.outputs.ready == 'true' && github.event_name != 'push'
         env:
           AFISHA_BOT_TOKEN: ${{ secrets.AFISHA_BOT_TOKEN || secrets.PROPERTY_BOT_TOKEN }}
-          AFISHA_CHAT_ID: ${{ vars.AFISHA_CHAT_ID || secrets.AFISHA_CHAT_ID || vars.PROPERTY_CHAT_ID || secrets.PROPERTY_CHAT_ID }}
+          AFISHA_CHAT_ID: ${{ vars.AFISHA_CHAT_ID || secrets.AFISHA_CHAT_ID || vars.PROPERTY_CHAT_ID || secrets.PROPERTY_CHAT_ID || '@Serbia24Afisha' }}
           AFISHA_ENABLE_TONS: '1'
         run: python afisha_bot.py
       - name: Safely persist Afisha history
