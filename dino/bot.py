@@ -372,7 +372,12 @@ def main():
         print("Daily limit reached", count)
         return
     if not DRY_RUN and (not BOT_TOKEN or not CHAT_ID):
-        print("Not configured: DINO_BOT_TOKEN/DINO_CHAT_ID; no publishing.")
+        missing = []
+        if not BOT_TOKEN:
+            missing.append("DINO_BOT_TOKEN")
+        if not CHAT_ID:
+            missing.append("DINO_CHAT_ID")
+        print("Missing GitHub Secrets (names only):", ", ".join(missing))
         return
     # Video every seventh post, but only when a fresh licensed clip is available.
     if PIXABAY_KEY and count % 7 == 6:
