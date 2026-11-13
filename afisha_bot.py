@@ -154,8 +154,44 @@ def event_price(item: dict, body: str) -> str:
     return "Стоимость уточняется"
 
 
+def visible_event_dates(soup: BeautifulSoup) -> tuple[date | None, date | None]:
+    """Prefer visitor-facing ISO dates near Start/End labels if JSON-LD differs."""
+    content = soup.select_one(".tribe-events-single") or soup
+    displayed = content.get_text(" ", strip=True)
+
+    def dated_label(label: str) -> date | None:
+        pattern = (
+            r"\b" + label +
+            r"\s*:\s*(?:(?!\b(?:Start|End|Početak|Kraj)\s*:).){0,110}?"
+            r"\b(20\d\d-\d\d-\d\d)\b"
+        )
+        found = re.search(pattern, displayed, re.IGNORECASE)
+        if found:
+            try:
+                return date.fromisoformat(found.group(1))
+            except ValueError:
+                return None
+        return None
+
+    start = dated_label("(?:Start|Početak)")
+    end = dated_label("(?:End|Kraj)")
+    if start is None:
+        for node in content.select(".tribe-events-start-date, time[datetime]"):
+            raw = node.get("datetime") or node.get("title") or ""
+            m = re.search(r"\b(20\d\d-\d\d-\d\d)\b", str(raw))
+            if m:
+                try:
+                    start = date.fromisoformat(m.group(1))
+                    break
+                except ValueError:
+                    pass
+    return start, end
+
+
 def parse_jsonld_events(markup: str, url: str, city_fallback: str = "Нови-Сад") -> list[Event]:
     soup = BeautifulSoup(markup, "html.parser")
+    page_start, page_end = visible_event_dates(soup)
+    displayed_text = soup.get_text(" ", strip=True)
     collected: list[Event] = []
     for script in soup.select('script[type="application/ld+json"]'):
         try:
@@ -189,6 +225,12 @@ def parse_jsonld_events(markup: str, url: str, city_fallback: str = "Нови-С
             if not source:
                 continue
             end = parse_date(item.get("endDate"))
+            if page_start and page_start != start.date():
+                print("Afisha visitor-facing start date overrides conflicting JSON-LD date.")
+                start = datetime.combine(page_start, datetime.min.time(), tzinfo=TZ)
+            if page_end and (end is None or page_end != end.date()):
+                print("Afisha visitor-facing end date overrides conflicting JSON-LD date.")
+                end = datetime.combine(page_end, datetime.max.time().replace(microsecond=0), tzinfo=TZ)
             summary = clean(item.get("description", ""), 450)
             image = item.get("image") or ""
             if isinstance(image, list):
@@ -199,7 +241,7 @@ def parse_jsonld_events(markup: str, url: str, city_fallback: str = "Нови-С
                 url=source, title=title, city=city, venue=venue, start=start,
                 end=end, description=summary,
                 category=clean(item.get("eventAttendanceMode", ""), 35),
-                price=event_price(item, summary),
+                price=event_price(item, displayed_text),
                 image=image if isinstance(image, str) and image.startswith("https://") else "",
             ))
     return collected
