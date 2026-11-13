@@ -1,4 +1,4 @@
-"""Offline QA for 2–3 good Afisha posts/day and mandatory AI editing."""
+"""Offline QA for up to five good Afisha posts/day and mandatory AI editing."""
 import os
 import unittest
 from datetime import datetime, timedelta
@@ -38,16 +38,16 @@ class AfishaDailyQualityTests(unittest.TestCase):
         self.assertEqual(select([weak, strong], {}, NOW), [strong])
         self.assertEqual(event_topic(strong), "concert")
 
-    def test_maximum_three_per_local_day(self):
+    def test_maximum_five_per_local_day(self):
         new = event()
         seen = {
             f"p{i}": {
                 "published_at": NOW.replace(hour=8 + i).isoformat(),
                 "topic": "concert",
-            } for i in range(3)
+            } for i in range(5)
         }
-        self.assertEqual(MAX_DAILY_POSTS, 3)
-        self.assertEqual(len(posted_today(seen, NOW)), 3)
+        self.assertEqual(MAX_DAILY_POSTS, 5)
+        self.assertEqual(len(posted_today(seen, NOW)), 5)
         self.assertEqual(select([new], seen, NOW), [])
         # The previous calendar day must not block a new day.
         for item in seen.values():
@@ -59,6 +59,15 @@ class AfishaDailyQualityTests(unittest.TestCase):
         unknown = event(price="не указана", url_id=32)
         self.assertEqual(interest_score(known, NOW), interest_score(unknown, NOW))
         self.assertIn(unknown, select([unknown], {}, NOW))
+
+    def test_belgrade_and_novi_sad_have_priority_not_exclusivity(self):
+        from dataclasses import replace
+        base = event(url_id=50)
+        belgrade = replace(base, url="https://example.com/bg", city="Белград")
+        subotica = replace(base, url="https://example.com/subotica", city="Суботица")
+        self.assertGreater(interest_score(belgrade, NOW), interest_score(subotica, NOW))
+        # Even the remote city may be published if it's interesting enough.
+        self.assertEqual(select([subotica], {}, NOW), [subotica])
 
     def test_selection_is_ranked_not_earliest_first(self):
         weak = event("Exhibition", "An exhibition with art.", price="не указана",
@@ -104,7 +113,7 @@ class AfishaDailyQualityTests(unittest.TestCase):
             with patch("afisha_bot.datetime") as dt:
                 dt.now.return_value = NOW
                 with patch("afisha_bot.load_seen", return_value={}):
-                    with patch("afisha_bot.posted_today", return_value=[{}, {}, {}]):
+                    with patch("afisha_bot.posted_today", return_value=[{}, {}, {}, {}, {}]):
                         with patch("afisha_bot.collect_official_events") as get_events:
                             self.assertEqual(afisha_bot.main(), 0)
                             get_events.assert_not_called()
