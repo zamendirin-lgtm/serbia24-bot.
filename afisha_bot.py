@@ -520,6 +520,19 @@ def posted_today(seen: dict, now: datetime) -> list[dict]:
     return result
 
 
+def post_spacing_ok(seen: dict, now: datetime, minutes: int = 90) -> bool:
+    """Protect channel from near-simultaneous main and backup scheduled runs."""
+    for row in seen.values():
+        if not isinstance(row, dict) or row.get("corrected_test") is True:
+            continue
+        stamp = parse_date(row.get("published_at"))
+        if stamp:
+            diff = now - stamp.astimezone(TZ)
+            if timedelta(0) <= diff < timedelta(minutes=minutes):
+                return False
+    return True
+
+
 def interest_score(event: Event, now: datetime) -> int:
     """Conservative editorial sorting before AI checks quality and writes copy."""
     # A complete event page scores better than a vague one-line promotion.
@@ -697,6 +710,9 @@ def main() -> int:
     daily_count = len(posted_today(seen, now))
     if daily_count >= MAX_DAILY_POSTS:
         print(f"Daily Afisha cap reached: {daily_count}/{MAX_DAILY_POSTS}.")
+        return 0
+    if not post_spacing_ok(seen, now):
+        print("Afisha last post was less than 90 minutes ago; skipping this check.")
         return 0
     from belgrade_events import collect_belgrade_events
     from subotica_events import collect_subotica_events
