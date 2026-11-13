@@ -29,7 +29,7 @@ CHAT_ID = os.getenv("DINO_CHAT_ID", "")
 PIXABAY_KEY = os.getenv("PIXABAY_API_KEY", "")
 DRY_RUN = os.getenv("DINO_DRY_RUN", "0").lower() in ("1", "true", "yes")
 HTTP = requests.Session()
-HTTP.headers.update({"User-Agent": "DinoDvijNewsBot/1.0 (contact: channel administrator)"})
+HTTP.headers.update({"User-Agent": "DinoDvijNewsBot/1.0 (https://t.me/AVQ_GO)"})
 SEARCHES = [
     ("ru", "терианы OR террианы when:7d"),
     ("ru", "диносьюты OR диносюты OR динсьюты when:7d"),
@@ -131,9 +131,46 @@ def discover_news(state, now):
     return sorted(found, key=lambda e: not bool(re.search(r"[А-Яа-яЁё]", e["title"])))
 
 
+def commons_results(state, now):
+    """Use only explicitly public-domain / CC0 photos from Wikimedia Commons."""
+    cache = state.setdefault("commons_cache", {})
+    if time.time() - cache.get("saved_at", 0) < 86400:
+        return cache.get("hits", [])
+    queries = ("dinosaur costume", "dinosaur suit", "animal costume")
+    query = queries[now.timetuple().tm_yday % len(queries)]
+    params = {
+        "action": "query", "generator": "search", "gsrsearch": query,
+        "gsrnamespace": "6", "gsrlimit": "20", "prop": "imageinfo",
+        "iiprop": "url|extmetadata", "iiurlwidth": "1080",
+        "format": "json",
+    }
+    hits = []
+    try:
+        resp = HTTP.get("https://commons.wikimedia.org/w/api.php",
+                        params=params, timeout=16)
+        resp.raise_for_status()
+        pages = resp.json().get("query", {}).get("pages", {})
+        for page in pages.values():
+            info = (page.get("imageinfo") or [{}])[0]
+            meta = info.get("extmetadata", {})
+            license_name = meta.get("LicenseShortName", {}).get("value", "")
+            if not ("CC0" in license_name or
+                    "Public domain" in license_name.lower().capitalize()):
+                continue
+            photo = info.get("thumburl") or info.get("url")
+            if not photo or not photo.lower().split("?")[0].endswith((".jpg", ".jpeg", ".png")):
+                continue
+            hits.append({"id": "commons-" + str(page.get("pageid")),
+                         "webformatURL": photo})
+        cache.update({"saved_at": time.time(), "hits": hits})
+    except (requests.RequestException, ValueError):
+        print("Commons photo source unavailable")
+    return hits
+
+
 def pixabay_results(state, kind, now):
     if not PIXABAY_KEY:
-        return []
+        return commons_results(state, now) if kind != "video" else []
     cache = state.setdefault("pixabay_cache", {})
     key = "videos" if kind == "video" else "photos"
     previous = cache.get(key, {})
