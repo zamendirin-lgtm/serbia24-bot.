@@ -31,7 +31,8 @@
     "507c89d91559f224fd09bd0d": 1794501924.745252,
     "5c5e40c49f744fe80f89da1f": 1794505165.927597,
     "4967920c6297b35c3035a956": 1794508586.022071,
-    "b75a7575382702c4d4ae2d86": 1794512117.194673
+    "b75a7575382702c4d4ae2d86": 1794512117.194673,
+    "06e0224b26d4080c61fed271": 1794556275.799295
   },
   "photos": {
     "50f559ee5d138a92c244ad4c": 1794474084.088928,
@@ -54,7 +55,8 @@
     "1e1fe1b1044d92e4077eaf9f": 1794501924.745252,
     "6158d3937bfc3f5404f16853": 1794505165.927597,
     "81a1596fc9f182c2a37d01ac": 1794508586.022071,
-    "0f54639847ec7803c7c88cf3": 1794512117.194673
+    "0f54639847ec7803c7c88cf3": 1794512117.194673,
+    "f6ccc7a6962382b4203a910a": 1794556275.799295
   },
   "phashes": {
     "2ceefee6566d6666": 1794474084.088928,
@@ -77,7 +79,8 @@
     "9b9bcd2d393b3313": 1794501924.745252,
     "07190c581014343e": 1794505165.927597,
     "1810144c0d119898": 1794508586.022071,
-    "75cd4d3a33f3c7e7": 1794512117.194673
+    "75cd4d3a33f3c7e7": 1794512117.194673,
+    "c68cce795b1c1736": 1794556275.799295
   },
   "posted": [
     {
@@ -267,6 +270,12 @@
       "title_norm": "batut u srbiji 660 000 odraslih ima dijabetes trecina ne zna da ga ima",
       "summary_norm": "u srbiji 440 000 odraslih osoba ima dijagnostikovan dijabetes i nalazi se u sistemu zdravstvene zastite a njih 220 000 nema postavljenu dijagnozu dijabetesa i ne zna za svoju bolest objavljeno je danas",
       "source": "Danas"
+    },
+    {
+      "ts": 1794556275.799295,
+      "title_norm": "novi pazar je najmladji grad u srbiji ali mladi odlaze shta bi moglo da ikh zadrzhi",
+      "summary_norm": "prema podatsima krovne organizatsije mladikh srbije gotovo polovina mladikh u zemlji razmishlja o odlasku u potrazi za poslom u strutsi i boljim zhivotnim standardom sa prosechnom staroshtshu stanovnika od 36 godina novi pazar je najmladji grad u srbiji ali zvanichna statistika i u tom gradu belezhi odliv stanovnishtva",
+      "source": "RTS"
     }
   ]
 }
