@@ -74,7 +74,8 @@ class AfishaTests(unittest.TestCase):
         self.assertIn("<b>Цена:</b> не указана", card)
         self.assertIn("14.11.2026–15.11.2026", card)
         self.assertIn("Нови-Сад", card)
-        self.assertIn("первоисточник", card)
+        self.assertIn("Подробности и билеты", card)
+        self.assertNotIn("ℹ️ Время и цену проверьте", card)
         self.assertNotIn("Бесплатно", card)
 
     def test_dedupe_by_event_date(self):
@@ -86,15 +87,39 @@ class AfishaTests(unittest.TestCase):
         self.assertFalse(safe_source_url("https://evil.test/event"))
         self.assertFalse(safe_source_url("http://novisad.travel/event"))
 
-    def test_telegram_uses_link_preview(self):
+    def test_telegram_never_generates_source_preview(self):
         response = Mock(ok=True)
         response.json.return_value = {"ok": True}
         session = Mock()
         session.post.return_value = response
         self.assertTrue(publish(session, "private-test", "@afisha", "Sample", URL))
         payload = session.post.call_args.kwargs["json"]
-        self.assertEqual(payload["link_preview_options"]["url"], URL)
-        self.assertFalse(payload["link_preview_options"]["is_disabled"])
+        self.assertTrue(payload["link_preview_options"]["is_disabled"])
+        self.assertTrue(session.post.call_args.args[0].endswith("/sendMessage"))
+
+    def test_official_poster_uses_send_photo_and_russian_caption(self):
+        response = Mock(ok=True)
+        response.json.return_value = {"ok": True}
+        session = Mock()
+        session.post.return_value = response
+        poster = "https://novisad.travel/wp-content/uploads/2019/05/To-Be-Punk-festival-2026_1.jpeg"
+        self.assertTrue(publish(session, "private-test", "@afisha",
+                                "<b>Панк-фестиваль</b>", URL, poster))
+        payload = session.post.call_args.kwargs["json"]
+        self.assertTrue(session.post.call_args.args[0].endswith("/sendPhoto"))
+        self.assertEqual(payload["photo"], poster)
+        self.assertIn("Панк-фестиваль", payload["caption"])
+        self.assertNotIn("link_preview_options", payload)
+
+    def test_untrusted_poster_falls_back_to_no_preview_text(self):
+        response = Mock(ok=True)
+        response.json.return_value = {"ok": True}
+        session = Mock()
+        session.post.return_value = response
+        self.assertTrue(publish(session, "private-test", "@afisha", "Sample",
+                                URL, "https://example.com/poster.jpg"))
+        self.assertTrue(session.post.call_args.args[0].endswith("/sendMessage"))
+        self.assertTrue(session.post.call_args.kwargs["json"]["link_preview_options"]["is_disabled"])
 
 
 if __name__ == "__main__":
