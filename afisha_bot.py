@@ -67,6 +67,7 @@ class Event:
     price: str = PRICE_UNKNOWN
     image: str = ""
     image_permission: bool = False
+    ticket_url: str = ""
 
     @property
     def key(self) -> str:
@@ -83,6 +84,62 @@ def safe_source_url(value: str, allowed_hosts: tuple[str, ...] = ("novisad.trave
     if parsed.scheme != "https" or parsed.hostname not in allowed_hosts:
         return ""
     return urlunparse((parsed.scheme, parsed.netloc, parsed.path.rstrip("/") or "/", "", "", ""))
+
+
+def safe_ticket_url(url: str, source_url: str) -> str:
+    """Only a distinct HTTPS event checkout/booking page can be a ticket link."""
+    if not isinstance(url, str):
+        return ""
+    try:
+        parsed = urlparse(url)
+        origin = urlparse(source_url)
+    except ValueError:
+        return ""
+    if (
+        parsed.scheme != "https" or not parsed.hostname
+        or parsed.username or parsed.password
+        or parsed.hostname in ("localhost", "127.0.0.1")
+    ):
+        return ""
+    normalized = urlunparse((parsed.scheme, parsed.netloc, parsed.path or "/", "", parsed.query, ""))
+    src_normalized = urlunparse((origin.scheme, origin.netloc, origin.path or "/", "", origin.query, ""))
+    if normalized.rstrip("/") == src_normalized.rstrip("/"):
+        return ""
+    # Links to a seller's landing page are not event-specific booking pages.
+    if parsed.path in ("", "/") and not parsed.query:
+        return ""
+    return normalized
+
+
+def find_ticket_link(soup: BeautifulSoup, structured: dict, source_url: str) -> str:
+    """Use explicitly labeled real purchase/registration links, never generic details.
+
+    A generic "Tickets" label on the source page without a distinct URL does
+    not authorize a second link.
+    """
+    area = soup.select_one(".tribe-events-single") or soup
+    ticket_labels = re.compile(
+        r"(?:\b(?:buy\s+tickets?|book\s+now|purchase\s+tickets?|tickets?|"
+        r"kupi(?:te)?\s+(?:kartu|karte|ulaznice)|kupovina\s+(?:karata|ulaznica)|"
+        r"rezervi(?:ši|site|s[iš]|sati)|ulaznice|karte)\b)",
+        re.IGNORECASE,
+    )
+    for a in area.select("a[href]"):
+        label = clean(a.get_text(" ", strip=True), 100)
+        if not ticket_labels.search(label):
+            continue
+        candidate = safe_ticket_url(urljoin(source_url, a.get("href", "")), source_url)
+        if candidate:
+            return candidate
+    offers = structured.get("offers") or []
+    if not isinstance(offers, list):
+        offers = [offers]
+    for offer in offers:
+        if isinstance(offer, dict) and isinstance(offer.get("url"), str):
+            candidate = safe_ticket_url(offer["url"], source_url)
+            if candidate:
+                return candidate
+    return ""
 
 
 def clean(value: str, limit: int = 420) -> str:
@@ -248,6 +305,7 @@ def parse_jsonld_events(markup: str, url: str, city_fallback: str = "Нови-С
                 category=clean(item.get("eventAttendanceMode", ""), 35),
                 price=event_price(item, displayed_text),
                 image=image if isinstance(image, str) and image.startswith("https://") else "",
+                ticket_url=find_ticket_link(soup, item, source),
             ))
     return collected
 
@@ -364,6 +422,7 @@ def load_curated_events(now: datetime) -> list[Event]:
                 price=(lambda p: PRICE_UNKNOWN if p.casefold() in ("", "стоимость уточняется", "цена не указана", "не указана") else p)(clean(row.get("price", ""), 75)),
                 image=str(row.get("image", "")),
                 image_permission=row.get("image_permission") is True,
+                ticket_url=safe_ticket_url(str(row.get("ticket_url", "")), url),
             )
         except (KeyError, TypeError, ValueError):
             continue
@@ -410,13 +469,18 @@ def format_event(event: Event, title_ru: str = "", description_ru: str = "") -> 
         if "skcns" in location_name.casefold() and "fabrika" in location_name.casefold():
             venue += "\n🗺 <b>Адрес:</b> Bulevar despota Stefana 5"
     link = html.escape(event.url, quote=True)
+    ticket = safe_ticket_url(event.ticket_url, event.url)
+    ticket_line = (
+        f'\n🎟 <a href="{html.escape(ticket, quote=True)}">Купить билеты</a>'
+        if ticket else ""
+    )
     return (
         f"🎭 <b>{title}</b>\n\n"
         f"📅 <b>Дата:</b> {when}\n"
         f"📍 <b>Город:</b> {html.escape(event.city)}{venue}\n"
         f"🎟 <b>Цена:</b> {html.escape(event.price)}\n\n"
         f"📝 {description[:500]}\n\n"
-        f'🔗 <a href="{link}">Подробности и билеты</a>'
+        f'🔗 <a href="{link}">Подробности</a>{ticket_line}'
     )
 
 
