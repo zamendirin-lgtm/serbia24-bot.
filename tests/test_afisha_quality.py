@@ -54,6 +54,14 @@ class AfishaDailyQualityTests(unittest.TestCase):
             item["published_at"] = (NOW - timedelta(days=1)).isoformat()
         self.assertEqual(select([new], seen, NOW), [new])
 
+    def test_corrected_post_is_not_counted_twice(self):
+        seen = {
+            "original": {"url": "https://example.com/event", "published_at": NOW.isoformat()},
+            "correction": {"url": "https://example.com/event", "published_at": NOW.isoformat(),
+                           "corrected_test": True}
+        }
+        self.assertEqual(len(posted_today(seen, NOW)), 1)
+
     def test_interest_does_not_depend_on_known_price(self):
         known = event(price="от 300 дин.", url_id=31)
         unknown = event(price="не указана", url_id=32)
