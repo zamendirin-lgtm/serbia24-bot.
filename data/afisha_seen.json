@@ -29,5 +29,12 @@
     "corrected_test": true,
     "message_id": 14,
     "replaces": "https://www.runbgd.com/whats-on/prekretnice-ka-modernosti"
+  },
+  "7cf583fcd964ed20be9681f51e1b529a8d022c0aaa374a3b25e9b8ee52417a34": {
+    "url": "https://www.runbgd.com/whats-on/gala-concert-of-classical-ballet-2026-11-29",
+    "event_start": "2026-11-29T00:00:00+01:00",
+    "published_at": "2026-11-13T11:06:20.347971+01:00",
+    "topic": "concert",
+    "ai_editor": "groq"
   }
 }
