@@ -1,0 +1,37 @@
+name: Reality — edit existing Mars caption
+
+on:
+  issues:
+    types: [opened]
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  edit_caption:
+    if: github.event.issue.user.login == 'zamendirin-lgtm' && github.event.issue.title == '[reality] shorten Mars caption in place'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      REALITY_BOT_TOKEN: ${{ secrets.REALITY_BOT_TOKEN }}
+      REALITY_CHAT_ID: '@priroda_realnosti'
+      REALITY_DRY_RUN: 'false'
+      GH_TOKEN: ${{ github.token }}
+      ISSUE_NUMBER: ${{ github.event.issue.number }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install dependencies
+        run: python -m pip install -r reality/requirements.txt
+      - name: Edit only the existing Mars message caption
+        run: python reality/edit_mars_caption.py
+      - name: Record result visibly in issue
+        if: always()
+        env:
+          RESULT: ${{ job.status }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          gh issue comment "$ISSUE_NUMBER" --body "Mars caption edit: **$RESULT**. [Diagnostic log]($RUN_URL). No new Telegram message is sent by this workflow."
