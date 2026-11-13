@@ -49,7 +49,7 @@ def main() -> int:
         )
         if chat_type == "channel" and (
             member.get("status") not in ("administrator", "creator")
-            or (member.get("status") == "administrator" and member.get("can_post_messages") is False)
+            or (member.get("status") == "administrator" and member.get("can_post_messages") is not True)
         ):
             print("Bot is not allowed to post to Afisha channel; grant admin/post rights.")
             return 1
