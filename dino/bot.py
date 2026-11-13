@@ -155,7 +155,7 @@ def commons_results(state, now):
             meta = info.get("extmetadata", {})
             license_name = meta.get("LicenseShortName", {}).get("value", "")
             if not ("CC0" in license_name or
-                    "Public domain" in license_name.lower().capitalize()):
+                    "public domain" in license_name.lower()):
                 continue
             photo = info.get("thumburl") or info.get("url")
             if not photo or not photo.lower().split("?")[0].endswith((".jpg", ".jpeg", ".png")):
