@@ -13,5 +13,12 @@
     "topic": "festival",
     "corrected_test": true,
     "message_id": 12
+  },
+  "9d0ecbd463e5aadec1610d7792e7443566c0d0bc9d1687519b9ad47ead182a1c": {
+    "url": "https://www.runbgd.com/whats-on/prekretnice-ka-modernosti-umetnost-drustva-1900-1945-predrag-2026-11-13",
+    "event_start": "2026-11-13T00:00:00+01:00",
+    "published_at": "2026-11-13T08:39:27.967122+01:00",
+    "topic": "other",
+    "ai_editor": "groq"
   }
 }
