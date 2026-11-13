@@ -32,7 +32,8 @@
     "5c5e40c49f744fe80f89da1f": 1794505165.927597,
     "4967920c6297b35c3035a956": 1794508586.022071,
     "b75a7575382702c4d4ae2d86": 1794512117.194673,
-    "06e0224b26d4080c61fed271": 1794556275.799295
+    "06e0224b26d4080c61fed271": 1794556275.799295,
+    "b8d9f648604fdf2fe433b733": 1794562303.8545
   },
   "photos": {
     "50f559ee5d138a92c244ad4c": 1794474084.088928,
@@ -276,6 +277,12 @@
       "title_norm": "novi pazar je najmladji grad u srbiji ali mladi odlaze shta bi moglo da ikh zadrzhi",
       "summary_norm": "prema podatsima krovne organizatsije mladikh srbije gotovo polovina mladikh u zemlji razmishlja o odlasku u potrazi za poslom u strutsi i boljim zhivotnim standardom sa prosechnom staroshtshu stanovnika od 36 godina novi pazar je najmladji grad u srbiji ali zvanichna statistika i u tom gradu belezhi odliv stanovnishtva",
       "source": "RTS"
+    },
+    {
+      "ts": 1794562303.8545,
+      "title_norm": "jovanovic za probijanje rokova infrastrukturnih radova u beogradu odgovorna gradska uprava i njen prvi covek",
+      "summary_norm": "centar za lokalnu samoupravu cls upozorio je da brojni infrastrukturni projekti u beogradu znacajno kasne i da su rokovi za njihov zavrsetak probije",
+      "source": "N1"
     }
   ]
 }
