@@ -1,6 +1,9 @@
 name: DinoDvij — themed news and videos
 
 on:
+  push:
+    paths:
+      - 'dino/.run-once'
   schedule:
     - cron: "*/15 * * * *"
   workflow_dispatch:
