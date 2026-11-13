@@ -353,7 +353,35 @@ def publish_video(hit):
         Path(path).unlink(missing_ok=True)
 
 
+def verify_config():
+    """Diagnostics: report only booleans and harmless Telegram metadata."""
+    print("SECRET_PRESENT DINO_BOT_TOKEN:", bool(BOT_TOKEN))
+    print("SECRET_PRESENT DINO_CHAT_ID:", bool(CHAT_ID))
+    print("SECRET_PRESENT PIXABAY_API_KEY:", bool(PIXABAY_KEY))
+    if not BOT_TOKEN or not CHAT_ID:
+        print("CONFIG_CHECK: FAIL - missing Telegram secret(s)")
+        return
+    try:
+        me = telegram_send("getMe")
+        chat = telegram_send("getChat", data={"chat_id": CHAT_ID})
+        print("CONFIG_CHECK: OK; bot_username:", me.get("username", "unknown"))
+        print("CHAT_CHECK: OK; type:", chat.get("type", "unknown"))
+        try:
+            member = telegram_send("getChatMember", data={
+                "chat_id": CHAT_ID, "user_id": me["id"]
+            })
+            print("CHAT_MEMBERSHIP:", member.get("status", "unknown"))
+        except (RuntimeError, requests.RequestException):
+            print("CHAT_MEMBERSHIP: unknown")
+    except (RuntimeError, requests.RequestException) as exc:
+        print("CONFIG_CHECK: FAIL:", type(exc).__name__,
+              str(exc)[:180])
+
+
 def main():
+    if os.getenv("DINO_VERIFY_ONLY", "false").lower() == "true":
+        verify_config()
+        return
     now = datetime.now(TZ)
     if not 8 <= now.hour < 24:
         print("Quiet hours in", TZ, now.isoformat())
