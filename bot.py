@@ -1041,7 +1041,7 @@ def _telegram_channel_avatar(token: str, channel: str) -> bytes:
 
 
 def branded_fallback_photo(token: str, channel: str) -> bytes:
-    """Landscape 16:9 fallback featuring the actual channel profile logo."""
+    """Landscape 16:9 fallback with the channel avatar and НОВОСТИ label."""
     w, h = 1200, 675
     im = Image.new("RGB", (w, h), (3, 22, 59))
     px = im.load()
@@ -1083,12 +1083,30 @@ def branded_fallback_photo(token: str, channel: str) -> bytes:
     box = draw.textbbox((0, 0), word, font=font, stroke_width=1)
     tw = box[2] - box[0]
     text_x = (w - tw) / 2
+    # Two-tier broadcast nameplate, matching the news-logo mockup.
     draw.rounded_rectangle(
-        (max(40, text_x - 35), 502, min(w - 40, text_x + tw + 35), 619),
-        radius=20, fill=(151, 19, 37), outline=(238, 242, 250), width=4,
+        (max(40, text_x - 35), 485, min(w - 40, text_x + tw + 35), 584),
+        radius=18, fill=(151, 19, 37), outline=(238, 242, 250), width=4,
     )
-    draw.text((text_x, 510), word, fill=(255, 255, 255), font=font,
+    draw.text((text_x, 487), word, fill=(255, 255, 255), font=font,
               stroke_width=2, stroke_fill=(8, 22, 54))
+    news_label = "НОВОСТИ"
+    try:
+        news_font = ImageFont.truetype(
+            "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 48,
+        )
+    except OSError:
+        news_font = ImageFont.load_default()
+    label_box = draw.textbbox((0, 0), news_label, font=news_font)
+    label_width = label_box[2] - label_box[0]
+    draw.rounded_rectangle(
+        (335, 590, 865, 659),
+        radius=12, fill=(240, 246, 255), outline=(40, 115, 221), width=4,
+    )
+    draw.text(
+        ((w - label_width) / 2, 593), news_label,
+        fill=(15, 51, 115), font=news_font,
+    )
     out = BytesIO()
     im.save(out, format="JPEG", quality=88, optimize=True)
     return out.getvalue()
