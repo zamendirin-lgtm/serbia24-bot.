@@ -271,11 +271,17 @@ def credit_line(media):
 
 def story_caption(item, media, ru_title, ru_summary):
     emoji = TOPIC_EMOJI.get(item["topic"], "🔬")
-    # No claim that Wikimedia photograph depicts the reported discovery.
+    # Keep HTML links intact and mark topic photos as illustrative, not event photos.
     title = html.escape(ru_title.strip(" .!?")[:125])
-    intro = html.escape(ru_summary[:520].rsplit(" ", 1)[0])
     label = '<a href="' + html.escape(item["url"], quote=True) + '">' + html.escape(item["source"]) + '</a>'
-    return f"{emoji} <b>{title}</b>\n\n{intro}\n\nИсточник: {label}\n{credit_line(media)}"[:1024]
+    head = f"{emoji} <b>{title}</b>\n\n"
+    tail = f"\n\nИсточник: {label}\n{credit_line(media)}"
+    for limit in range(520, 99, -30):
+        intro = html.escape(ru_summary[:limit].rsplit(" ", 1)[0])
+        caption = head + intro + tail
+        if len(caption) <= 1024:
+            return caption
+    return ""
 
 
 def post_story(item, state):
