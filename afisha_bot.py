@@ -32,8 +32,8 @@ UA = "Serbia24Afisha/1.0 (+https://github.com/zamendirin-lgtm/serbia24-bot.)"
 MAX_LINKS = 32
 MAX_POSTS = 1  # only one good event per run
 PRICE_UNKNOWN = "не указана"
-MAX_DAILY_POSTS = 3
-SELECTION_POOL = 5
+MAX_DAILY_POSTS = 5
+SELECTION_POOL = 12
 MIN_INTEREST_SCORE = 52
 FIRST_POST_ONLY_DATE = date(2026, 11, 13)
 CITY_NAMES = {
@@ -533,6 +533,10 @@ def interest_score(event: Event, now: datetime) -> int:
         score += 6
     elif text_size < 20:
         score -= 9
+    if event.city in ('Белград', 'Нови-Сад'):
+        score += 9  # primary readership, not a filter for other cities
+    elif event_topic(event) in ('festival', 'fair', 'concert'):
+        score += 5  # worthwhile events can justify travel
     if event.venue:
         score += 12
     else:
@@ -684,7 +688,7 @@ def main() -> int:
     print(f"Event candidates: {len(events)}, ranked shortlist: {len(shortlisted)}, "
           f"today already: {daily_count}/{MAX_DAILY_POSTS}.")
     published = False
-    for event in shortlisted[:3]:
+    for event in shortlisted[:5]:
         # Require AI editorial approval and an adequate interest score.
         approved = edit_event(event)
         if approved is None:
@@ -711,7 +715,7 @@ def main() -> int:
                              encoding="utf8")
             print(f"One quality Afisha event published. AI editor: {approved.provider}.")
             published = True
-            break  # maximum one per check; maximum 3 per Belgrade calendar day
+            break  # maximum one per check; maximum 5 per Belgrade calendar day
         return 1
     if not published:
         print("No editorially approved event; quality over quantity.")
