@@ -560,16 +560,36 @@ def interest_score(event: Event, now: datetime) -> int:
     return score
 
 
+def event_series_key(url: str) -> str:
+    """Do not reannounce the same multiday Belgrade exhibition every day."""
+    try:
+        parsed = urlparse(url)
+    except ValueError:
+        return url
+    path = parsed.path.rstrip("/")
+    if parsed.hostname in ("runbgd.com", "www.runbgd.com") and path.startswith("/whats-on/"):
+        path = re.sub(r"-20\d{2}-\d{2}-\d{2}$", "", path)
+    return (parsed.hostname or "") + path
+
+
 def select(events: list[Event], seen: dict, now: datetime) -> list[Event]:
     """Rank by useful details, novelty, type and near-term date, never random order."""
     daily = posted_today(seen, now)
     if len(daily) >= MAX_DAILY_POSTS:
         return []
     posted_topics = [r.get("topic", "") for r in daily]
-    deduped = {
-        e.key: e for e in events
-        if e.key not in seen and event_in_window(e, now)
+    past_series = {
+        event_series_key(row.get("url", ""))
+        for row in seen.values() if isinstance(row, dict) and row.get("url")
     }
+    deduped = {}
+    for e in events:
+        if e.key in seen or not event_in_window(e, now):
+            continue
+        series = event_series_key(e.url)
+        if series in past_series or series in deduped:
+            continue
+        deduped[series] = e
     scored = []
     for e in deduped.values():
         topic = event_topic(e)
