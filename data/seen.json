@@ -34,7 +34,8 @@
     "b75a7575382702c4d4ae2d86": 1794512117.194673,
     "06e0224b26d4080c61fed271": 1794556275.799295,
     "b8d9f648604fdf2fe433b733": 1794562303.8545,
-    "df7406229f6ad5fe62c56a1a": 1794569413.144807
+    "df7406229f6ad5fe62c56a1a": 1794569413.144807,
+    "a9b8dc50c595ebe9d718d54a": 1794577694.288527
   },
   "photos": {
     "50f559ee5d138a92c244ad4c": 1794474084.088928,
@@ -58,7 +59,8 @@
     "6158d3937bfc3f5404f16853": 1794505165.927597,
     "81a1596fc9f182c2a37d01ac": 1794508586.022071,
     "0f54639847ec7803c7c88cf3": 1794512117.194673,
-    "f6ccc7a6962382b4203a910a": 1794556275.799295
+    "f6ccc7a6962382b4203a910a": 1794556275.799295,
+    "96857a0137890ab264e605a8": 1794577694.288527
   },
   "phashes": {
     "2ceefee6566d6666": 1794474084.088928,
@@ -82,7 +84,8 @@
     "07190c581014343e": 1794505165.927597,
     "1810144c0d119898": 1794508586.022071,
     "75cd4d3a33f3c7e7": 1794512117.194673,
-    "c68cce795b1c1736": 1794556275.799295
+    "c68cce795b1c1736": 1794556275.799295,
+    "132601a332b2b1a9": 1794577694.288527
   },
   "posted": [
     {
@@ -290,6 +293,12 @@
       "title_norm": "vlada produzila privremeno smanjenje akciza na derivate nafte do 22 novembra",
       "summary_norm": "vlada srbije u tehnickom mandatu danas ce na sednici u 15 casova odlucivati o produzenju privremenog smanjenja akciza na derivate nafte od 25 odsto r",
       "source": "N1"
+    },
+    {
+      "ts": 1794577694.288527,
+      "title_norm": "tsene goriva na pumpama nepromenjene i narednikh sedam dana",
+      "summary_norm": "do narednog petka tsene goriva na pumpama u srbiji ostaju nepromenjene litar evrodizela koshta 236 a benzina 207 dinara",
+      "source": "RTS"
     }
   ]
 }
