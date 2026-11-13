@@ -30,6 +30,7 @@ jobs:
       PIXABAY_API_KEY: ${{ secrets.PIXABAY_API_KEY }}
       DINO_MAX_DAILY: "50"
       DINO_TIMEZONE: "Europe/Belgrade"
+      DINO_VERIFY_ONLY: ${{ github.event_name == 'push' && 'true' || 'false' }}
       DINO_DRY_RUN: ${{ github.event_name == 'push' && 'true' || inputs.dry_run || 'false' }}
     steps:
       - uses: actions/checkout@v4
