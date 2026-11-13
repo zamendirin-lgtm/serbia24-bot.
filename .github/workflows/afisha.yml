@@ -40,6 +40,7 @@ jobs:
             echo 'ready=false' >> "$GITHUB_OUTPUT"
             echo '::notice::Afisha destination missing. Reusing PROPERTY_BOT_TOKEN / PROPERTY_CHAT_ID is supported. To finish, add AFISHA_CHAT_ID (or PROPERTY_CHAT_ID) as an Actions variable.'
           fi
+      # Safe verification run after reconnecting existing real-estate Telegram credentials.
       - name: Verify existing Telegram bot and Afisha channel (no posting)
         if: steps.dest.outputs.ready == 'true'
         env:
@@ -47,12 +48,12 @@ jobs:
           AFISHA_CHAT_ID: ${{ vars.AFISHA_CHAT_ID || vars.PROPERTY_CHAT_ID }}
         run: python scripts/check_afisha_telegram.py
       - name: Discover and publish selected events
-        if: steps.dest.outputs.ready == 'true'
+        if: steps.dest.outputs.ready == 'true' && github.event_name != 'push'
         env:
           AFISHA_BOT_TOKEN: ${{ secrets.AFISHA_BOT_TOKEN || secrets.PROPERTY_BOT_TOKEN }}
           AFISHA_CHAT_ID: ${{ vars.AFISHA_CHAT_ID || vars.PROPERTY_CHAT_ID }}
           AFISHA_ENABLE_TONS: '1'
         run: python afisha_bot.py
       - name: Safely persist Afisha history
-        if: steps.dest.outputs.ready == 'true'
+        if: steps.dest.outputs.ready == 'true' && github.event_name != 'push'
         run: python scripts/persist_afisha.py
