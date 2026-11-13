@@ -118,6 +118,8 @@ def parse_hits(data, kind, topic):
     for page in pages:
         title = page.get("title", "")
         lower_title = title.lower()
+        if "naughty_dino_gets_a_surprise" in lower_title.replace(" ", "_"):
+            continue  # Already posted by the first-video workflow.
         if any(term in lower_title for term in SKIP_NAMES):
             continue
         imageinfo = page.get("imageinfo") or []
@@ -236,6 +238,8 @@ def caption_for(hit, kind):
         if license_info["license_url"]:
             caption += ' · <a href="' + html.escape(license_info["license_url"], quote=True) + '">лицензия</a>'
     caption += '\n<a href="' + html.escape(hit["description_url"], quote=True) + '">·</a>'
+    if hit["kind"] == "video":
+        caption += "\nФрагмент перекодирован для Telegram."
     return caption[:1000]
 
 
