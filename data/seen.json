@@ -35,7 +35,8 @@
     "06e0224b26d4080c61fed271": 1794556275.799295,
     "b8d9f648604fdf2fe433b733": 1794562303.8545,
     "df7406229f6ad5fe62c56a1a": 1794569413.144807,
-    "a9b8dc50c595ebe9d718d54a": 1794577694.288527
+    "a9b8dc50c595ebe9d718d54a": 1794577694.288527,
+    "2180a8aa66497fbec3ce0274": 1794583907.367809
   },
   "photos": {
     "50f559ee5d138a92c244ad4c": 1794474084.088928,
@@ -60,7 +61,8 @@
     "81a1596fc9f182c2a37d01ac": 1794508586.022071,
     "0f54639847ec7803c7c88cf3": 1794512117.194673,
     "f6ccc7a6962382b4203a910a": 1794556275.799295,
-    "96857a0137890ab264e605a8": 1794577694.288527
+    "96857a0137890ab264e605a8": 1794577694.288527,
+    "7b578cc018cd43979833f283": 1794583907.367809
   },
   "phashes": {
     "2ceefee6566d6666": 1794474084.088928,
@@ -85,7 +87,8 @@
     "1810144c0d119898": 1794508586.022071,
     "75cd4d3a33f3c7e7": 1794512117.194673,
     "c68cce795b1c1736": 1794556275.799295,
-    "132601a332b2b1a9": 1794577694.288527
+    "132601a332b2b1a9": 1794577694.288527,
+    "6b83cbcdcd0d9894": 1794583907.367809
   },
   "posted": [
     {
@@ -299,6 +302,12 @@
       "title_norm": "tsene goriva na pumpama nepromenjene i narednikh sedam dana",
       "summary_norm": "do narednog petka tsene goriva na pumpama u srbiji ostaju nepromenjene litar evrodizela koshta 236 a benzina 207 dinara",
       "source": "RTS"
+    },
+    {
+      "ts": 1794583907.367809,
+      "title_norm": "srbiji sve potrebniji stranci nedostatak radnika izazvao rat platama",
+      "summary_norm": "ekonomska situacija u srbiji je skolski primer privrede sa dva lica jer su kompanije u stranom vlasnistvu znatno produktivnije tehnoloski naprednije i finansijski stabilnije od domaceg privatnog sektora koji hronicno pati od nedostatka kapitalnih ulaganja pise mesecnik biznis i finansije",
+      "source": "Danas"
     }
   ]
 }
