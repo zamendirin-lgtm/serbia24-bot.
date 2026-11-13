@@ -1,0 +1,39 @@
+name: Serbia24 Afisha — publish corrected museum post once
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/afisha-museum-correction.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: serbia24-afisha
+  cancel-in-progress: false
+
+jobs:
+  museum-correction:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install dependencies
+        run: python -m pip install -r requirements.txt
+      - name: Check Afisha tests and corrected price
+        run: python -m unittest discover -s tests -p 'test_afisha*.py' -v
+      - name: Verify existing Afisha bot has channel permissions
+        env:
+          AFISHA_BOT_TOKEN: ${{ secrets.AFISHA_BOT_TOKEN || secrets.PROPERTY_BOT_TOKEN }}
+          AFISHA_CHAT_ID: '@Serbia24Afisha'
+        run: python scripts/check_afisha_telegram.py
+      - name: Publish accurate museum exhibition post with licensed photo
+        env:
+          AFISHA_BOT_TOKEN: ${{ secrets.AFISHA_BOT_TOKEN || secrets.PROPERTY_BOT_TOKEN }}
+        run: PYTHONPATH=. python scripts/afisha_repost_museum_once.py
+      - name: Persist correction history to prevent duplicates
+        run: python scripts/persist_afisha.py
