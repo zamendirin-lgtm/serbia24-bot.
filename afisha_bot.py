@@ -28,7 +28,7 @@ STATE = Path("data/afisha_seen.json")
 BASE = "https://novisad.travel"
 SOURCE = BASE + "/en/kalendar-dogadjaja/kategorija/calendar-of-events/list/"
 UA = "Serbia24Afisha/1.0 (+https://github.com/zamendirin-lgtm/serbia24-bot.)"
-MAX_LINKS = 16
+MAX_LINKS = 32
 MAX_POSTS = 1
 CITY_NAMES = {
     "novi sad": "Нови-Сад", "beograd": "Белград", "belgrade": "Белград",
@@ -80,7 +80,10 @@ def safe_source_url(value: str, allowed_hosts: tuple[str, ...] = ("novisad.trave
 
 
 def clean(value: str, limit: int = 420) -> str:
-    return re.sub(r"\s+", " ", BeautifulSoup(str(value or ""), "html.parser").get_text(" ", strip=True)).strip()[:limit]
+    raw = str(value or "")
+    if "<" in raw and ">" in raw:
+        raw = BeautifulSoup(raw, "html.parser").get_text(" ", strip=True)
+    return re.sub(r"\s+", " ", html.unescape(raw)).strip()[:limit]
 
 
 def parse_date(value) -> datetime | None:
