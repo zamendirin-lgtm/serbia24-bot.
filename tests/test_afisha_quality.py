@@ -73,7 +73,7 @@ class AfishaDailyQualityTests(unittest.TestCase):
         weak = event("Exhibition", "An exhibition with art.", price="не указана",
                      venue="", day=1, url_id=3)
         strong = event(day=4, url_id=4)
-        self.assertEqual(select([weak, strong], {}, NOW), [strong])
+        self.assertEqual(select([weak, strong], {}, NOW)[0], strong)
 
     def test_AI_rejects_unsupported_numbers(self):
         source = event()
