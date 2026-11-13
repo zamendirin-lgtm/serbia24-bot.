@@ -674,7 +674,12 @@ def main() -> int:
     if daily_count >= MAX_DAILY_POSTS:
         print(f"Daily Afisha cap reached: {daily_count}/{MAX_DAILY_POSTS}.")
         return 0
-    events = load_curated_events(now) + collect_official_events(session, now)
+    from belgrade_events import collect_belgrade_events
+    events = (
+        load_curated_events(now)
+        + collect_official_events(session, now)
+        + collect_belgrade_events(session, now)
+    )
     shortlisted = select(events, seen, now)
     print(f"Event candidates: {len(events)}, ranked shortlist: {len(shortlisted)}, "
           f"today already: {daily_count}/{MAX_DAILY_POSTS}.")
