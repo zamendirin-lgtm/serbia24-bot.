@@ -22,6 +22,7 @@ from zoneinfo import ZoneInfo
 
 import requests
 from bs4 import BeautifulSoup
+from afisha_editor import edit_event
 
 TZ = ZoneInfo("Europe/Belgrade")
 STATE = Path("data/afisha_seen.json")
@@ -29,7 +30,10 @@ BASE = "https://novisad.travel"
 SOURCE = BASE + "/en/kalendar-dogadjaja/kategorija/calendar-of-events/list/"
 UA = "Serbia24Afisha/1.0 (+https://github.com/zamendirin-lgtm/serbia24-bot.)"
 MAX_LINKS = 32
-MAX_POSTS = 1
+MAX_POSTS = 1  # only one good event per run
+MAX_DAILY_POSTS = 3
+SELECTION_POOL = 5
+MIN_INTEREST_SCORE = 52
 CITY_NAMES = {
     "novi sad": "Нови-Сад", "beograd": "Белград", "belgrade": "Белград",
     "nis": "Ниш", "niš": "Ниш", "pancevo": "Панчево",
@@ -373,16 +377,94 @@ def load_seen() -> dict:
         return {}
 
 
+def event_topic(event: Event) -> str:
+    title = (event.title + " " + event.description[:130]).casefold()
+    groups = (
+        ("family", ("deca", "decji", "dečji", "children", "kids", "family", "porodic", "детск", "семей")),
+        ("festival", ("festival", "фестив", "manifestacij")),
+        ("concert", ("koncert", "concert", "muzik", "music", "концерт", "музык")),
+        ("theatre", ("theatre", "theater", "pozoriš", "pozoris", "представлен", "театр")),
+        ("fair", ("sajam", "fair", "market", "ярмарк", "базар")),
+        ("exhibition", ("izložb", "izlozb", "exhibit", "gallery", "izlozba", "выстав", "музе")),
+        ("workshop", ("radionic", "workshop", "мастер-класс")),
+    )
+    for kind, words in groups:
+        if any(x in title for x in words):
+            return kind
+    return "other"
+
+
+def posted_today(seen: dict, now: datetime) -> list[dict]:
+    result = []
+    for row in seen.values():
+        if not isinstance(row, dict):
+            continue
+        stamp = parse_date(row.get("published_at"))
+        if stamp and stamp.astimezone(TZ).date() == now.astimezone(TZ).date():
+            result.append(row)
+    return result
+
+
+def interest_score(event: Event, now: datetime) -> int:
+    """Conservative editorial sorting before AI checks quality and writes copy."""
+    # A complete event page scores better than a vague one-line promotion.
+    text_size = len(clean(event.description, 600))
+    score = 22
+    if text_size >= 110:
+        score += 17
+    elif text_size >= 60:
+        score += 11
+    elif text_size >= 35:
+        score += 6
+    elif text_size < 20:
+        score -= 9
+    if event.venue:
+        score += 12
+    else:
+        score -= 4
+    if event.price != "Стоимость уточняется":
+        score += 8
+    topic = event_topic(event)
+    score += {
+        "family": 14, "festival": 15, "concert": 14,
+        "theatre": 11, "fair": 13, "exhibition": 10,
+        "workshop": 9, "other": 3,
+    }[topic]
+    days = (event.start.date() - now.date()).days
+    if 0 <= days <= 7:
+        score += 16
+    elif 8 <= days <= 21:
+        score += 11
+    elif 22 <= days <= 30:
+        score += 5
+    elif days < 0 and event.end and event.end.date() >= now.date():
+        # Long-running exhibitions can be interesting, but prioritize new events.
+        score += 4 if days >= -7 else -10
+    return score
+
+
 def select(events: list[Event], seen: dict, now: datetime) -> list[Event]:
-    unique = {e.key: e for e in events if e.key not in seen and event_in_window(e, now)}
-    def score(e: Event):
-        # Near-term events first, but allow ongoing exhibitions.
-        delta = (e.start.date() - now.date()).days
-        upcoming = max(delta, 0)
-        ongoing_penalty = 7 if delta < 0 else 0
-        cost_bonus = -1 if e.price.startswith("Бесплатно") else 0
-        return (upcoming + ongoing_penalty + cost_bonus, e.start, e.title)
-    return sorted(unique.values(), key=score)[:MAX_POSTS]
+    """Rank by useful details, novelty, type and near-term date, never random order."""
+    daily = posted_today(seen, now)
+    if len(daily) >= MAX_DAILY_POSTS:
+        return []
+    posted_topics = [r.get("topic", "") for r in daily]
+    deduped = {
+        e.key: e for e in events
+        if e.key not in seen and event_in_window(e, now)
+    }
+    scored = []
+    for e in deduped.values():
+        topic = event_topic(e)
+        penalty = posted_topics.count(topic) * 9 if topic != "other" else 0
+        score = interest_score(e, now) - penalty
+        if score >= MIN_INTEREST_SCORE:
+            scored.append((score, e))
+    scored.sort(key=lambda pair: (
+        -pair[0], max((pair[1].start.date()-now.date()).days, 0),
+        pair[1].title,
+    ))
+    return [e for _, e in scored[:SELECTION_POOL]]
 
 
 def publish(session: requests.Session, token: str, chat: str, post: str, source_url: str) -> bool:
@@ -422,29 +504,44 @@ def main() -> int:
         return 0
     session = requests.Session()
     session.headers.update({"User-Agent": UA, "Accept-Language": "en-US,en;q=0.8"})
-    events = load_curated_events(now) + collect_official_events(session, now)
     seen = load_seen()
+    daily_count = len(posted_today(seen, now))
+    if daily_count >= MAX_DAILY_POSTS:
+        print(f"Daily Afisha cap reached: {daily_count}/{MAX_DAILY_POSTS}.")
+        return 0
+    events = load_curated_events(now) + collect_official_events(session, now)
     shortlisted = select(events, seen, now)
-    print(f"Eligible upcoming event candidates: {len(events)}, selected: {len(shortlisted)}")
-    for event in shortlisted:
-        title = translate_to_russian(event.title)
-        summary = translate_to_russian(event.description) if event.description else ""
-        post = format_event(event, title, summary)
-        if dry:
-            print(post)
+    print(f"Event candidates: {len(events)}, ranked shortlist: {len(shortlisted)}, "
+          f"today already: {daily_count}/{MAX_DAILY_POSTS}.")
+    published = False
+    for event in shortlisted[:3]:
+        # Require AI editorial approval and an adequate interest score.
+        approved = edit_event(event)
+        if approved is None:
             continue
+        post = format_event(event, approved.title_ru, approved.summary_ru)
+        if dry:
+            print(f"AI approved via {approved.provider}, score {approved.interest_score}.")
+            print(post)
+            published = True
+            break
         if publish(session, token, chat, post, event.url):
             seen[event.key] = {
-                "url": event.url, "event_start": event.start.isoformat(),
+                "url": event.url,
+                "event_start": event.start.isoformat(),
                 "published_at": now.isoformat(),
+                "topic": event_topic(event),
+                "ai_editor": approved.provider,
             }
             STATE.parent.mkdir(parents=True, exist_ok=True)
-            STATE.write_text(json.dumps(seen, ensure_ascii=False, indent=2) + "\n", encoding="utf8")
-            print("Afisha announcement sent.")
-        else:
-            return 1
-    if not shortlisted:
-        print("No verified upcoming event to publish; skipping rather than inventing.")
+            STATE.write_text(json.dumps(seen, ensure_ascii=False, indent=2) + "\n",
+                             encoding="utf8")
+            print(f"One quality Afisha event published. AI editor: {approved.provider}.")
+            published = True
+            break  # maximum one per check; maximum 3 per Belgrade calendar day
+        return 1
+    if not published:
+        print("No editorially approved event; quality over quantity.")
     return 0
 
 
