@@ -122,14 +122,15 @@ class AfishaTests(unittest.TestCase):
         self.assertFalse(safe_source_url("https://evil.test/event"))
         self.assertFalse(safe_source_url("http://novisad.travel/event"))
 
-    def test_telegram_never_generates_source_preview(self):
+    def test_telegram_source_preview_can_show_poster(self):
         response = Mock(ok=True)
         response.json.return_value = {"ok": True}
         session = Mock()
         session.post.return_value = response
         self.assertTrue(publish(session, "private-test", "@afisha", "Sample", URL))
         payload = session.post.call_args.kwargs["json"]
-        self.assertTrue(payload["link_preview_options"]["is_disabled"])
+        self.assertEqual(payload["link_preview_options"]["url"], URL)
+        self.assertTrue(payload["link_preview_options"]["prefer_large_media"])
         self.assertTrue(session.post.call_args.args[0].endswith("/sendMessage"))
 
     def test_official_poster_uses_send_photo_and_russian_caption(self):
@@ -146,7 +147,7 @@ class AfishaTests(unittest.TestCase):
         self.assertIn("Панк-фестиваль", payload["caption"])
         self.assertNotIn("link_preview_options", payload)
 
-    def test_untrusted_poster_falls_back_to_no_preview_text(self):
+    def test_untrusted_poster_falls_back_to_source_preview(self):
         response = Mock(ok=True)
         response.json.return_value = {"ok": True}
         session = Mock()
@@ -154,7 +155,7 @@ class AfishaTests(unittest.TestCase):
         self.assertTrue(publish(session, "private-test", "@afisha", "Sample",
                                 URL, "https://example.com/poster.jpg"))
         self.assertTrue(session.post.call_args.args[0].endswith("/sendMessage"))
-        self.assertTrue(session.post.call_args.kwargs["json"]["link_preview_options"]["is_disabled"])
+        self.assertEqual(session.post.call_args.kwargs["json"]["link_preview_options"]["url"], URL)
 
 
 if __name__ == "__main__":
