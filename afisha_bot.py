@@ -235,6 +235,9 @@ def parse_jsonld_events(markup: str, url: str, city_fallback: str = "Нови-С
                 end = datetime.combine(page_end, datetime.max.time().replace(microsecond=0), tzinfo=TZ)
             summary = clean(item.get("description", ""), 450)
             image = item.get("image") or ""
+            if not image:
+                og = soup.select_one('meta[property="og:image"], meta[name="twitter:image"]')
+                image = og.get("content", "") if og else ""
             if isinstance(image, list):
                 image = image[0] if image else ""
             if isinstance(image, dict):
@@ -408,8 +411,7 @@ def format_event(event: Event, title_ru: str = "", description_ru: str = "") -> 
         f"📍 <b>Город:</b> {html.escape(event.city)}{venue}\n"
         f"🎟 <b>Цена:</b> {html.escape(event.price)}\n\n"
         f"📝 {description[:500]}\n\n"
-        f'🔗 <a href="{link}">Подробности и билеты — первоисточник</a>\n'
-        f"ℹ️ Время и цену проверьте перед посещением."
+        f'🔗 <a href="{link}">Подробности и билеты</a>'
     )
 
 
@@ -509,19 +511,51 @@ def select(events: list[Event], seen: dict, now: datetime) -> list[Event]:
     return [e for _, e in scored[:SELECTION_POOL]]
 
 
-def publish(session: requests.Session, token: str, chat: str, post: str, source_url: str) -> bool:
-    """Link preview may show the organizer photo; no image is downloaded/rehosted."""
+def _official_poster(url: str) -> bool:
+    """Official tourist organisation's promotional event photo."""
+    if not isinstance(url, str):
+        return False
+    parsed = urlparse(url)
+    return (
+        parsed.scheme == "https"
+        and parsed.hostname in ("novisad.travel", "www.novisad.travel")
+        and not parsed.username
+        and not parsed.password
+    )
+
+
+def publish(session: requests.Session, token: str, chat: str, post: str,
+            source_url: str, image_url: str = "") -> bool:
+    """Send an official event poster with a Russian caption; never link previews.
+
+    Fallback is a plain post with link previews disabled.
+    """
+    api = f"https://api.telegram.org/bot{token}/"
+    if image_url and _official_poster(image_url) and len(clean(post, 2000)) <= 1024:
+        try:
+            photo = session.post(
+                api + "sendPhoto",
+                json={
+                    "chat_id": chat, "photo": image_url,
+                    "caption": post, "parse_mode": "HTML",
+                    "show_caption_above_media": False,
+                },
+                timeout=24,
+            )
+            if photo.ok and photo.json().get("ok") is True:
+                print("Official event poster published with Russian caption; no link preview.")
+                return True
+            print("Official photo wasn't accepted; using text fallback.")
+        except (requests.RequestException, ValueError):
+            print("Event poster couldn't be sent; using text fallback.")
     try:
         result = session.post(
-            f"https://api.telegram.org/bot{token}/sendMessage",
+            api + "sendMessage",
             json={
-                "chat_id": chat, "parse_mode": "HTML", "text": post,
-                "link_preview_options": {
-                    "is_disabled": False,
-                    "url": source_url,
-                    "prefer_large_media": True,
-                    "show_above_text": True,
-                },
+                "chat_id": chat,
+                "parse_mode": "HTML",
+                "text": post,
+                "link_preview_options": {"is_disabled": True},
             },
             timeout=22,
         )
@@ -531,7 +565,6 @@ def publish(session: requests.Session, token: str, chat: str, post: str, source_
     except (requests.RequestException, ValueError):
         print("Telegram send failed.")
     return False
-
 
 def publication_allowed(now: datetime, *, initial: bool = False, seen: dict | None = None) -> bool:
     """No publications 22:00–07:59 in Serbia, except one explicitly requested test.
@@ -591,7 +624,7 @@ def main() -> int:
             print(post)
             published = True
             break
-        if publish(session, token, chat, post, event.url):
+        if publish(session, token, chat, post, event.url, event.image):
             seen[event.key] = {
                 "url": event.url,
                 "event_start": event.start.isoformat(),
