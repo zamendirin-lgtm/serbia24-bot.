@@ -40,11 +40,11 @@ class AfishaTests(unittest.TestCase):
     def test_free_and_unknown_price(self):
         self.assertEqual(event_price({"isAccessibleForFree": True}, ""), "Бесплатно (по данным организатора)")
         self.assertEqual(event_price({}, "Ulaz je slobodan."), "Бесплатно (по данным источника)")
-        self.assertEqual(event_price({}, "An exhibition of 300 works"), "Стоимость уточняется")
+        self.assertEqual(event_price({}, "An exhibition of 300 works"), "не указана")
         self.assertEqual(event_price({"offers": {"price": "800", "priceCurrency": "RSD"}}, ""), "800 дин.")
 
     def test_does_not_infer_from_zero_unrelated(self):
-        self.assertEqual(event_price({}, "20 years 10 artists, exhibitions begin at 18:00"), "Стоимость уточняется")
+        self.assertEqual(event_price({}, "20 years 10 artists, exhibitions begin at 18:00"), "не указана")
 
     def test_rejects_missing_or_past_date(self):
         self.assertEqual(parse_jsonld_events(PAGE.replace("2026-11-14T10:00:00+01:00","invalid"), URL), [])
@@ -67,10 +67,11 @@ class AfishaTests(unittest.TestCase):
 
     def test_no_invented_price_or_false_free(self):
         e = parse_jsonld_events(PAGE.replace('"offers":{"@type":"Offer","lowPrice":"500","priceCurrency":"RSD"},', ''), URL)[0]
-        self.assertEqual(e.price, "Стоимость уточняется")
+        self.assertEqual(e.price, "не указана")
         card = format_event(e, "Выставка ювелирных изделий", "Ювелиры покажут свои работы.")
         self.assertIn("Выставка ювелирных изделий", card)
-        self.assertIn("Стоимость уточняется", card)
+        self.assertIn("не указана", card)
+        self.assertIn("<b>Цена:</b> не указана", card)
         self.assertIn("14.11.2026–15.11.2026", card)
         self.assertIn("Нови-Сад", card)
         self.assertIn("первоисточник", card)

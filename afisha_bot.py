@@ -31,6 +31,7 @@ SOURCE = BASE + "/en/kalendar-dogadjaja/kategorija/calendar-of-events/list/"
 UA = "Serbia24Afisha/1.0 (+https://github.com/zamendirin-lgtm/serbia24-bot.)"
 MAX_LINKS = 32
 MAX_POSTS = 1  # only one good event per run
+PRICE_UNKNOWN = "не указана"
 MAX_DAILY_POSTS = 3
 SELECTION_POOL = 5
 MIN_INTEREST_SCORE = 52
@@ -62,7 +63,7 @@ class Event:
     end: datetime | None = None
     description: str = ""
     category: str = ""
-    price: str = "Стоимость уточняется"
+    price: str = PRICE_UNKNOWN
     image: str = ""
     image_permission: bool = False
 
@@ -151,11 +152,47 @@ def event_price(item: dict, body: str) -> str:
         number = match.group(1).strip()
         units = "дин." if match.group(2).lower() not in ("€", "eur") else "€"
         return f"{number} {units} (по данным источника)"
-    return "Стоимость уточняется"
+    return PRICE_UNKNOWN
+
+
+def visible_event_dates(soup: BeautifulSoup) -> tuple[date | None, date | None]:
+    """Prefer visitor-facing ISO dates near Start/End labels if JSON-LD differs."""
+    content = soup.select_one(".tribe-events-single") or soup
+    displayed = content.get_text(" ", strip=True)
+
+    def dated_label(label: str) -> date | None:
+        pattern = (
+            r"\b" + label +
+            r"\s*:\s*(?:(?!\b(?:Start|End|Početak|Kraj)\s*:).){0,110}?"
+            r"\b(20\d\d-\d\d-\d\d)\b"
+        )
+        found = re.search(pattern, displayed, re.IGNORECASE)
+        if found:
+            try:
+                return date.fromisoformat(found.group(1))
+            except ValueError:
+                return None
+        return None
+
+    start = dated_label("(?:Start|Početak)")
+    end = dated_label("(?:End|Kraj)")
+    if start is None:
+        for node in content.select(".tribe-events-start-date, time[datetime]"):
+            raw = node.get("datetime") or node.get("title") or ""
+            m = re.search(r"\b(20\d\d-\d\d-\d\d)\b", str(raw))
+            if m:
+                try:
+                    start = date.fromisoformat(m.group(1))
+                    break
+                except ValueError:
+                    pass
+    return start, end
 
 
 def parse_jsonld_events(markup: str, url: str, city_fallback: str = "Нови-Сад") -> list[Event]:
     soup = BeautifulSoup(markup, "html.parser")
+    page_start, page_end = visible_event_dates(soup)
+    displayed_text = soup.get_text(" ", strip=True)
     collected: list[Event] = []
     for script in soup.select('script[type="application/ld+json"]'):
         try:
@@ -189,6 +226,12 @@ def parse_jsonld_events(markup: str, url: str, city_fallback: str = "Нови-С
             if not source:
                 continue
             end = parse_date(item.get("endDate"))
+            if page_start and page_start != start.date():
+                print("Afisha visitor-facing start date overrides conflicting JSON-LD date.")
+                start = datetime.combine(page_start, datetime.min.time(), tzinfo=TZ)
+            if page_end and (end is None or page_end != end.date()):
+                print("Afisha visitor-facing end date overrides conflicting JSON-LD date.")
+                end = datetime.combine(page_end, datetime.max.time().replace(microsecond=0), tzinfo=TZ)
             summary = clean(item.get("description", ""), 450)
             image = item.get("image") or ""
             if isinstance(image, list):
@@ -199,7 +242,7 @@ def parse_jsonld_events(markup: str, url: str, city_fallback: str = "Нови-С
                 url=source, title=title, city=city, venue=venue, start=start,
                 end=end, description=summary,
                 category=clean(item.get("eventAttendanceMode", ""), 35),
-                price=event_price(item, summary),
+                price=event_price(item, displayed_text),
                 image=image if isinstance(image, str) and image.startswith("https://") else "",
             ))
     return collected
@@ -314,7 +357,7 @@ def load_curated_events(now: datetime) -> list[Event]:
                 start=start, end=end,
                 description=clean(row.get("description", ""), 430),
                 category=clean(row.get("category", ""), 50),
-                price=clean(row.get("price", ""), 75) or "Стоимость уточняется",
+                price=(lambda p: PRICE_UNKNOWN if p.casefold() in ("", "стоимость уточняется", "цена не указана", "не указана") else p)(clean(row.get("price", ""), 75)),
                 image=str(row.get("image", "")),
                 image_permission=row.get("image_permission") is True,
             )
@@ -362,7 +405,7 @@ def format_event(event: Event, title_ru: str = "", description_ru: str = "") -> 
         f"🎭 <b>{title}</b>\n\n"
         f"📅 <b>Дата:</b> {when}\n"
         f"📍 <b>Город:</b> {html.escape(event.city)}{venue}\n"
-        f"🎟 <b>Стоимость:</b> {html.escape(event.price)}\n\n"
+        f"🎟 <b>Цена:</b> {html.escape(event.price)}\n\n"
         f"📝 {description[:500]}\n\n"
         f'🔗 <a href="{link}">Подробности и билеты — первоисточник</a>\n'
         f"ℹ️ Время и цену проверьте перед посещением."
@@ -422,8 +465,6 @@ def interest_score(event: Event, now: datetime) -> int:
         score += 12
     else:
         score -= 4
-    if event.price != "Стоимость уточняется":
-        score += 8
     topic = event_topic(event)
     score += {
         "family": 14, "festival": 15, "concert": 14,
