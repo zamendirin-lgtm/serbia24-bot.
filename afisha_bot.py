@@ -35,6 +35,7 @@ PRICE_UNKNOWN = "не указана"
 MAX_DAILY_POSTS = 3
 SELECTION_POOL = 5
 MIN_INTEREST_SCORE = 52
+FIRST_POST_ONLY_DATE = date(2026, 11, 13)
 CITY_NAMES = {
     "novi sad": "Нови-Сад", "beograd": "Белград", "belgrade": "Белград",
     "nis": "Ниш", "niš": "Ниш", "pancevo": "Панчево",
@@ -532,10 +533,32 @@ def publish(session: requests.Session, token: str, chat: str, post: str, source_
     return False
 
 
+def publication_allowed(now: datetime, *, initial: bool = False, seen: dict | None = None) -> bool:
+    """No publications 22:00–07:59 in Serbia, except one explicitly requested test.
+
+    The test exemption expires automatically after 2026-11-13 07:59 and never
+    applies if the channel already has a recorded Afisha publication.
+    """
+    local = now.astimezone(TZ)
+    if 8 <= local.hour < 22:
+        return True
+    return (
+        initial
+        and local.date() == FIRST_POST_ONLY_DATE
+        and local.hour < 8
+        and not seen
+    )
+
+
 def main() -> int:
     now = datetime.now(TZ)
-    if not (8 <= now.hour < 22) and os.getenv("AFISHA_ALLOW_NIGHT", "") != "1":
-        print("Quiet hours for Serbia 24 Afisha.")
+    initial = os.getenv("AFISHA_FIRST_POST_ONCE", "") == "1"
+    seen = load_seen()
+    if initial and seen:
+        print("One-time first Afisha post has already been recorded. Skipping.")
+        return 0
+    if not publication_allowed(now, initial=initial, seen=seen):
+        print("Afisha quiet hours 22:00–08:00 Europe/Belgrade. No publication.")
         return 0
     token = os.getenv("AFISHA_BOT_TOKEN", "").strip()
     chat = os.getenv("AFISHA_CHAT_ID", "").strip()
@@ -545,7 +568,6 @@ def main() -> int:
         return 0
     session = requests.Session()
     session.headers.update({"User-Agent": UA, "Accept-Language": "en-US,en;q=0.8"})
-    seen = load_seen()
     daily_count = len(posted_today(seen, now))
     if daily_count >= MAX_DAILY_POSTS:
         print(f"Daily Afisha cap reached: {daily_count}/{MAX_DAILY_POSTS}.")
@@ -561,6 +583,9 @@ def main() -> int:
         if approved is None:
             continue
         post = format_event(event, approved.title_ru, approved.summary_ru)
+        if not publication_allowed(datetime.now(TZ), initial=initial, seen=seen):
+            print("Publication blocked: quiet hours started before message could be sent.")
+            return 0
         if dry:
             print(f"AI approved via {approved.provider}, score {approved.interest_score}.")
             print(post)
