@@ -6,6 +6,7 @@ on:
   push:
     paths:
       - 'reality/.test-trigger'
+      - 'reality/.start-trigger'
   workflow_dispatch:
     inputs:
       dry_run:
@@ -27,7 +28,7 @@ jobs:
     env:
       REALITY_BOT_TOKEN: ${{ secrets.REALITY_BOT_TOKEN }}
       REALITY_CHAT_ID: '@priroda_realnosti'
-      REALITY_DRY_RUN: ${{ github.event_name == 'push' && 'true' || (github.event_name == 'workflow_dispatch' && inputs.dry_run || 'false') }}
+      REALITY_DRY_RUN: ${{ github.event_name == 'push' && github.event.head_commit.message != 'start(reality): verify and enable live bot' && 'true' || (github.event_name == 'workflow_dispatch' && inputs.dry_run || 'false') }}
     steps:
       - name: Check credentials and test mode
         id: ready
@@ -53,6 +54,9 @@ jobs:
       - name: Install ffmpeg for NASA videos
         if: ${{ steps.ready.outputs.run == 'true' }}
         run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
+      - name: Check bot credentials and channel administrator permissions
+        if: ${{ steps.ready.outputs.run == 'true' }}
+        run: python reality/verify.py
       - name: Find one relevant, reusable item
         if: ${{ steps.ready.outputs.run == 'true' }}
         run: |
