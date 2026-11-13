@@ -1,0 +1,51 @@
+name: Reality — science, mysteries and NASA media
+
+on:
+  schedule:
+    - cron: '11,31,51 * * * *'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Preview candidates; send nothing to Telegram'
+        type: boolean
+        default: true
+
+permissions:
+  contents: write
+
+concurrency:
+  group: reality-publisher
+  cancel-in-progress: false
+
+jobs:
+  reality:
+    runs-on: ubuntu-latest
+    timeout-minutes: 9
+    env:
+      REALITY_BOT_TOKEN: ${{ secrets.REALITY_BOT_TOKEN }}
+      REALITY_CHAT_ID: '@priroda_realnosti'
+      REALITY_DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run || 'false' }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install science-feed dependencies
+        run: python -m pip install -r reality/requirements.txt
+      - name: Install ffmpeg for NASA videos
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
+      - name: Find one relevant, reusable item
+        run: python reality/bot.py
+      - name: Remember posted content only on actual publications
+        if: ${{ env.REALITY_DRY_RUN != 'true' }}
+        run: |
+          git add reality/state.json
+          if ! git diff --cached --quiet; then
+            git config user.name "reality-publisher[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git commit -m "chore(reality): store publication history [skip ci]"
+            git pull --rebase origin main
+            git push origin HEAD:main
+          fi
