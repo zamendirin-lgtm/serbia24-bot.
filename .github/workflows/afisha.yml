@@ -2,7 +2,8 @@ name: Serbia24 Afisha events
 
 on:
   schedule:
-    - cron: '17 7,9,11,14,17,19 * * *' # 08/10/12/15/18/20 winter; 09/11/13/16/19/21 summer
+    - cron: '17 7,9,11,14,17,19 * * *' # main schedule, UTC
+    - cron: '47 7,9,11,14,17,19 * * *' # backup if GitHub delays a scheduled run
   workflow_dispatch:
   push:
     paths:
