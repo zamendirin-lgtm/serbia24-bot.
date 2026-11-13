@@ -15,7 +15,7 @@ from afisha_editor import EditRejected, _validate, edit_event
 NOW = datetime(2026, 11, 13, 12, tzinfo=ZoneInfo("Europe/Belgrade"))
 
 
-def event(name="International jazz festival and concert", description=None,
+def event(name="International jazz concert", description=None,
           price="от 300 дин.", venue="Kulturni centar", day=1, url_id=1):
     desc = description or (
         "International musicians will perform jazz and contemporary music "
@@ -97,13 +97,11 @@ class AfishaDailyQualityTests(unittest.TestCase):
         with patch.dict(os.environ, {"AFISHA_BOT_TOKEN":"not-a-real-token", "AFISHA_CHAT_ID":"@test"}, clear=True):
             with patch("afisha_bot.datetime") as dt:
                 dt.now.return_value = NOW
-                with patch("afisha_bot.load_seen", return_value={
-                    str(i): {"published_at": NOW.replace(hour=8 + i).isoformat()}
-                    for i in range(3)
-                }):
-                    with patch("afisha_bot.collect_official_events") as get_events:
-                        self.assertEqual(afisha_bot.main(), 0)
-                        get_events.assert_not_called()
+                with patch("afisha_bot.load_seen", return_value={}):
+                    with patch("afisha_bot.posted_today", return_value=[{}, {}, {}]):
+                        with patch("afisha_bot.collect_official_events") as get_events:
+                            self.assertEqual(afisha_bot.main(), 0)
+                            get_events.assert_not_called()
 
 
 if __name__ == "__main__":
