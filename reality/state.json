@@ -1,4 +1,10 @@
 {
-  "posted": {},
-  "last_sent": 0
+  "posted": {
+    "editorial-2026-11-12-mars-organic-carbon": {
+      "at": 1794610147.288677,
+      "local_day": "2026-11-13",
+      "image_id": "commons:104897482"
+    }
+  },
+  "last_sent": 1794610147.288677
 }
