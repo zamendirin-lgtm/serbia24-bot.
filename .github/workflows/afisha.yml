@@ -53,8 +53,10 @@ jobs:
           AFISHA_BOT_TOKEN: ${{ secrets.AFISHA_BOT_TOKEN || secrets.PROPERTY_BOT_TOKEN }}
           AFISHA_CHAT_ID: ${{ vars.AFISHA_CHAT_ID || secrets.AFISHA_CHAT_ID || vars.PROPERTY_CHAT_ID || secrets.PROPERTY_CHAT_ID || '@Serbia24Afisha' }}
         run: python scripts/check_afisha_telegram.py
+      # A commit marked [afisha-publish] explicitly authorizes one catch-up post.
+      # Normal code/configuration pushes remain read-only, to avoid noise.
       - name: Discover and publish selected events
-        if: steps.dest.outputs.ready == 'true' && github.event_name != 'push'
+        if: steps.dest.outputs.ready == 'true' && (github.event_name != 'push' || contains(github.event.head_commit.message, '[afisha-publish]'))
         env:
           AFISHA_BOT_TOKEN: ${{ secrets.AFISHA_BOT_TOKEN || secrets.PROPERTY_BOT_TOKEN }}
           AFISHA_CHAT_ID: ${{ vars.AFISHA_CHAT_ID || secrets.AFISHA_CHAT_ID || vars.PROPERTY_CHAT_ID || secrets.PROPERTY_CHAT_ID || '@Serbia24Afisha' }}
@@ -68,5 +70,5 @@ jobs:
           EDITOR_MODEL: 'gemini-3.5-flash-lite'
         run: python afisha_bot.py
       - name: Safely persist Afisha history
-        if: steps.dest.outputs.ready == 'true' && github.event_name != 'push'
+        if: steps.dest.outputs.ready == 'true' && (github.event_name != 'push' || contains(github.event.head_commit.message, '[afisha-publish]'))
         run: python scripts/persist_afisha.py
