@@ -59,7 +59,7 @@ class RegionTests(unittest.TestCase):
         self.assertEqual(len(events), 2)
         event = events[0]
         self.assertEqual(event.city, "Белград")
-        self.assertEqual(event.price, "1890 дин.")
+        self.assertEqual(event.price, "от 1890 дин. (по данным афиши)")
         self.assertEqual(event.start.date().isoformat(), "2026-11-14")
         self.assertEqual(event.venue, "Dorćol Platz")
         self.assertEqual(event.ticket_url, "https://tickets.rs/event/tribute_maraton_serbia__28395")
