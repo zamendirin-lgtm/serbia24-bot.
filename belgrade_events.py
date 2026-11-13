@@ -90,9 +90,19 @@ def parse_belgrade_cards(markup: str, now: datetime) -> list:
         price = "не указана"
         m = re.fullmatch(r"(\d[\d., ]{0,8})\s*(?:RSD|DIN|DINARA)", price_source, re.I)
         if m:
-            price = m.group(1).strip() + " дин."
+            # Aggregator cards may show a discounted / lowest ticket category.
+            # Never present the card's number as the universal adult price.
+            price = "от " + m.group(1).strip() + " дин. (по данным афиши)"
         elif re.fullmatch(r"(?:FREE|BESPLATNO|ULAZ SLOBODAN)", price_source, re.I):
             price = "Бесплатно (по данным источника)"
+        if (
+            "muzej savremene umetnosti" in venue.casefold()
+            and "prekretnice ka modernosti" in title.casefold()
+            and m is not None and m.group(1).strip() == "300"
+        ):
+            # Museum's own visitor tariff (msub.org.rs/poseta/) checked 2026-11-13:
+            # standard 600 RSD; reduced 300 RSD. RUN BGD lists only the minimum.
+            price = "обычный — 600 дин., льготный — 300 дин."
         tickets = ""
         for el in article.select('a[href]'):
             if not re.search(r"\b(?:tickets?|buy\s+tickets?|karte|ulaznice)\b",
