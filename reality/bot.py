@@ -272,13 +272,29 @@ def credit_line(media):
             html.escape(media["page"], quote=True) + '">файл</a>')
 
 
+def compact_source_line(source_url, media):
+    """Single subdued line; preserve artist/license credits when legally required."""
+    source = '<a href="' + html.escape(source_url, quote=True) + '">Источник</a>'
+    photo_page = html.escape(media.get("page", "https://commons.wikimedia.org/"), quote=True)
+    rights = media["license"]
+    if not rights["credit"]:
+        # Public-domain/CC0 attribution not compulsory, but still link the image.
+        photo = '<a href="' + photo_page + '">Иллюстрация</a>'
+    else:
+        author = html.escape(rights["credit"])
+        license_url = html.escape(rights["lic_url"], quote=True)
+        label = html.escape(rights["name"])
+        photo = ('Иллюстрация: <a href="' + photo_page + '">' + author +
+                 '</a> (<a href="' + license_url + '">' + label + '</a>)')
+    return '🔗 ' + source + ' · ' + photo
+
+
 def story_caption(item, media, ru_title, ru_summary):
     emoji = TOPIC_EMOJI.get(item["topic"], "🔬")
     # Keep HTML links intact and mark topic photos as illustrative, not event photos.
     title = html.escape(ru_title.strip(" .!?")[:125])
-    label = '<a href="' + html.escape(item["url"], quote=True) + '">' + html.escape(item["source"]) + '</a>'
     head = f"{emoji} <b>{title}</b>\n\n"
-    tail = f"\n\nИсточник: {label}\n{credit_line(media)}"
+    tail = "\n\n" + compact_source_line(item["url"], media)
     for limit in range(520, 99, -30):
         intro = html.escape(ru_summary[:limit].rsplit(" ", 1)[0])
         caption = head + intro + tail
