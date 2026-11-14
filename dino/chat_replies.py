@@ -92,8 +92,8 @@ HORSE_TROLL_REPLIES = (
     "Тебя лошадь пешком обгонит. У тебя там бензин или фантазия закончилась? 💀",
 )
 ROOSTER_QUESTION = re.compile(
-    r"(?:\\b(?:ты|это)\\s+(?:бот|человек)\\b|\\bкто\\s+ты\\b|"
-    r"\\bты\\s+кто\\b|\\bты\\s+вообще\\s+кто\\b)",
+    r"(?:\b(?:ты|это)\s+(?:бот|человек)\b|\bкто\s+ты\b|"
+    r"\bты\s+кто\b|\bты\s+вообще\s+кто\b)",
     re.I,
 )
 BOT_HECKLE = re.compile(
@@ -254,7 +254,7 @@ def classify(text, to_bot):
             return "bot_insult"
         if PRONOUN.search(cleaned) or re.search(r"@\w+", cleaned):
             return "harassment"
-    if ROOSTER_QUESTION.search(cleaned) and (to_bot or re.search(r"\\bбот\\b", cleaned, re.I)):
+    if ROOSTER_QUESTION.search(cleaned) and (to_bot or re.search(r"\bбот\b", cleaned, re.I)):
         return "rooster"
     if not to_bot:
         # Participants regularly bait the bot without mentioning its handle.
