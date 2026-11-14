@@ -77,7 +77,9 @@ HARASSMENT_REPLY = (
 
 THREAT_REPLY = "Угрозы — не дерзость, а дичь. Заканчивай и не трогай участников."
 SEXUAL_REPLY = "Стоп. Здесь есть подростки, такой контент сюда не тащи."
-HELP_REPLY = "Я сам врываюсь в обсуждения. Хочешь баттл — /battle, хочешь прожарку — /roast. 😈"
+HELP_REPLY = "Я иногда сам подключаюсь к теме. Хочешь баттл — /battle, прожарку — /roast. 😈"
+GROUP_ROLES_REPLY = "Админ и создатель — разные роли. Кто именно создал этот чат, я достоверно не знаю. Выдумывать не стану 💀"
+GROUP_ROLE_WORDS = re.compile(r"\b(?:админ\w*|создат\w*|создал\w*|основател\w*|владелец|модератор\w*)\b", re.I)
 
 TOPIC_REPLIES = {
     "therian": (
@@ -116,7 +118,7 @@ TOPIC_PATTERNS = (
     ("quad", re.compile(r"квадроб|quadrob", re.I)),
     ("costume", re.compile(r"маск[аиуе]|костюм|fursuit|cosplay|образ", re.I)),
     ("meme", re.compile(r"мем|кринж|cringe|лол|имба|жиза|рилс|shorts|тикток|видос", re.I)),
-    ("debate", re.compile(r"спор|против|кто круче|лучше|почему|не соглас|топ|отстой|нормально|хайп", re.I)),
+    ("debate", re.compile(r"\b(?:баттл|спор|против|vs)\b|кто круче", re.I)),
 )
 CHAT_HOOK = re.compile(
     r"\b(?:серьёзно|реально|вообще|блин|ахах|хаха|прикол|ржака|"
@@ -185,6 +187,8 @@ def classify(text, to_bot):
             return "harassment"
     if not to_bot:
         return None
+    if GROUP_ROLE_WORDS.search(cleaned):
+        return "group_roles"
     if low.startswith(("/help", "/start")):
         return "help"
     if low.startswith(("/roast", "/dino")) or "подколи" in low or "прожарь" in low:
@@ -209,15 +213,17 @@ def spontaneous_category(text, message_id):
         "травят", "травля", "страшно", "страда",
     )):
         return None
-    # Always eligible to be considered when the chat is about its interests.
+    # A group's leadership and identity are facts, not material for a random
+    # "drama" joke. Do not interrupt admin/creator conversations.
+    if GROUP_ROLE_WORDS.search(cleaned):
+        return None
+    # Autonomous participation is limited to actual community hobbies.
+    # A generic question or a stray word like "спор" is insufficient.
     for category, pattern in TOPIC_PATTERNS:
+        if category == "debate":
+            continue
         if pattern.search(cleaned):
             return category
-    # In general chat, join only occasional open opinions/questions.
-    if not ("?" in cleaned or "!" in cleaned or CHAT_HOOK.search(cleaned)):
-        return None
-    if (message_id * 37 + 17) % 7 < 2:
-        return "chat"
     return None
 
 
@@ -233,6 +239,8 @@ def choose_reply(category, msg_id):
         return rng.choice(INSULTED_BOT)
     if category == "help":
         return HELP_REPLY
+    if category == "group_roles":
+        return GROUP_ROLES_REPLY
     if category == "roast":
         return rng.choice(ROAST)
     if category == "battle":
@@ -326,6 +334,11 @@ def main():
                 is_spontaneous = False
                 # Join discussions on its own, without needing @mention.
                 if category is None:
+                    # Do not butt into two people answering one another;
+                    # only directly addressed questions or urgent moderation
+                    # bypass this filter.
+                    if msg.get("reply_to_message"):
+                        continue
                     if spontaneous >= AUTO_REPLIES_PER_RUN:
                         continue
                     msg_time = int(msg.get("date") or 0)
@@ -344,8 +357,8 @@ def main():
                 # First enforce moderation. Only ordinary conversation gets
                 # local classifier-composed replies, never unsafe raw copying.
                 response = choose_reply(category, original_msg_id)
-                if category not in ("threat", "sexual", "harassment",
-                                    "bot_insult", "help") and original_msg_id % 4:
+                if category in ("therian", "dino", "quad", "meme", "costume",
+                                "debate", "roast", "battle") and original_msg_id % 4:
                     generated, interpretation = offline_brain.compose(
                         body, original_msg_id, {**style, "intents": state["style"].get("intents", {})},
                         tone=category
