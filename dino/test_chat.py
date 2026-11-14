@@ -92,6 +92,10 @@ def main():
     after = learner.learn("это реально смешной мем", before)
     assert after["seen"] == 1 and after["topics"]["meme"] == 1
     assert learner.learn("на питбайке задавлю собаку", after)["seen"] == 1
+    assert c.classify("А если я казах, то лошадь можно переехать?", False) == "horse_safety"
+    assert c.classify("А собаку можно задавить?", False) == "animal_threat"
+    assert c.choose_reply("horse_safety", 800) == c.HORSE_QUESTION_REPLY
+    assert "национальность" in c.HORSE_QUESTION_REPLY
     assert c.GROUP_ID == -1002244148588
     print("CHAT_RULES_TESTS_OK",len(expectations))
 
