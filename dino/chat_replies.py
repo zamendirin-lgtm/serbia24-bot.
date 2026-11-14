@@ -19,6 +19,7 @@ import requests
 
 import bot
 import learn_style
+import offline_brain
 
 STATE_FILE = Path(__file__).resolve().parent / "chat_state.json"
 GROUP_ID = -1002244148588
@@ -339,10 +340,22 @@ def main():
                     continue
                 if replied >= MAX_ANSWERS_PER_RUN:
                     continue
+                style = learn_style.preferred_style(state["style"])
+                # First enforce moderation. Only ordinary conversation gets
+                # local classifier-composed replies, never unsafe raw copying.
                 response = choose_reply(category, original_msg_id)
+                if category not in ("threat", "sexual", "harassment",
+                                    "bot_insult", "help") and original_msg_id % 4:
+                    generated, interpretation = offline_brain.compose(
+                        body, original_msg_id, {**style, "intents": state["style"].get("intents", {})},
+                        tone=category
+                    )
+                    if generated:
+                        response = generated
+                    print("LOCAL_INTENT", interpretation["intent"],
+                          "topic", interpretation["topic"])
                 response = learn_style.adapt_reply(
-                    response, learn_style.preferred_style(state["style"]),
-                    original_msg_id, category
+                    response, style, original_msg_id, category
                 )
                 sent = False
                 if DRY_RUN:
