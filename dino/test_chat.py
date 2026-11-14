@@ -21,6 +21,15 @@ def main():
         if actual:
             reply = c.choose_reply(actual, 54)
             assert reply and len(reply) <= 300
+    # Spontaneous response to ordinary themed chat, even without a mention.
+    assert c.classify("Мне нравится эта маска терриана", False) is None
+    assert c.spontaneous_category("Мне нравится эта маска терриана", 12345) == "therian"
+    assert c.spontaneous_category("Диносьюты реально смешнее всех", 12346) == "dino"
+    assert c.spontaneous_category("Сегодня мне плохо, нужна помощь", 12347) is None
+    assert c.spontaneous_category("Привет", 12348) is None
+    assert c.classify("ты урод", False) == "harassment"
+    assert c.AUTO_COOLDOWN_SECONDS >= 300
+    assert c.AUTO_REPLIES_PER_RUN <= 3
     assert c.GROUP_ID == -1002244148588
     print("CHAT_RULES_TESTS_OK",len(expectations))
 
