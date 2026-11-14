@@ -444,18 +444,18 @@ def main():
             return
     from news_auto import publish_news
     from video_only import publish_video_only
-    # Real, sourced trend news with photographs. Never publish generic VS cards.
-    # New news is throttled independently, with video discovery as fallback.
-    if publish_news(state, now, dry_run=DRY_RUN):
-        if not DRY_RUN:
-            state["daily_count"] = count + 1
-            save_state(state)
-        print("SOURCED_NEWS_CYCLE_COMPLETE")
-        return
+    # VIDEO FIRST: real playable short clips with original proportions.
+    # Brief sourced notes are an occasional fallback, not the focus.
     if publish_video_only(state, now, dry_run=DRY_RUN):
         if not DRY_RUN:
             state["daily_count"] = count + 1
-        print("VIDEO_CYCLE_COMPLETE")
+            save_state(state)
+        print("VIDEO_FIRST_CYCLE_COMPLETE")
+        return
+    if publish_news(state, now, dry_run=DRY_RUN):
+        if not DRY_RUN:
+            state["daily_count"] = count + 1
+        print("SHORT_NEWS_FALLBACK_COMPLETE")
     if not DRY_RUN:
         save_state(state)
 
