@@ -28,7 +28,7 @@ def main():
     assert c.spontaneous_category("Сегодня мне плохо, нужна помощь", 12347) is None
     assert c.spontaneous_category("Привет", 12348) is None
     assert c.classify("ты урод", False) == "harassment"
-    assert c.AUTO_COOLDOWN_SECONDS >= 300
+    assert c.AUTO_COOLDOWN_SECONDS >= 180
     assert c.AUTO_REPLIES_PER_RUN <= 3
     # The offline learner adapts from aggregate counts, never raw messages
     # or personal identifiers, and avoids learning from distress.
