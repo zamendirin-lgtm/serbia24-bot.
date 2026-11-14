@@ -115,6 +115,25 @@ def main():
             reply = c.choose_reply(category, msg_id)
             assert "Я петух" in reply, reply
             assert "я бот" not in reply.lower()
+    own_quote = {
+        "message_id": 741540,
+        "text": "Смелое мнение. Комменты уже достают попкорн",
+        "sender_chat": {"id": -1002244148588},
+    }
+    popcorn_reply = {"text": "Люблю попкорн", "reply_to_message": own_quote}
+    assert c.is_reply_to_bot(popcorn_reply, 555123, {})
+    assert c.classify(popcorn_reply["text"], True) == "banter"
+    assert c.choose_reply("popcorn", 741555) in c.POPCORN_REPLIES
+    assert c.is_reply_to_bot({
+        "reply_to_message": {"message_id": 741551, "from": {"id": 555123}}
+    }, 555123, {})
+    assert c.is_reply_to_bot({
+        "reply_to_message": {"message_id": 741552}
+    }, 555123, {"bot_message_ids": [741552]})
+    assert not c.is_reply_to_bot({
+        "reply_to_message": {"message_id": 741552,
+                             "text": "А кто же создатель нашей группы?"}
+    }, 555123, {})
     assert c.GROUP_ID == -1002244148588
     print("CHAT_RULES_TESTS_OK",len(expectations))
 
