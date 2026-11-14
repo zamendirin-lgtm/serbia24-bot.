@@ -232,6 +232,13 @@ def foreign_centered_story(article: Article) -> bool:
         return False
     if re.search(r"\bu srbiji\b", title):
         return False
+    # Foreign investment, travel, exports or other concrete events directly
+    # affecting Serbia remain eligible even when the foreign party comes first.
+    if re.search(r"\bu srbiju\b", title) and contains_anchor(
+        title, ("invest", "ulaz", "dolaz", "otvar", "salj", "donac",
+                "izvoz", "uvoz", "seli", "prebac", "potpis")
+    ):
+        return False
 
     # The foreign country/city is the subject; Serbian media's publication or
     # a throwaway reference to Serbia in the excerpt does not justify posting.
