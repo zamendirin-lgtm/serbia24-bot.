@@ -18,14 +18,24 @@ def main():
               "license": "CC BY-SA 2.0",
               "license_url": "https://creativecommons.org/licenses/by-sa/2.0/"}
     photo_caption = n.format_news_caption(
-        story, rights, "https://commons.wikimedia.org/wiki/File:Sample.jpg")
-    assert "Todd Murray</a>" in photo_caption
-    assert "CC BY-SA 2.0" in photo_caption
-    assert "📷" in photo_caption
-    assert "Фотоиллюстрация" not in photo_caption
-    assert "оригинал" not in photo_caption
-    assert "адапт." not in photo_caption
-    assert len(photo_caption) <= 1000
+        story, rights, "https://commons.wikimedia.org/wiki/File:Sample.jpg", "156631916")
+    assert "ⓘ" in photo_caption
+    assert "news-156631916.md" in photo_caption
+    assert "Todd Murray" not in photo_caption
+    assert "CC BY-SA" not in photo_caption
+    assert "📷" not in photo_caption
+    assert len(photo_caption) < 750
+    full = n.photo_credit_document(
+        "156631916", rights, "https://commons.wikimedia.org/wiki/File:Sample.jpg",
+        "File:Costume Masks.jpg")
+    assert "Todd Murray" in full and "CC BY-SA 2.0" in full
+    assert "https://commons.wikimedia.org/wiki/File:Sample.jpg" in full
+    assert "Изменения" in full
+    try:
+        n.format_news_caption(story, rights, "https://commons.wikimedia.org/", None)
+        assert False, "Credit with no Commons page ID should be rejected"
+    except ValueError:
+        pass
     assert not n.relevant_story("Новость!", "")
     assert not n.relevant_story("Сенсация с подростком", "тест " * 35)
     assert n.suitable_rights({"LicenseShortName":{"value":"CC0"}})["credit"] == ""
