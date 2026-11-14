@@ -217,7 +217,7 @@ def lookup_candidates(state, now):
             - abs(ratio - 9 / 16),
             int("therian" in hit["title"].lower() or "dinosuit" in hit["title"].lower())
         )
-    hits.sort(key=score, reverse=True)
+    hits.sort(key=lambda h: (score(h), not bool(h['rights']['author'])), reverse=True)
     cache.clear()
     # Cache results for this execution to avoid repeating searches within run.
     cache.update({"cycle": cycle, "hits": hits[:80]})
@@ -262,22 +262,21 @@ def to_mp4_original_ratio(source, dest):
 
 
 def minimal_caption(hit):
-    # Users asked for video only: no headlines, questions or descriptions.
-    # CC0 / public domain = no caption; CC BY / BY-SA = mandatory attribution.
-    rights = hit["rights"]
-    if not rights["author"]:
+    # CC0/public domain => no caption. CC BY: minimal linked credit.
+    rights = hit['rights']
+    if not rights['author']:
         return None
-    source_url = hit.get("page_url", "")
-    if not media_url_allowed(source_url):
-        source_url = "https://commons.wikimedia.org/"
+    source = hit.get('page_url', '')
+    if not media_url_allowed(source):
+        source = 'https://commons.wikimedia.org/'
+    title = hit.get('title', '').removeprefix('File:').rsplit('.', 1)[0].replace('_', ' ')
     return (
-        "Видео: " + html.escape(rights["author"]) +
-        " · " + html.escape(rights["label"]) +
-        ' · <a href="' + html.escape(rights["url"], quote=True) + '">лицензия</a>' +
-        ' · <a href="' + html.escape(source_url, quote=True) + '">·</a>' +
-        "\nПерекодировано в MP4."
+        '<a href="' + html.escape(source, quote=True) + '">' +
+        html.escape(title[:65] or 'Видео') + '</a> · ' +
+        html.escape(rights['author'][:80]) + ' · ' +
+        '<a href="' + html.escape(rights['url'], quote=True) + '">' +
+        html.escape(rights['label']) + '</a> · адапт.'
     )
-
 
 def post_hit(hit, dry_run=False):
     print("SELECTED_VIDEO", hit["title"][:110], "portrait", hit["height"] > hit["width"])
