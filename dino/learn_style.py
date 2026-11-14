@@ -39,7 +39,7 @@ EMAJI = re.compile(r"[\U0001F300-\U0001FAFF]")
 def empty():
     return {
         "seen": 0, "short": 0, "questions": 0, "emoji": 0,
-        "slang": {}, "topics": {}
+        "slang": {}, "topics": {}, "intents": {}
     }
 
 def sanitize(raw):
@@ -48,7 +48,9 @@ def sanitize(raw):
     safe = empty()
     for key in ("seen", "short", "questions", "emoji"):
         safe[key] = max(0, min(10000, int(raw.get(key, 0) or 0)))
-    for key, options in (("slang", SAFE_SLANG), ("topics", TOPIC_PATTERNS)):
+    from offline_brain import TRAINING
+    for key, options in (("slang", SAFE_SLANG), ("topics", TOPIC_PATTERNS),
+                         ("intents", TRAINING)):
         src = raw.get(key, {})
         if isinstance(src, dict):
             safe[key] = {k: max(0, min(10000, int(v))) for k, v in src.items()
@@ -61,13 +63,15 @@ def learn(text, prior=None):
         return state
     low = text.lower()[:1400]
     # Do not learn from private crises or harassment.
-    if any(x in low for x in SERIOUS_WORDS):
+    if any(x in low for x in SERIOUS_WORDS) or any(x in low for x in (
+        "сдохни", "убейся", "шлюха", "выследи", "тебя убью", "пошёл нах", "скинь нюдс"
+    )):
         return state
     # Bounded aggregate-memory: halve counters to emphasize newer conversation.
     if state["seen"] >= 300:
         for key in ("seen", "short", "questions", "emoji"):
             state[key] //= 2
-        for section in ("slang", "topics"):
+        for section in ("slang", "topics", "intents"):
             state[section] = {k: v // 2 for k, v in state[section].items() if v >= 2}
     state["seen"] += 1
     state["short"] += int(len(text) <= 110)
@@ -79,6 +83,10 @@ def learn(text, prior=None):
     for term, pattern in TOPIC_PATTERNS.items():
         if pattern.search(low):
             state["topics"][term] = state["topics"].get(term, 0) + 1
+    from offline_brain import guess_intent
+    intent, confidence = guess_intent(low, state)
+    if confidence >= 0.40:
+        state["intents"][intent] = state["intents"].get(intent, 0) + 1
     return state
 
 def preferred_style(state):
