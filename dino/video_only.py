@@ -86,108 +86,117 @@ def appropriate(title, description):
     return any(term in title_low for term in ALLOWED_TERMS)
 
 
+def video_from_page(page, category=False):
+    """Build a licensed video hit, preferring Commons streaming transcodes.
+
+    Some originals are hundreds of MB; the 480p derivative is a real video
+    of the same event, often a few MB. Never fake a video from photos.
+    """
+    info = (page.get("videoinfo") or [{}])[0]
+    mime = (info.get("mime") or "").lower()
+    if not mime.startswith("video/") and mime != "application/ogg":
+        return None
+    title = page.get("title", "")
+    if any(term in title.lower().replace("_", " ") for term in BLOCKED):
+        return None
+    if "TITANIA - Fursuit Etiquette" in title:
+        return None  # Animated instructional clip, not community event footage.
+    description = info.get("extmetadata", {}).get("ImageDescription", {}).get("value", "")
+    if not category and not appropriate(title, description):
+        return None
+    rights = permitted_license(info.get("extmetadata", {}))
+    if not rights:
+        return None
+    original = info.get("url", "")
+    if not media_url_allowed(original):
+        return None
+
+    derivative = None
+    # MediaWiki TimedMediaHandler returns actual video source URLs.
+    # 480p VP9 is usually 2-15 MB even for enormous originals.
+    variants = []
+    for item in info.get("derivatives", []):
+        url = item.get("src") or item.get("url") or ""
+        if not media_url_allowed(url):
+            continue
+        if not urlparse(url).path.endswith((".webm", ".mp4", ".ogv", ".mov")):
+            continue
+        label = (str(item.get("shorttitle") or "") + " " +
+                 str(item.get("transcodekey") or "") + " " + url).lower()
+        if "480p" in label:
+            priority = 0
+        elif "360p" in label:
+            priority = 1
+        elif "720p" in label:
+            priority = 2
+        elif "240p" in label:
+            priority = 3
+        else:
+            priority = 5
+        variants.append((priority, url))
+    variants.sort()
+    if variants:
+        derivative = variants[0][1]
+
+    original_size = int(info.get("size") or 0)
+    if original_size < 40_000:
+        return None
+    if not derivative and original_size > MAX_DOWNLOAD:
+        return None
+
+    return {
+        "id": "commons-video:" + str(page.get("pageid")),
+        "title": title,
+        "url": derivative or original,
+        "original_url": original,
+        "transcoded": bool(derivative),
+        "page_url": info.get("descriptionurl", ""),
+        "width": int(info.get("width") or 0),
+        "height": int(info.get("height") or 0),
+        "size": original_size,
+        "rights": rights,
+    }
+
+
 def query_catalog(query):
     params = {
         "action": "query", "format": "json", "formatversion": "2",
         "generator": "search", "gsrnamespace": "6",
         "gsrsearch": query + " filetype:video", "gsrlimit": "40",
-        "prop": "imageinfo", "iiprop": "url|size|mime|extmetadata"
+        "prop": "videoinfo", "viprop": "url|size|mime|extmetadata|derivatives",
     }
     try:
-        response = bot.HTTP.get(BASE, params=params, timeout=18)
+        response = bot.HTTP.get(BASE, params=params, timeout=20)
         response.raise_for_status()
         pages = response.json().get("query", {}).get("pages", [])
     except (requests.RequestException, ValueError, KeyError) as exc:
         print("VIDEO_SEARCH_UNAVAILABLE", type(exc).__name__)
         return []
-    hits = []
-    total = len(pages)
-    stats = {"format": 0, "size": 0, "domain": 0, "topic": 0, "license": 0}
-    for page in pages if isinstance(pages, list) else pages.values():
-        info = (page.get("imageinfo") or [{}])[0]
-        mime = (info.get("mime") or "").lower()
-        if not mime.startswith("video/") and mime != "application/ogg":
-            stats["format"] += 1
-            continue
-        size = int(info.get("size") or 0)
-        if size < 40_000 or size > MAX_DOWNLOAD:
-            stats["size"] += 1
-            continue
-        url = info.get("url", "")
-        if not media_url_allowed(url):
-            stats["domain"] += 1
-            continue
-        title = page.get("title", "")
-        meta = info.get("extmetadata", {})
-        description = meta.get("ImageDescription", {}).get("value", "")
-        if not appropriate(title, description):
-            stats["topic"] += 1
-            continue
-        rights = permitted_license(meta)
-        if not rights:
-            stats["license"] += 1
-            continue
-        width = int(info.get("width") or 0)
-        height = int(info.get("height") or 0)
-        hits.append({
-            "id": "commons-video:" + str(page.get("pageid")),
-            "title": title,
-            "url": url,
-            "page_url": info.get("descriptionurl", ""),
-            "width": width,
-            "height": height,
-            "size": size,
-            "rights": rights
-        })
-    print("VIDEO_SEARCH_STATS", query, "raw", total, "accepted", len(hits), stats)
+    hits = [hit for page in (pages if isinstance(pages, list) else pages.values())
+            if (hit := video_from_page(page))]
+    print("VIDEO_SEARCH_STATS", query, "raw", len(pages), "usable", len(hits))
     return hits
 
 
 def query_video_category(category):
-    """Explicitly relevant Commons video categories, not generic cartoons."""
+    """Use Commons curated categories to discover relevant people in costumes."""
     params = {
         "action": "query", "format": "json", "formatversion": "2",
         "generator": "categorymembers", "gcmtitle": "Category:" + category,
         "gcmtype": "file", "gcmlimit": "100", "gcmnamespace": "6",
-        "prop": "imageinfo", "iiprop": "url|size|mime|extmetadata",
+        "prop": "videoinfo", "viprop": "url|size|mime|extmetadata|derivatives",
     }
     try:
-        response = bot.HTTP.get(BASE, params=params, timeout=18)
+        response = bot.HTTP.get(BASE, params=params, timeout=20)
         response.raise_for_status()
         pages = response.json().get("query", {}).get("pages", [])
     except (requests.RequestException, ValueError, KeyError) as exc:
         print("VIDEO_CATEGORY_UNAVAILABLE", category, type(exc).__name__)
         return []
-    hits = []
-    stats = {"format": 0, "size": 0, "license": 0}
-    for page in pages if isinstance(pages, list) else pages.values():
-        info = (page.get("imageinfo") or [{}])[0]
-        mime = (info.get("mime") or "").lower()
-        if not mime.startswith("video/") and mime != "application/ogg":
-            stats["format"] += 1
-            continue
-        size = int(info.get("size") or 0)
-        if size < 40_000 or size > MAX_DOWNLOAD or not media_url_allowed(info.get("url", "")):
-            stats["size"] += 1
-            continue
-        title = page.get("title", "")
-        if any(term in title.lower().replace("_", " ") for term in BLOCKED):
-            continue
-        rights = permitted_license(info.get("extmetadata", {}))
-        if not rights:
-            stats["license"] += 1
-            continue
-        hits.append({
-            "id": "commons-video:" + str(page.get("pageid")),
-            "title": title, "url": info.get("url"),
-            "page_url": info.get("descriptionurl", ""),
-            "width": int(info.get("width") or 0),
-            "height": int(info.get("height") or 0),
-            "size": size, "rights": rights
-        })
-    print("VIDEO_CATEGORY_STATS", category, "files", len(pages), "accepted", len(hits), stats)
+    hits = [hit for page in (pages if isinstance(pages, list) else pages.values())
+            if (hit := video_from_page(page, category=True))]
+    print("VIDEO_CATEGORY_STATS", category, "files", len(pages), "usable", len(hits))
     return hits
-
 
 
 def lookup_candidates(state, now):
@@ -201,8 +210,9 @@ def lookup_candidates(state, now):
     candidates = {}
     # Category contents are manually thematically curated by Commons editors.
     # File names can be personal names and therefore lack the word 'fursuit'.
-    for hit in query_video_category("Videos of fursuits"):
-        candidates[hit["id"]] = hit
+    for cat in ("Videos of fursuits", "Tyrannosaurus costumes"):
+        for hit in query_video_category(cat):
+            candidates[hit["id"]] = hit
     for term in terms:
         for hit in query_catalog(term):
             candidates[hit["id"]] = hit
@@ -223,7 +233,7 @@ def lookup_candidates(state, now):
     cache.update({"cycle": cycle, "hits": hits[:80]})
     print("RELEVANT_VIDEO_CANDIDATES", len(hits))
     for candidate in hits[:5]:
-        print("VIDEO_CHOICE", candidate["title"][:95], candidate["width"], candidate["height"])
+        print("VIDEO_CHOICE", candidate["title"][:95], "stream", candidate["transcoded"], candidate["width"], candidate["height"])
     return hits
 
 
