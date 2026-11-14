@@ -367,6 +367,9 @@ def post_hit(hit, dry_run=False):
     if dry_run:
         print("VIDEO_DRY_RUN_OK")
         return True
+    # Validate and prepare legal attribution before sending, never afterwards.
+    # Otherwise a credit-file error could cause a duplicate upload on retry.
+    save_credit(hit)
     source_bytes = download_limited(hit["url"])
     with tempfile.TemporaryDirectory(prefix="dinovideo-") as tmp:
         original = Path(tmp) / "source.webm"
@@ -390,8 +393,7 @@ def post_hit(hit, dry_run=False):
             )
         if not response.get("message_id"):
             raise RuntimeError("Telegram did not confirm upload")
-        # Workflow commits the complete attribution document alongside state.
-        save_credit(hit)
+        # Workflow commits the prepared attribution document alongside state.
         print("VIDEO_POSTED_OK", response["message_id"], "original aspect retained")
         return True
 
