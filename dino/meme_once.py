@@ -14,9 +14,6 @@ def main():
     if state.get("date") != day:
         state["date"] = day
         state["daily_count"] = 0
-    if state.get("daily_count", 0) >= 50:
-        print("DAILY_LIMIT_REACHED")
-        return
     if post_meme(state, force=True):
         state["daily_count"] = state.get("daily_count", 0) + 1
         save_state(state)
