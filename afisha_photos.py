@@ -193,10 +193,26 @@ def find_licensed_photo(session: requests.Session, event) -> LicensedPhoto | Non
     if not tokens:
         return None
     kind = normalize(str(event.category) + " " + event.title)
-    musical = any(k in kind for k in (
+    context = normalize(event.title + " " + str(getattr(event, "description", "")))
+    music_event = any(k in kind for k in (
         "music", "muzik", "koncert", "concert", "band", "bend", "festival",
         "rock", "jazz", "guitar", "pop",
     ))
+    # "Gospodja ministarka" can describe different theatre productions
+    # performed by unrelated casts. Never label an old theatre production
+    # photo as depicting the current concert's musicians.
+    clear_performer = re.search(
+        r"\b(?:bend|band|grupa|group|orkestar|orchestra|pevac|singer)\b",
+        context,
+    ) is not None
+    generic_production = re.search(
+        r"\b(?:projekat|projekt|project|predstava|theatre|theater|festival|"
+        r"maraton|ciklus|cycle|production)\b",
+        context,
+    ) is not None
+    musical = music_event and (
+        clear_performer or (len(tokens) >= 2 and not generic_production)
+    )
     # Performing group's own images may be from any year; do not label them
     # as depicting today's specific performance.
     if musical:
