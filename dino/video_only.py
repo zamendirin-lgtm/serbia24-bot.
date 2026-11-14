@@ -58,7 +58,7 @@ def permitted_license(meta):
     lic_url = plain(meta.get("LicenseUrl", {}).get("value", ""))
     if "cc0" in low or "public domain" in low:
         return {"label": label, "author": "", "url": ""}
-    if not re.fullmatch(r"cc by(?:-sa)?[ -]?[1-4]\.0", low):
+    if not re.fullmatch(r"cc by(?:-sa)?[ -]?[1-4]\.0(?:[ -](?:fr|de|it|uk|us))?", low):
         return None
     author = plain(meta.get("Artist", {}).get("value", ""))
     author = re.sub(r"https?://\S+", "", author).strip()
@@ -101,24 +101,31 @@ def query_catalog(query):
         print("VIDEO_SEARCH_UNAVAILABLE", type(exc).__name__)
         return []
     hits = []
+    total = len(pages)
+    stats = {"format": 0, "size": 0, "domain": 0, "topic": 0, "license": 0}
     for page in pages if isinstance(pages, list) else pages.values():
         info = (page.get("imageinfo") or [{}])[0]
         mime = (info.get("mime") or "").lower()
         if not mime.startswith("video/") and mime != "application/ogg":
+            stats["format"] += 1
             continue
         size = int(info.get("size") or 0)
         if size < 40_000 or size > MAX_DOWNLOAD:
+            stats["size"] += 1
             continue
         url = info.get("url", "")
         if not media_url_allowed(url):
+            stats["domain"] += 1
             continue
         title = page.get("title", "")
         meta = info.get("extmetadata", {})
         description = meta.get("ImageDescription", {}).get("value", "")
         if not appropriate(title, description):
+            stats["topic"] += 1
             continue
         rights = permitted_license(meta)
         if not rights:
+            stats["license"] += 1
             continue
         width = int(info.get("width") or 0)
         height = int(info.get("height") or 0)
@@ -132,7 +139,55 @@ def query_catalog(query):
             "size": size,
             "rights": rights
         })
+    print("VIDEO_SEARCH_STATS", query, "raw", total, "accepted", len(hits), stats)
     return hits
+
+
+def query_video_category(category):
+    """Explicitly relevant Commons video categories, not generic cartoons."""
+    params = {
+        "action": "query", "format": "json", "formatversion": "2",
+        "generator": "categorymembers", "gcmtitle": "Category:" + category,
+        "gcmtype": "file", "gcmlimit": "100", "gcmnamespace": "6",
+        "prop": "imageinfo", "iiprop": "url|size|mime|extmetadata",
+    }
+    try:
+        response = bot.HTTP.get(BASE, params=params, timeout=18)
+        response.raise_for_status()
+        pages = response.json().get("query", {}).get("pages", [])
+    except (requests.RequestException, ValueError, KeyError) as exc:
+        print("VIDEO_CATEGORY_UNAVAILABLE", category, type(exc).__name__)
+        return []
+    hits = []
+    stats = {"format": 0, "size": 0, "license": 0}
+    for page in pages if isinstance(pages, list) else pages.values():
+        info = (page.get("imageinfo") or [{}])[0]
+        mime = (info.get("mime") or "").lower()
+        if not mime.startswith("video/") and mime != "application/ogg":
+            stats["format"] += 1
+            continue
+        size = int(info.get("size") or 0)
+        if size < 40_000 or size > MAX_DOWNLOAD or not media_url_allowed(info.get("url", "")):
+            stats["size"] += 1
+            continue
+        title = page.get("title", "")
+        if any(term in title.lower().replace("_", " ") for term in BLOCKED):
+            continue
+        rights = permitted_license(info.get("extmetadata", {}))
+        if not rights:
+            stats["license"] += 1
+            continue
+        hits.append({
+            "id": "commons-video:" + str(page.get("pageid")),
+            "title": title, "url": info.get("url"),
+            "page_url": info.get("descriptionurl", ""),
+            "width": int(info.get("width") or 0),
+            "height": int(info.get("height") or 0),
+            "size": size, "rights": rights
+        })
+    print("VIDEO_CATEGORY_STATS", category, "files", len(pages), "accepted", len(hits), stats)
+    return hits
+
 
 
 def lookup_candidates(state, now):
@@ -144,6 +199,10 @@ def lookup_candidates(state, now):
     start = cycle % len(QUERIES)
     terms = [QUERIES[(start + i) % len(QUERIES)] for i in range(3)]
     candidates = {}
+    # Category contents are manually thematically curated by Commons editors.
+    # File names can be personal names and therefore lack the word 'fursuit'.
+    for hit in query_video_category("Videos of fursuits"):
+        candidates[hit["id"]] = hit
     for term in terms:
         for hit in query_catalog(term):
             candidates[hit["id"]] = hit
