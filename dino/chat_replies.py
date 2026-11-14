@@ -42,11 +42,16 @@ BANTER = (
 )
 
 INSULTED_BOT = (
-    "Да, я бот. А ты зачем с микроволновкой в баттл полез? 💀",
-    "Я хотя бы обновляюсь. А твои подколы на Windows XP работают? 😂",
-    "Ты меня троллишь или клавиатура сама в истерике? 💀",
-    "Наезд принят. Юмор ищем, он где-то в прошлой версии чата 🪦",
-    "Слабый троллинг. Перезагрузи сарказм и возвращайся 😈",
+    "Я петух 🐓 Кукареку! А ты почему с микроволновкой споришь? 💀",
+    "Я петух 🐓 Твои подколы даже соседского голубя не разбудят.",
+    "Я петух 🐓 А ты что так рано раскукарекался? 😂",
+    "Я петух 🐓 Шутку понял, смеяться буду после обновления твоего юмора.",
+    "Я петух 🐓 Теперь давай подкол посвежее, этот протух.",
+)
+
+ROOSTER_IDENTITY = (
+    "Я петух 🐓 Кукареку. Следующий вопрос!",
+    "Я петух 🐓 Главный по кукареканью и спорным тейкам.",
 )
 
 ROAST = (
@@ -85,6 +90,11 @@ HORSE_TROLL_REPLIES = (
     "Лошадь твой питбайк на завтрак съест, гонщик диванный 💀",
     "Ты сначала питбайк от самоката отличи, Шумахер с маркетплейса 💀 Лошадь тут вообще ни при чём.",
     "Тебя лошадь пешком обгонит. У тебя там бензин или фантазия закончилась? 💀",
+)
+ROOSTER_QUESTION = re.compile(
+    r"(?:\\b(?:ты|это)\\s+(?:бот|человек)\\b|\\bкто\\s+ты\\b|"
+    r"\\bты\\s+кто\\b|\\bты\\s+вообще\\s+кто\\b)",
+    re.I,
 )
 BOT_HECKLE = re.compile(
     r"(?:бот(?:ик|яра)?\b|@dinodvij_bot)[^.!?\n]{0,65}"
@@ -244,6 +254,8 @@ def classify(text, to_bot):
             return "bot_insult"
         if PRONOUN.search(cleaned) or re.search(r"@\w+", cleaned):
             return "harassment"
+    if ROOSTER_QUESTION.search(cleaned) and (to_bot or re.search(r"\\bбот\\b", cleaned, re.I)):
+        return "rooster"
     if not to_bot:
         # Participants regularly bait the bot without mentioning its handle.
         # Join the playful banter, but never prioritize it over safety rules.
@@ -324,6 +336,8 @@ def choose_reply(category, msg_id):
         return rng.choice(HARASSMENT_REPLY)
     if category == "bot_insult":
         return rng.choice(INSULTED_BOT)
+    if category == "rooster":
+        return rng.choice(ROOSTER_IDENTITY)
     if category == "help":
         return HELP_REPLY
     if category == "group_roles":
