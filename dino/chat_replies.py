@@ -103,7 +103,8 @@ def save_state(state):
     # Never store group message text, usernames, IDs, profiles or handles here.
     public_state = {"offset": int(state.get("offset", 0)),
                     "last_check_utc": datetime.now(timezone.utc).isoformat(),
-                    "total_replies": int(state.get("total_replies", 0))}
+                    "total_replies": int(state.get("total_replies", 0)),
+                    "announcement_message_id": int(state.get("announcement_message_id", 0))}
     STATE_FILE.write_text(
         json.dumps(public_state, ensure_ascii=False, indent=2) + "\n",
         encoding="utf-8",
