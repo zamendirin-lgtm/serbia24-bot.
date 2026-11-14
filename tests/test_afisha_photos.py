@@ -83,6 +83,20 @@ class AfishaLicensedPhotoTests(unittest.TestCase):
         self.assertIn("Magla", picture.file_page)
         self.assertIn("commons.wikimedia.org/w/api.php", session.get.call_args.args[0])
 
+    def test_generic_theatre_project_does_not_impersonate_its_performers(self):
+        # Several unrelated productions have the same Gospođa ministarka title.
+        e = event(title="Gospodja ministarka", category="Music")
+        e.description = "Koncertni projekat u kulturnom centru."
+        response = Mock()
+        response.json.return_value = {"query": {"pages": [
+            file_info("File:Gospodja ministarka theatre production 2013.jpg")
+        ]}}
+        session = Mock()
+        session.get.return_value = response
+        self.assertIsNone(find_licensed_photo(session, e))
+        # Only the archive query is attempted; not an artist photo query.
+        self.assertEqual(session.get.call_count, 1)
+
     def test_source_event_without_licensed_photo_returns_none(self):
         session = Mock()
         resp = Mock()
