@@ -109,6 +109,26 @@ def _candidate(page: dict, tokens: list[str], year: int,
     elif not tokens or count != 1 or len(tokens[0]) < 5:
         return None
 
+    # A single word such as "Magla" is also an ordinary Serbian noun (fog).
+    # Require independent evidence this depicts music, not a foggy landscape.
+    if kind in ("artist", "archive") and len(tokens) == 1 and not any(
+        hint in file_words for hint in (
+            "band", "bend", "grupa", "group", "koncert", "concert",
+            "festival", "performance", "nastup", "muzik", "music",
+        )
+    ):
+        return None
+
+    # A venue name that includes a person's name must not match a portrait.
+    if kind == "venue" and not any(
+        word in file_words for word in (
+            "centar", "center", "platz", "dvorana", "hall", "skcns",
+            "fabrika", "kulturn", "theatre", "theater", "venue",
+            "zgrada", "building", "club", "klub", "dom",
+        )
+    ):
+        return None
+
     # An event/archive image must say which year's edition it depicts,
     # rather than matching a totally unrelated production of the same name.
     if kind == "archive" and not any(
@@ -145,13 +165,21 @@ def _candidate(page: dict, tokens: list[str], year: int,
     return LicensedPhoto(
         image_url=image, file_page=file_page, author=author,
         license_name=licence, license_url=licence_url,
-        subject_label="Фото исполнителя" if kind == "artist" else "Архивное фото",
+        subject_label={
+            "artist": "Фото исполнителя",
+            "archive": "Архивное фото",
+            "venue": "Фото площадки",
+        }[kind],
     )
 
 
 def _lookup(session: requests.Session, subject: str, year: int,
             kind: str) -> LicensedPhoto | None:
-    words = significant(subject)
+    if kind == "venue":
+        # Keep distinctive venue words such as Sava/Centar and Dorcol/Platz.
+        words = list(dict.fromkeys(re.findall(r"[a-z]{4,}", normalize(subject))))[:6]
+    else:
+        words = significant(subject)
     if not words:
         return None
     # Use an exactish subject query; require matching filename words below.
@@ -219,4 +247,12 @@ def find_licensed_photo(session: requests.Session, event) -> LicensedPhoto | Non
         found = _lookup(session, subject, event.start.year, "artist")
         if found:
             return found
-    return _lookup(session, subject, event.start.year, "archive")
+    archived = _lookup(session, subject, event.start.year, "archive")
+    if archived:
+        return archived
+    # Last resort: an actual photo of the named venue, explicitly labelled
+    # as the venue (never presented as the current event or its performers).
+    venue = str(getattr(event, "venue", "")).strip()
+    if venue:
+        return _lookup(session, venue, event.start.year, "venue")
+    return None
