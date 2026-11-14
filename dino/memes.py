@@ -157,7 +157,7 @@ def post_meme(state, dry_run=False, force=False):
         print("NO_NEW_ORIGINAL_MEMES")
         return False
     # Alternate versions without repeating, not the same image every 15 minutes.
-    index, entry = random.choice(available)
+    index, entry = (available[0] if force else random.choice(available))
     print("MEME_SELECTED", index, entry[0], "available", len(available))
     if dry_run:
         print("MEME_DRY_RUN_OK")
@@ -184,8 +184,19 @@ def post_meme(state, dry_run=False, force=False):
 
 
 def scheduled_meme(state, now, dry_run=False):
-    # 6 meme windows/day (~1 every 2h) preserves chat conversation.
-    # On remaining runs, video search is still the first choice.
-    if now.hour not in (9, 11, 13, 15, 18, 21) or now.minute >= 15:
+    """At most one meme per six selected hours; tolerate GitHub cron delays."""
+    hours = (9, 11, 13, 15, 18, 21)
+    if now.hour not in hours:
         return False
-    return post_meme(state, dry_run=dry_run)
+    day = now.date().isoformat()
+    if state.get("meme_slots_day") != day:
+        state["meme_slots_day"] = day
+        state["meme_slots"] = []
+    slot = str(now.hour)
+    if slot in state.get("meme_slots", []):
+        return False
+    if not post_meme(state, dry_run=dry_run):
+        return False
+    if not dry_run:
+        state.setdefault("meme_slots", []).append(slot)
+    return True
