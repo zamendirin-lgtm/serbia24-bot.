@@ -481,9 +481,41 @@ def translate_to_russian(value: str) -> str:
     return ""
 
 
+def normalize_sava_hall(venue: str) -> str:
+    """Keep the real Russian name of Sava Centar's Plava dvorana (Blue Hall)."""
+    raw = clean(venue, 140)
+    if (
+        re.search(r"(?:sava\s*centar|сава\s*цент[а-я]*)", raw, re.IGNORECASE)
+        and re.search(
+            r"(?:plav[a-z]*\s+(?:dvoran[a-z]*|sal[a-z]*)|"
+            r"плав[а-я]*\s+зал[а-я]*|син[а-я]*\s+зал[а-я]*)",
+            raw, re.IGNORECASE,
+        )
+    ):
+        return "Сава Центар, Синий зал (Plava dvorana)"
+    return raw
+
+
+def normalize_sava_description(description: str) -> str:
+    """Fix the recurring mangled hall name in AI-written Russian descriptions."""
+    value = re.sub(
+        r"\bв\s+Сава\s+Центре\s*,\s*Плав[а-я]*\s+зал[а-я]*",
+        "в Синем зале «Сава Центра»",
+        description,
+        flags=re.IGNORECASE,
+    )
+    value = re.sub(
+        r"\bПлав[а-я]*\s+зал[а-я]*",
+        "Синий зал",
+        value,
+        flags=re.IGNORECASE,
+    )
+    return value
+
+
 def format_event(event: Event, title_ru: str = "", description_ru: str = "") -> str:
     title = html.escape(title_ru or event.title)
-    description = html.escape(description_ru) if description_ru else (
+    description = html.escape(normalize_sava_description(description_ru)) if description_ru else (
         "Подробная программа и условия — на странице организатора."
     )
     if event.end and event.end.date() != event.start.date():
@@ -494,7 +526,7 @@ def format_event(event: Event, title_ru: str = "", description_ru: str = "") -> 
             when += event.start.strftime(" в %H:%M")
     venue = ""
     if event.venue:
-        location_name = event.venue.strip()
+        location_name = normalize_sava_hall(event.venue)
         venue = "\n🏛 <b>Место проведения:</b> " + html.escape(location_name)
         if "skcns" in location_name.casefold() and "fabrika" in location_name.casefold():
             venue += "\n🗺 <b>Адрес:</b> Bulevar despota Stefana 5"
