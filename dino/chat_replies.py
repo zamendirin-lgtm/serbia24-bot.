@@ -119,7 +119,8 @@ def classify(text, to_bot):
     # If a user swears at the bot itself, joke about the wording rather than
     # humiliating the person. If somebody attacks a participant, intervene.
     if PERSONAL_ABUSE.search(cleaned):
-        if to_bot and not re.search(r"@\w+", cleaned.replace(BOT_NAME, ""), re.I):
+        without_bot_mention = MENTION.sub("", cleaned)
+        if to_bot and not re.search(r"@\w+", without_bot_mention, re.I):
             return "bot_insult"
         if PRONOUN.search(cleaned) or re.search(r"@\w+", cleaned):
             return "harassment"
