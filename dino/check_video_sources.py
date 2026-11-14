@@ -1,9 +1,24 @@
 """One-off smoke test for Commons real fursuit video transcodes."""
 from datetime import datetime, timezone
 
-from video_only import query_video_category, lookup_candidates, video_from_page, permitted_license, media_url_allowed
+from video_only import query_video_category, lookup_candidates, video_from_page, permitted_license, media_url_allowed, minimal_caption, credit_document, credit_filename, credit_url
 
 def main():
+    from pathlib import Path
+    import bot
+    state = bot.load_state()
+    pyrkon = next(x for x in state["video_search_cache"]["hits"]
+                  if x["id"] == "commons-video:195011858")
+    credit_file = Path(__file__).resolve().parent / "credits" / credit_filename(pyrkon)
+    assert credit_file.exists()
+    assert credit_file.read_text(encoding="utf-8") == credit_document(pyrkon)
+    caption = minimal_caption(pyrkon)
+    assert "Rose Abrams" not in caption
+    assert "CC BY" not in caption
+    assert "обр." not in caption
+    assert "ⓘ" in caption
+    assert "195011858.md" in caption
+    print("COMPACT_CREDIT_TEST_OK", len(caption))
     rows = query_video_category("Videos of fursuits")
     assert rows, "No community video discovered"
     for hit in rows:
