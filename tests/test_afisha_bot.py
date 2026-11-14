@@ -1,5 +1,6 @@
 """Offline tests for sources, dates, prices, dedupe and Russian Telegram cards."""
 import unittest
+import requests
 from datetime import datetime
 from zoneinfo import ZoneInfo
 from unittest.mock import Mock
@@ -122,15 +123,15 @@ class AfishaTests(unittest.TestCase):
         self.assertFalse(safe_source_url("https://evil.test/event"))
         self.assertFalse(safe_source_url("http://novisad.travel/event"))
 
-    def test_telegram_source_preview_can_show_poster(self):
+    def test_telegram_disables_foreign_source_preview(self):
         response = Mock(ok=True)
         response.json.return_value = {"ok": True}
         session = Mock()
         session.post.return_value = response
         self.assertTrue(publish(session, "private-test", "@afisha", "Sample", URL))
         payload = session.post.call_args.kwargs["json"]
-        self.assertEqual(payload["link_preview_options"]["url"], URL)
-        self.assertTrue(payload["link_preview_options"]["prefer_large_media"])
+        self.assertTrue(payload["link_preview_options"]["is_disabled"])
+        self.assertNotIn("url", payload["link_preview_options"])
         self.assertTrue(session.post.call_args.args[0].endswith("/sendMessage"))
 
     def test_official_poster_uses_send_photo_and_russian_caption(self):
@@ -147,7 +148,7 @@ class AfishaTests(unittest.TestCase):
         self.assertIn("Панк-фестиваль", payload["caption"])
         self.assertNotIn("link_preview_options", payload)
 
-    def test_untrusted_poster_falls_back_to_source_preview(self):
+    def test_untrusted_poster_falls_back_to_text_without_preview(self):
         response = Mock(ok=True)
         response.json.return_value = {"ok": True}
         session = Mock()
@@ -155,7 +156,59 @@ class AfishaTests(unittest.TestCase):
         self.assertTrue(publish(session, "private-test", "@afisha", "Sample",
                                 URL, "https://example.com/poster.jpg"))
         self.assertTrue(session.post.call_args.args[0].endswith("/sendMessage"))
-        self.assertEqual(session.post.call_args.kwargs["json"]["link_preview_options"]["url"], URL)
+        self.assertTrue(session.post.call_args.kwargs["json"]["link_preview_options"]["is_disabled"])
+
+    def test_tourism_event_cover_extracted_without_jsonld_image(self):
+        from afisha_bot import official_event_poster
+        from bs4 import BeautifulSoup
+        image = "https://novisad.travel/wp-content/uploads/2019/10/Pozorisni-festival-%E2%80%9EUpad.jpg"
+        markup = (
+            '<div class="tribe-events-event-image"><img src="' + image + '"></div>'
+            '<meta property="og:image" content="https://novisad.travel/logo.jpg">'
+        )
+        soup = BeautifulSoup(markup, "html.parser")
+        self.assertEqual(official_event_poster(soup, {}, URL), image)
+        event_markup = PAGE.replace(
+            '"image":"https://novisad.travel/example.jpg"',
+            '"image":""'
+        ).replace(
+            "</body>", '<div class="tribe-events-event-image"><img src="' + image + '"></div></body>'
+        )
+        self.assertEqual(parse_jsonld_events(event_markup, URL)[0].image, image)
+
+    def test_telegram_rejected_image_url_downloads_and_uploads_jpeg(self):
+        response = Mock(ok=False, status_code=400)
+        image_bytes = b"\\xff\\xd8\\xff" + b"x" * 2200
+        downloaded = Mock(content=image_bytes)
+        uploaded = Mock(ok=True)
+        uploaded.json.return_value = {"ok": True}
+        session = Mock()
+        session.post.side_effect = [response, uploaded]
+        session.get.return_value = downloaded
+        poster = "https://novisad.travel/wp-content/uploads/2019/10/upad.jpg"
+        self.assertTrue(publish(session, "private-test", "@afisha", "Русская афиша", URL, poster))
+        self.assertEqual(session.post.call_count, 2)
+        upload = session.post.call_args.kwargs
+        self.assertIn("files", upload)
+        self.assertEqual(upload["files"]["photo"][1], image_bytes)
+
+    def test_failed_photo_never_falls_back_to_foreign_preview(self):
+        photo_error = Mock(ok=False, status_code=400)
+        text_success = Mock(ok=True)
+        text_success.json.return_value = {"ok": True}
+        session = Mock()
+        session.post.side_effect = [photo_error, text_success]
+        session.get.side_effect = requests.RequestException("image unavailable")
+        poster = "https://novisad.travel/wp-content/uploads/2019/10/upad.jpg"
+        self.assertTrue(publish(session, "private-test", "@afisha", "Афиша", URL, poster))
+        last = session.post.call_args.kwargs["json"]
+        self.assertTrue(last["link_preview_options"]["is_disabled"])
+        self.assertTrue(session.post.call_args.args[0].endswith("sendMessage"))
+
+    def test_photo_path_rejects_html_and_unofficial_urls(self):
+        from afisha_bot import _official_poster
+        self.assertFalse(_official_poster("https://novisad.travel/event/upad"))
+        self.assertFalse(_official_poster("https://evil.test/upad.jpg"))
 
 
 if __name__ == "__main__":
