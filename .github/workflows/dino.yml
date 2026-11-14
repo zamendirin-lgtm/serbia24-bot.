@@ -1,4 +1,4 @@
-name: DinoDvij — видео и мемы
+name: DinoDvij — новости и видео
 
 on:
   push:
@@ -43,7 +43,7 @@ jobs:
         run: python -m pip install -r dino/requirements.txt
       - name: Install ffmpeg for inline Telegram clips
         run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
-      - name: Find and post one eligible item
+      - name: Publish verified trend news or licensed video
         run: python dino/bot.py
       - name: Save state only when changed
         if: ${{ env.DINO_DRY_RUN != 'true' }}
