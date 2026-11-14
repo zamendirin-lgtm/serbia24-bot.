@@ -442,16 +442,11 @@ def main():
         except (RuntimeError, requests.RequestException) as exc:
             print("POST_BLOCKED: cannot verify Telegram destination:", type(exc).__name__)
             return
-    from memes import scheduled_meme
     from video_only import publish_video_only
-    # Original meme battlegrounds and humorous youth posts run in a few
-    # dedicated slots. Other checks look for licensed in-chat videos.
-    if scheduled_meme(state, now, dry_run=DRY_RUN):
-        if not DRY_RUN:
-            state["daily_count"] = count + 1
-            save_state(state)
-        print("MEME_CYCLE_COMPLETE")
-        return
+    # The repeating VS cards were rejected as low-quality filler.
+    # Keep autonomous themed video discovery and separate chat replies,
+    # but do NOT publish any generated meme cards automatically.
+    print("LOW_QUALITY_MEME_CARDS_DISABLED")
     if publish_video_only(state, now, dry_run=DRY_RUN):
         if not DRY_RUN:
             state["daily_count"] = count + 1
