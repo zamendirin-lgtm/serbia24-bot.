@@ -27,6 +27,7 @@ CURATED = [
         "key": "canal10-2026-10-16-quadrobics",
         "published": "2026-10-16",
         "title": "Квадробика: спорт или просто хайп?",
+        "short": "Маски, прыжки и видосы в TikTok — хайпа много. Но запястьям и спине такие трюки дают нагрузку. Canal 10 писал об этом 16 октября. А ты как считаешь? 👀",
         "summary": "Маски, прыжки на четвереньках и видосы в TikTok — вокруг этого до сих пор спорят. Но есть нюанс: при таких прыжках нагрузка идёт на запястья и спину. Об этом Canal 10 писал 16 октября. Так это тренировка или больше движ ради просмотров? 👀",
         "url": "https://www.canal10.com.ni/noticia/therians-que-hay-detras-de-la-tendencia-viral-que-domina-tiktok-y-redes-sociales/",
         "search": "quadrobics animal mask",
@@ -36,6 +37,7 @@ CURATED = [
         "key": "tovima-2026-05-21-therians",
         "published": "2026-05-21",
         "title": "Терианы: свой стиль или хайп из соцсетей?",
+        "short": "Одни носят маски ради самовыражения, другие — просто ради творчества. А в комментах всё спорят, где тут стиль, а где хайп. Разбор от мая 2026 года.",
         "summary": "Маски животных и необычные движения залетают в короткие видео. Для одних это часть самовыражения, для других — просто творческое хобби. А в комментах всё часто сводят к одному слову: «кринж». To Vima разбирал эту тему 21 мая.",
         "url": "https://www.tovima.com/culture/therians-trend-goes-viral-identity-or-online-myth/amp/",
         "search": "therian animal masks",
@@ -45,6 +47,7 @@ CURATED = [
         "key": "unsw-2025-10-quadrobics",
         "published": "2025-10-01",
         "title": "Квадробика вместо зала? Не всё так просто",
+        "short": "Прыжки выглядят эффектно, но это не значит, что они заменят тренировку. Специалисты UNSW разбирали реальные нагрузки ещё в 2025 году.",
         "summary": "Прыжки на четвереньках выглядят эффектно, но заменят ли они обычную тренировку? Специалисты UNSW ещё в октябре 2025 года разбирали нагрузки и обещания пользы от квадробики. Красивый видос — ещё не доказательство, что тренд работает так, как обещают.",
         "url": "https://www.unsw.edu.au/newsroom/news/2025/10/experts-unpack-quadrobics-the-fitness-trend-that-claims-leaping-around-on-all-fours-will-make-you-fit",
         "search": "quadrobics",
@@ -243,37 +246,53 @@ def group_avatar():
         return None
 
 
-def format_news_caption(story, photo_rights=None, photo_page=None):
-    """Readable youth-style article caption with unobtrusive linked sources.
+def short_news_text(story):
+    """A self-contained short note, never a teaser that requires leaving chat."""
+    if story.get("short"):
+        return story["short"][:240].strip()
+    # RSS abstracts can be wordy; keep only complete first sentence(s).
+    summary = re.sub(r"\s+", " ", story.get("summary", "")).strip()
+    sentences = re.split(r"(?<=[.!?])\s+", summary)
+    selected = []
+    for sentence in sentences:
+        sentence = sentence.strip()
+        if not re.search(r"[.!?]$", sentence):
+            break
+        if len(" ".join(selected + [sentence])) > 230:
+            break
+        selected.append(sentence)
+        if len(" ".join(selected)) >= 125:
+            break
+    brief = " ".join(selected)
+    return brief if len(brief) >= 60 else None
 
-    License-required photo author, license and adaptation remain as a single
-    small credit. The article source is linked in the headline.
-    """
+
+def format_news_caption(story, photo_rights=None, photo_page=None):
+    """Brief full in-chat text, tiny source link, short lawful photo credit."""
     if not source_is_valid(story.get("url", "")):
         raise ValueError("Missing article source")
-    title = (('🦖 <a href="' + html.escape(story["url"], quote=True) +
-             '"><b>' + html.escape(story["title"]) + '</b></a>'))
-    credit = ""
+    short = short_news_text(story)
+    if not short:
+        raise ValueError("No self-contained short article text")
+    title = "🦖 <b>" + html.escape(story["title"]) + "</b>"
+    cap = (title + "\n\n" + html.escape(short) +
+           '  <a href="' + html.escape(story["url"], quote=True) + '">·</a>')
     if photo_rights and photo_rights.get("credit"):
         if not photo_page or not source_is_valid(photo_page):
-            raise ValueError("Licensed image requires its own source page")
+            raise ValueError("CC-licensed picture needs author source page")
         license_url = photo_rights.get("license_url", "")
         if not license_url.startswith("https://creativecommons.org/licenses/"):
-            raise ValueError("Licensed image requires a license URL")
+            raise ValueError("CC-licensed picture needs license link")
         author = photo_rights["credit"]
-        # Commons fields sometimes append the author's hometown; keep name.
         if " from " in author:
             author = author.split(" from ", 1)[0]
-        credit = ('\n\n📷 <a href="' + html.escape(photo_page, quote=True) +
-                  '">' + html.escape(author[:70]) + '</a> · <a href="' +
-                  html.escape(license_url, quote=True) + '">' +
-                  html.escape(photo_rights["license"]) + '</a> · обр.')
-    for limit in (650, 530, 410, 290, 190):
-        text = story["summary"][:limit].rstrip()
-        caption = title + '\n\n' + html.escape(text) + credit
-        if len(caption) <= 1000:
-            return caption
-    raise ValueError("Cannot fit safe complete HTML caption")
+        cap += ('\n📷 <a href="' + html.escape(photo_page, quote=True) + '">' +
+                html.escape(author[:60]) + '</a> · <a href="' +
+                html.escape(license_url, quote=True) + '">' +
+                html.escape(photo_rights["license"]) + '</a> · обр.')
+    if len(cap) > 750:
+        raise ValueError("News caption unexpectedly too long")
+    return cap
 
 
 def publish_news(state, now, dry_run=False):
