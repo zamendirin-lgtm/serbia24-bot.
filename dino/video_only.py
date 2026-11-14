@@ -202,7 +202,7 @@ def query_video_category(category):
 def lookup_candidates(state, now):
     cache = state.setdefault("video_search_cache", {})
     cycle = now.timetuple().tm_yday * 96 + now.hour * 4 + now.minute // 15
-    if cache.get("cycle") == cycle:
+    if cache.get("version") == 2 and cache.get("cycle") == cycle:
         return cache.get("hits", [])
     # Rotate queries each time; no dependency on paid/API-key integrations.
     start = cycle % len(QUERIES)
@@ -231,7 +231,7 @@ def lookup_candidates(state, now):
     hits.sort(key=lambda h: (score(h), not bool(h['rights']['author'])), reverse=True)
     cache.clear()
     # Cache results for this execution to avoid repeating searches within run.
-    cache.update({"cycle": cycle, "hits": hits[:80]})
+    cache.update({"version": 2, "cycle": cycle, "hits": hits[:80]})
     print("RELEVANT_VIDEO_CANDIDATES", len(hits))
     for candidate in hits[:5]:
         print("VIDEO_CHOICE", candidate["title"][:95], "stream", candidate["transcoded"], candidate["width"], candidate["height"])
