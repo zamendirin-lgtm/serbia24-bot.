@@ -42,11 +42,11 @@ BANTER = (
 )
 
 INSULTED_BOT = (
-    "Ого, наехали на бота. И это всё? Слабовато, переделывай 💀",
-    "Слов много, остроумие где-то застряло на загрузке 😏",
-    "Меня послали? Хоть маршрут интересный предложи 😂",
-    "А вот это был наезд из архива 2014-го. Есть версия поновее?",
-    "Громко. Только меня так легко не заденешь, я из кода 😈",
+    "Да, я бот. А ты зачем с микроволновкой в баттл полез? 💀",
+    "Я хотя бы обновляюсь. А твои подколы на Windows XP работают? 😂",
+    "Ты меня троллишь или клавиатура сама в истерике? 💀",
+    "Наезд принят. Юмор ищем, он где-то в прошлой версии чата 🪦",
+    "Слабый троллинг. Перезагрузи сарказм и возвращайся 😈",
 )
 
 ROAST = (
@@ -78,7 +78,21 @@ HARASSMENT_REPLY = (
 
 THREAT_REPLY = "Угрозы — не дерзость, а дичь. Заканчивай и не трогай участников."
 ANIMAL_THREAT_REPLY = "Эй, животных не трогаем. Это уже не рофл, а дичь. 💀"
-HORSE_QUESTION_REPLY = "Не, брат, национальность тут вообще ни при чём 💀 Лошадей тоже не трогаем. Питбайк для катания, а не для дичи."
+# Edgy, absurd comeback to an obviously hypothetical troll prompt.
+# Joke about the ridiculous plan, never the person's ethnicity or animal harm.
+HORSE_QUESTION_REPLY = "Лошадь твой питбайк на завтрак съест, гонщик диванный 💀"
+HORSE_TROLL_REPLIES = (
+    "Лошадь твой питбайк на завтрак съест, гонщик диванный 💀",
+    "Ты сначала питбайк от самоката отличи, Шумахер с маркетплейса 💀 Лошадь тут вообще ни при чём.",
+    "Тебя лошадь пешком обгонит. У тебя там бензин или фантазия закончилась? 💀",
+)
+BOT_HECKLE = re.compile(
+    r"(?:бот(?:ик|яра)?\b|@dinodvij_bot)[^.!?\n]{0,65}"
+    r"(?:молч(?:ит|ишь)|туп(?:ой|ишь)|не\s+отвеча(?:ет|ешь)|"
+    r"где\s+ты|бот\s+слабый|кринж)|"
+    r"(?:где\s+бот|бот\s+сдох|бот\s+отвали)",
+    re.I,
+)
 HORSE_HARM = re.compile(
     r"(?:лошад\w*|коня|коней|конь)[^.!?\n]{0,70}"
     r"(?:переех|переед|задавл|давить|убить|сбить)|"
@@ -231,6 +245,10 @@ def classify(text, to_bot):
         if PRONOUN.search(cleaned) or re.search(r"@\w+", cleaned):
             return "harassment"
     if not to_bot:
+        # Participants regularly bait the bot without mentioning its handle.
+        # Join the playful banter, but never prioritize it over safety rules.
+        if BOT_HECKLE.search(cleaned):
+            return "bot_insult"
         return None
     if GROUP_ROLE_WORDS.search(cleaned):
         return "group_roles"
@@ -299,7 +317,7 @@ def choose_reply(category, msg_id):
     if category == "animal_threat":
         return ANIMAL_THREAT_REPLY
     if category == "horse_safety":
-        return HORSE_QUESTION_REPLY
+        return rng.choice(HORSE_TROLL_REPLIES)
     if category == "sexual":
         return SEXUAL_REPLY
     if category == "harassment":
