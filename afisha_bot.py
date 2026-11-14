@@ -23,6 +23,7 @@ from zoneinfo import ZoneInfo
 import requests
 from bs4 import BeautifulSoup
 from afisha_editor import edit_event
+from afisha_photos import find_licensed_photo
 
 TZ = ZoneInfo("Europe/Belgrade")
 STATE = Path("data/afisha_seen.json")
@@ -743,18 +744,25 @@ def _send_event_photo(session: requests.Session, api: str, chat: str,
 
 
 def publish(session: requests.Session, token: str, chat: str, post: str,
-            source_url: str, image_url: str = "") -> bool:
+            source_url: str, image_url: str = "",
+            *, licensed_commons: bool = False) -> bool:
     """Use a clean photo with Russian caption or text-only, never foreign previews.
 
     Telegram link previews pull the source's Serbian/English title and synopsis,
     making a second foreign-language block above the Russian announcement.
     """
     api = f"https://api.telegram.org/bot{token}/"
-    if image_url and _official_poster(image_url) and len(post) <= 1024:
+    official = _official_poster(image_url)
+    commons = (
+        licensed_commons
+        and urlparse(image_url).scheme == "https"
+        and urlparse(image_url).hostname == "upload.wikimedia.org"
+    )
+    if image_url and (official or commons) and len(post) <= 1024:
         if _send_event_photo(session, api, chat, post, image_url):
             return True
-        print("Official poster failed; posting Russian text without a link preview.")
-    elif image_url and _official_poster(image_url):
+        print("Licensed event image failed; posting Russian text without a link preview.")
+    elif image_url and (official or commons):
         print("Long Afisha caption; posting full Russian text without a link preview.")
 
     try:
@@ -844,7 +852,24 @@ def main() -> int:
             print(post)
             published = True
             break
-        if publish(session, token, chat, post, event.url, event.image):
+        # When no official event poster is available, look for a licensed image
+        # of the actual performer or a clearly labelled prior-year event photo.
+        # Wikimedia Commons metadata is checked for author and licence.
+        chosen_image = event.image
+        licensed_commons = False
+        if not chosen_image:
+            photo = find_licensed_photo(session, event)
+            if photo:
+                with_credit = post + "\n\n" + photo.credit_html()
+                if len(with_credit) <= 1024:
+                    post = with_credit
+                    chosen_image = photo.image_url
+                    licensed_commons = True
+                    print(f"Afisha matched {photo.subject_label} from Wikimedia Commons.")
+                else:
+                    print("Licensed image credit would exceed Telegram caption size; keeping full text.")
+        if publish(session, token, chat, post, event.url, chosen_image,
+                   licensed_commons=licensed_commons):
             seen[event.key] = {
                 "url": event.url,
                 "event_start": event.start.isoformat(),
