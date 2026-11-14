@@ -1,8 +1,10 @@
 {
   "date": "2026-11-14",
-  "daily_count": 0,
+  "daily_count": 1,
   "seen": {},
-  "used_media": [],
+  "used_media": [
+    "commons-video:5761750"
+  ],
   "welcome_posted": true,
   "welcome_message_id": 741482,
   "video_posts": {
@@ -10,7 +12,22 @@
   },
   "rejected_media": [],
   "video_search_cache": {
-    "cycle": 30569,
-    "hits": []
+    "cycle": 30571,
+    "hits": [
+      {
+        "id": "commons-video:5761750",
+        "title": "File:Diti hugs Natalie.ogv",
+        "url": "https://upload.wikimedia.org/wikipedia/commons/f/f4/Diti_hugs_Natalie.ogv?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+        "page_url": "https://commons.wikimedia.org/wiki/File:Diti_hugs_Natalie.ogv",
+        "width": 720,
+        "height": 576,
+        "size": 2816816,
+        "rights": {
+          "label": "CC BY 2.0 fr",
+          "author": "Dimitri “Diti” Torterat",
+          "url": "https://creativecommons.org/licenses/by/2.0/fr/deed.en"
+        }
+      }
+    ]
   }
 }
