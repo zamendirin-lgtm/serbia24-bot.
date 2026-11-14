@@ -25,8 +25,8 @@ STATE_FILE = Path(__file__).resolve().parent / "chat_state.json"
 GROUP_ID = -1002244148588
 MAX_LEARNING_AGE = 6 * 3600  # learn from recent public group chat even after GitHub cron delays
 MAX_REPLY_AGE = 45 * 60  # delayed GitHub Actions; restrict unsolicited replies to newest messages
-MAX_ANSWERS_PER_RUN = 12
-MAX_ANSWERS_PER_USER_PER_RUN = 2
+MAX_ANSWERS_PER_RUN = 24
+MAX_ANSWERS_PER_USER_PER_RUN = 4
 DRY_RUN = os.environ.get("DINO_CHAT_DRY_RUN", "false").lower() in ("1", "true", "yes")
 BOT_NAME = "@dinodvij_bot"
 
@@ -67,6 +67,12 @@ TRENDS = (
     "Маска за три ночи или покупной костюм за ползарплаты? Битва пошла.",
     "Кринж или хайп: динозавр в супермаркете? Только не юлите 🦖",
     "Идеальный монтаж или эпичный фейл — что реально залетит? 🍿",
+)
+
+POPCORN_REPLIES = (
+    "Тогда бери ведро побольше 🍿 Здесь сюжет закручивается быстрее, чем в сериале.",
+    "Попкорн? Правильно. Тут иногда такой цирк, что билеты продавать пора 💀",
+    "Окей, назначаю тебя главным по попкорну. У нас тут сезон без финала 🍿",
 )
 
 NORMAL = (
@@ -228,11 +234,61 @@ def save_state(state):
                     "total_replies": int(state.get("total_replies", 0)),
                     "last_spontaneous_at": int(state.get("last_spontaneous_at", 0)),
                     "announcement_message_id": int(state.get("announcement_message_id", 0)),
+                    "bot_message_ids": [
+                        int(v) for v in state.get("bot_message_ids", [])[-120:]
+                        if isinstance(v, int) and v > 0
+                    ],
                     "style": learn_style.sanitize(state.get("style"))}
     STATE_FILE.write_text(
         json.dumps(public_state, ensure_ascii=False, indent=2) + "\n",
         encoding="utf-8",
     )
+
+
+# These responses are authored by this bot; can recognize a quoted bot
+# message even if Telegram represents it as an anonymous group admin.
+def normalized_quote(value):
+    return " ".join(re.findall(r"[a-zа-яё0-9]+", str(value).lower()))
+
+
+def known_bot_reply_text(reply):
+    candidate = normalized_quote(reply.get("text") or reply.get("caption") or "")
+    if len(candidate) < 18:
+        return False
+    pools = (BANTER, INSULTED_BOT, ROAST, TRENDS, NORMAL,
+             HARASSMENT_REPLY, ROOSTER_IDENTITY, HORSE_TROLL_REPLIES)
+    for group in pools:
+        for authored in group:
+            original = normalized_quote(authored)
+            if len(original) >= 18 and (candidate == original or
+                                        candidate.startswith(original[:24])):
+                return True
+    for authored in (THREAT_REPLY, ANIMAL_THREAT_REPLY, SEXUAL_REPLY,
+                     HELP_REPLY, GROUP_ROLES_REPLY):
+        original = normalized_quote(authored)
+        if len(original) >= 18 and candidate.startswith(original[:24]):
+            return True
+    for group in TOPIC_REPLIES.values():
+        for authored in group:
+            original = normalized_quote(authored)
+            if len(original) >= 18 and candidate.startswith(original[:24]):
+                return True
+    return False
+
+
+def is_reply_to_bot(message, bot_user_id, state):
+    replied = message.get("reply_to_message") or {}
+    if not replied:
+        return False
+    sender = replied.get("from") or {}
+    if sender.get("id") == bot_user_id and bot_user_id:
+        return True
+    message_id = replied.get("message_id")
+    if message_id and message_id in state.get("bot_message_ids", []):
+        return True
+    # Regression: older output "Смелое мнение. Комменты уже достают попкорн"
+    # appears from anonymous group admin for some members.
+    return known_bot_reply_text(replied)
 
 
 def classify(text, to_bot):
@@ -342,6 +398,8 @@ def choose_reply(category, msg_id):
         return HELP_REPLY
     if category == "group_roles":
         return GROUP_ROLES_REPLY
+    if category == "popcorn":
+        return rng.choice(POPCORN_REPLIES)
     if category == "roast":
         return rng.choice(ROAST)
     if category == "battle":
@@ -364,7 +422,7 @@ def send_reply(text, original_msg_id):
             "link_preview_options": json.dumps({"is_disabled": True}),
         },
     )
-    return bool(result.get("message_id"))
+    return int(result.get("message_id") or 0)
 
 
 def main():
@@ -428,16 +486,18 @@ def main():
                 # user ID is persisted; serious distress is ignored.
                 if not HORSE_HARM.search(body) and not ANIMAL_HARM.search(body):
                     state["style"] = learn_style.learn(body, state["style"])
-                # Learning is broader than replying; a delayed job must not
-                # revive an obsolete discussion just to be noisy.
-                if msg_age > MAX_REPLY_AGE:
-                    continue
-                replied_to = msg.get("reply_to_message", {}).get("from", {})
+                # Direct replies deserve priority even when GitHub cron was
+                # delayed. Random unsolicited banter expires much sooner.
+                replied_to_bot = is_reply_to_bot(msg, bot_user_id, state)
                 direct = bool(
                     MENTION.search(body) or BOT_COMMAND.search(body) or
-                    replied_to.get("id") == bot_user_id
+                    replied_to_bot
                 )
+                if msg_age > (2 * 3600 if direct else MAX_REPLY_AGE):
+                    continue
                 category = classify(body, direct)
+                if replied_to_bot and re.search(r"попкорн", body, re.I):
+                    category = "popcorn"
                 is_spontaneous = False
                 # Join discussions on its own, without needing @mention.
                 if category is None:
@@ -484,7 +544,10 @@ def main():
                     sent = True
                 else:
                     try:
-                        if send_reply(response, original_msg_id):
+                        own_msg_id = send_reply(response, original_msg_id)
+                        if own_msg_id:
+                            state.setdefault("bot_message_ids", []).append(own_msg_id)
+                            state["bot_message_ids"] = state["bot_message_ids"][-120:]
                             replied += 1
                             sent = True
                     except (RuntimeError, requests.RequestException):
