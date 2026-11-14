@@ -50,5 +50,12 @@
     "published_at": "2026-11-13T15:57:00.574146+01:00",
     "topic": "other",
     "ai_editor": "groq"
+  },
+  "095f4ee6410f5397999fae6041192ad5d18c8f60d6f2612218f06993b0a80112": {
+    "url": "https://novisad.travel/en/kalendar-dogadjaja/upad-theatre-festival",
+    "event_start": "2026-11-17T00:00:00+01:00",
+    "published_at": "2026-11-14T09:08:47.353277+01:00",
+    "topic": "festival",
+    "ai_editor": "groq"
   }
 }
