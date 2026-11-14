@@ -225,6 +225,7 @@ def lookup_candidates(state, now):
             (4 if h > w else 0)
             + (2 if 0.45 <= ratio <= 0.75 else 0)
             - abs(ratio - 9 / 16),
+            int("2026" in hit["title"].lower()),
             int("therian" in hit["title"].lower() or "dinosuit" in hit["title"].lower())
         )
     hits.sort(key=lambda h: (score(h), not bool(h['rights']['author'])), reverse=True)
@@ -272,21 +273,28 @@ def to_mp4_original_ratio(source, dest):
 
 
 def minimal_caption(hit):
-    # CC0/public domain => no caption. CC BY: minimal linked credit.
-    rights = hit['rights']
-    if not rights['author']:
-        return None
-    source = hit.get('page_url', '')
-    if not media_url_allowed(source):
-        source = 'https://commons.wikimedia.org/'
-    title = hit.get('title', '').removeprefix('File:').rsplit('.', 1)[0].replace('_', ' ')
+    """A short real-video hook plus the smallest legally complete attribution."""
+    title = hit.get("title", "").lower()
+    if "pyrkon" in title:
+        hook = "🦖 Костюмный парад на Pyrkon! Кто бы так вышел на улицу? 😂"
+    elif "conga" in title or "närcon" in title:
+        hook = "🐾 Когда вся тусовка пошла в танец 😂"
+    else:
+        hook = "🎬 Смотрите, что попалось в костюмной тусовке 👀"
+    rights = hit["rights"]
+    if not rights["author"]:
+        return hook
+    page = hit.get("page_url", "")
+    if not media_url_allowed(page):
+        page = "https://commons.wikimedia.org/"
     return (
-        '<a href="' + html.escape(source, quote=True) + '">' +
-        html.escape(title[:65] or 'Видео') + '</a> · ' +
-        html.escape(rights['author'][:80]) + ' · ' +
-        '<a href="' + html.escape(rights['url'], quote=True) + '">' +
-        html.escape(rights['label']) + '</a> · адапт.'
+        hook + "\n" +
+        '<a href="' + html.escape(page, quote=True) + '">' +
+        html.escape(rights["author"][:65]) + '</a> · ' +
+        '<a href="' + html.escape(rights["url"], quote=True) + '">' +
+        html.escape(rights["label"]) + '</a> · обр.'
     )
+
 
 def post_hit(hit, dry_run=False):
     print("SELECTED_VIDEO", hit["title"][:110], "portrait", hit["height"] > hit["width"])
