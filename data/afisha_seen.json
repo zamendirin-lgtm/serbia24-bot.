@@ -71,5 +71,12 @@
     "published_at": "2026-11-14T12:46:36.945157+01:00",
     "topic": "other",
     "ai_editor": "groq"
+  },
+  "fc8775a39b6070a1acef879833e0baa081576453a6b0917a37dc861a22a8bf7c": {
+    "url": "https://www.runbgd.com/whats-on/magla-bend-2026-11-26",
+    "event_start": "2026-11-26T00:00:00+01:00",
+    "published_at": "2026-11-14T15:21:15.821610+01:00",
+    "topic": "other",
+    "ai_editor": "groq"
   }
 }
