@@ -18,6 +18,7 @@ from datetime import datetime, timezone
 import requests
 
 import bot
+import learn_style
 
 STATE_FILE = Path(__file__).resolve().parent / "chat_state.json"
 GROUP_ID = -1002244148588
@@ -158,7 +159,8 @@ def save_state(state):
                     "last_check_utc": datetime.now(timezone.utc).isoformat(),
                     "total_replies": int(state.get("total_replies", 0)),
                     "last_spontaneous_at": int(state.get("last_spontaneous_at", 0)),
-                    "announcement_message_id": int(state.get("announcement_message_id", 0))}
+                    "announcement_message_id": int(state.get("announcement_message_id", 0)),
+                    "style": learn_style.sanitize(state.get("style"))}
     STATE_FILE.write_text(
         json.dumps(public_state, ensure_ascii=False, indent=2) + "\n",
         encoding="utf-8",
@@ -268,6 +270,7 @@ def main():
     me = bot.telegram_send("getMe")
     bot_user_id = me.get("id")
     state = read_state()
+    state["style"] = learn_style.sanitize(state.get("style"))
     old_offset = int(state.get("offset") or 0)
     offset = old_offset
     now = time.time()
@@ -310,6 +313,9 @@ def main():
                 body = str(msg.get("text") or msg.get("caption") or "")[:1500]
                 if not body:
                     continue
+                # Anonymous aggregate vocabulary/format training. No text or
+                # user ID is persisted; serious distress is ignored.
+                state["style"] = learn_style.learn(body, state["style"])
                 replied_to = msg.get("reply_to_message", {}).get("from", {})
                 direct = bool(
                     MENTION.search(body) or BOT_COMMAND.search(body) or
@@ -334,6 +340,10 @@ def main():
                 if replied >= MAX_ANSWERS_PER_RUN:
                     continue
                 response = choose_reply(category, original_msg_id)
+                response = learn_style.adapt_reply(
+                    response, learn_style.preferred_style(state["style"]),
+                    original_msg_id, category
+                )
                 sent = False
                 if DRY_RUN:
                     print("CHAT_DRY_RUN_ANSWER", category, "spontaneous", is_spontaneous)
@@ -364,8 +374,11 @@ def main():
         state["total_replies"] = int(state.get("total_replies", 0)) + replied
         state["last_spontaneous_at"] = last_auto_at
         save_state(state)
+    style_summary = learn_style.preferred_style(state["style"])
     print("CHAT_POLL_OK", "processed", processed,
           "replied", replied, "spontaneous", spontaneous,
+          "learned_message_count", style_summary["seen"],
+          "learned_style", style_summary["length"],
           "offset_changed", offset != old_offset)
 
 
