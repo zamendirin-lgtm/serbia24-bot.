@@ -77,7 +77,15 @@ HARASSMENT_REPLY = (
 )
 
 THREAT_REPLY = "Угрозы — не дерзость, а дичь. Заканчивай и не трогай участников."
-ANIMAL_THREAT_REPLY = "Эй, собак и других животных не трогай. Угрозы им — не рофл, а дичь."
+ANIMAL_THREAT_REPLY = "Эй, животных не трогаем. Это уже не рофл, а дичь. 💀"
+HORSE_QUESTION_REPLY = "Не, брат, национальность тут вообще ни при чём 💀 Лошадей тоже не трогаем. Питбайк для катания, а не для дичи."
+HORSE_HARM = re.compile(
+    r"(?:лошад\w*|коня|коней|конь)[^.!?\n]{0,70}"
+    r"(?:переех|переед|задавл|давить|убить|сбить)|"
+    r"(?:переех|переед|задавл|давить|убить|сбить)"
+    r"[^.!?\n]{0,70}(?:лошад\w*|коня|коней|конь)",
+    re.I,
+)
 ANIMAL_HARM = re.compile(
     r"(?:задавл(?:ю|им|ишь|ить)|переед(?:у|ешь|ем|ет)|"
     r"убь(?:ю|ём|ёшь|ет)|убить|зареж(?:у|ешь)|отравл(?:ю|ишь|ить))"
@@ -208,6 +216,8 @@ def classify(text, to_bot):
     low = cleaned.lower()
     if THREATS.search(cleaned):
         return "threat"
+    if HORSE_HARM.search(cleaned):
+        return "horse_safety"
     if ANIMAL_HARM.search(cleaned):
         return "animal_threat"
     if SEXUAL.search(cleaned):
@@ -288,6 +298,8 @@ def choose_reply(category, msg_id):
         return THREAT_REPLY
     if category == "animal_threat":
         return ANIMAL_THREAT_REPLY
+    if category == "horse_safety":
+        return HORSE_QUESTION_REPLY
     if category == "sexual":
         return SEXUAL_REPLY
     if category == "harassment":
@@ -382,7 +394,8 @@ def main():
                     continue
                 # Anonymous aggregate vocabulary/format training. No text or
                 # user ID is persisted; serious distress is ignored.
-                state["style"] = learn_style.learn(body, state["style"])
+                if not HORSE_HARM.search(body) and not ANIMAL_HARM.search(body):
+                    state["style"] = learn_style.learn(body, state["style"])
                 # Learning is broader than replying; a delayed job must not
                 # revive an obsolete discussion just to be noisy.
                 if msg_age > MAX_REPLY_AGE:
@@ -445,6 +458,8 @@ def main():
                     except (RuntimeError, requests.RequestException):
                         print("CHAT_REPLY_FAILED")
                 if sent:
+                    if category in ("horse_safety", "animal_threat"):
+                        print("ANIMAL_SAFETY_REPLY_OK", category)
                     per_user[uid] = per_user.get(uid, 0) + 1
                     if is_spontaneous:
                         spontaneous += 1
