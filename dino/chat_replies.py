@@ -210,6 +210,9 @@ def main():
                 if update_id < offset:
                     continue
                 offset = update_id + 1
+                # First live poll establishes a cursor; never reply to past chat history.
+                if old_offset == 0 and not DRY_RUN:
+                    continue
                 msg = update.get("message", {})
                 chat = msg.get("chat", {})
                 if chat.get("id") != GROUP_ID:
