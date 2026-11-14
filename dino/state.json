@@ -1,9 +1,10 @@
 {
   "date": "2026-11-14",
-  "daily_count": 6,
+  "daily_count": 7,
   "seen": {},
   "used_media": [
-    "commons-video:5761750"
+    "commons-video:5761750",
+    "commons-video:195011858"
   ],
   "welcome_posted": true,
   "welcome_message_id": 741482,
@@ -12,12 +13,15 @@
   },
   "rejected_media": [],
   "video_search_cache": {
+    "version": 2,
     "cycle": 30599,
     "hits": [
       {
         "id": "commons-video:5761750",
         "title": "File:Diti hugs Natalie.ogv",
-        "url": "https://upload.wikimedia.org/wikipedia/commons/f/f4/Diti_hugs_Natalie.ogv?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+        "url": "https://upload.wikimedia.org/wikipedia/commons/transcoded/f/f4/Diti_hugs_Natalie.ogv/Diti_hugs_Natalie.ogv.480p.vp9.webm",
+        "original_url": "https://upload.wikimedia.org/wikipedia/commons/f/f4/Diti_hugs_Natalie.ogv?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+        "transcoded": true,
         "page_url": "https://commons.wikimedia.org/wiki/File:Diti_hugs_Natalie.ogv",
         "width": 720,
         "height": 576,
@@ -26,6 +30,38 @@
           "label": "CC BY 2.0 fr",
           "author": "Dimitri “Diti” Torterat",
           "url": "https://creativecommons.org/licenses/by/2.0/fr/deed.en"
+        }
+      },
+      {
+        "id": "commons-video:195011858",
+        "title": "File:Pyrkon 2026 furry parade.webm",
+        "url": "https://upload.wikimedia.org/wikipedia/commons/transcoded/f/f5/Pyrkon_2026_furry_parade.webm/Pyrkon_2026_furry_parade.webm.480p.vp9.webm",
+        "original_url": "https://upload.wikimedia.org/wikipedia/commons/f/f5/Pyrkon_2026_furry_parade.webm?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+        "transcoded": true,
+        "page_url": "https://commons.wikimedia.org/wiki/File:Pyrkon_2026_furry_parade.webm",
+        "width": 3840,
+        "height": 2160,
+        "size": 182582889,
+        "rights": {
+          "label": "CC BY 4.0",
+          "author": "Rose Abrams",
+          "url": "https://creativecommons.org/licenses/by/4.0"
+        }
+      },
+      {
+        "id": "commons-video:177084899",
+        "title": "File:NärCon Sommar 2025 - conga line of furries.webm",
+        "url": "https://upload.wikimedia.org/wikipedia/commons/transcoded/0/01/N%C3%A4rCon_Sommar_2025_-_conga_line_of_furries.webm/N%C3%A4rCon_Sommar_2025_-_conga_line_of_furries.webm.480p.vp9.webm",
+        "original_url": "https://upload.wikimedia.org/wikipedia/commons/0/01/N%C3%A4rCon_Sommar_2025_-_conga_line_of_furries.webm?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+        "transcoded": true,
+        "page_url": "https://commons.wikimedia.org/wiki/File:N%C3%A4rCon_Sommar_2025_-_conga_line_of_furries.webm",
+        "width": 3840,
+        "height": 2160,
+        "size": 952852753,
+        "rights": {
+          "label": "CC BY-SA 4.0",
+          "author": "Rose Abrams",
+          "url": "https://creativecommons.org/licenses/by-sa/4.0"
         }
       }
     ]
