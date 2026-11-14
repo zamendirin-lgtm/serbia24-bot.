@@ -61,6 +61,23 @@ def main():
             assert c.read_state()["style"]["seen"] == 14
         finally:
             c.STATE_FILE = old_file
+    # Regression from a real chat: a neutral question about the group's
+    # creator is not a fight, and the bot must not invent one.
+    for message in (
+        "То есть злой админ это не создатель?",
+        "А кто тогда создатель?",
+        "Конечно нет, но один из самых старых админов в чате.",
+        "Какой спор?",
+        "Кто владелец чата?",
+        "Я думаю у нас вообще ничего не произошло",
+        "Скажите, а кто сегодня будет в чате?",
+    ):
+        assert c.spontaneous_category(message, 746200) is None, message
+    assert c.classify("@DinoDvij_bot кто создатель чата?", True) == "group_roles"
+    answer = c.choose_reply("group_roles", 746201)
+    assert "не знаю" in answer and "спор" not in answer
+    assert c.spontaneous_category("Смотри мою маску терриана — как тебе?", 746201) == "therian"
+    assert c.spontaneous_category("В костюме динозавра я еле прошёл в дверь 😂", 746202) == "dino"
     assert c.GROUP_ID == -1002244148588
     print("CHAT_RULES_TESTS_OK",len(expectations))
 
