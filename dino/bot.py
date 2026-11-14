@@ -442,11 +442,16 @@ def main():
         except (RuntimeError, requests.RequestException) as exc:
             print("POST_BLOCKED: cannot verify Telegram destination:", type(exc).__name__)
             return
+    from news_auto import publish_news
     from video_only import publish_video_only
-    # The repeating VS cards were rejected as low-quality filler.
-    # Keep autonomous themed video discovery and separate chat replies,
-    # but do NOT publish any generated meme cards automatically.
-    print("LOW_QUALITY_MEME_CARDS_DISABLED")
+    # Real, sourced trend news with photographs. Never publish generic VS cards.
+    # New news is throttled independently, with video discovery as fallback.
+    if publish_news(state, now, dry_run=DRY_RUN):
+        if not DRY_RUN:
+            state["daily_count"] = count + 1
+            save_state(state)
+        print("SOURCED_NEWS_CYCLE_COMPLETE")
+        return
     if publish_video_only(state, now, dry_run=DRY_RUN):
         if not DRY_RUN:
             state["daily_count"] = count + 1
