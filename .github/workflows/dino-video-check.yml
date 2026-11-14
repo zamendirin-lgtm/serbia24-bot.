@@ -1,0 +1,19 @@
+name: DinoDvij - find playable costume video transcodes
+on:
+  push:
+    paths:
+      - 'dino/.check-video-once'
+permissions:
+  contents: read
+jobs:
+  videos:
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install -r dino/requirements.txt
+      - run: python -m compileall -q dino/video_only.py dino/bot.py dino/news_auto.py
+      - run: python dino/check_video_sources.py
