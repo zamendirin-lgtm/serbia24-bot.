@@ -153,12 +153,14 @@ def suitable_rights(meta):
     label = strip_markup(meta.get("LicenseShortName", {}).get("value", ""))
     low = label.lower()
     if "cc0" in low or "public domain" in low:
-        return {"credit": "", "license": label or "Public domain"}
+        return {"credit": "", "license": label or "Public domain", "license_url": ""}
     if re.fullmatch(r"cc by(?:-sa)?[ -]?[1-4]\.0(?:[ -][a-z]{2})?", low):
         author = strip_markup(meta.get("Artist", {}).get("value", ""))
         author = re.sub(r"https?://\S+", "", author).strip()
         if 3 <= len(author) <= 85:
-            return {"credit": author, "license": label}
+            url = strip_markup(meta.get("LicenseUrl", {}).get("value", ""))
+            if url.startswith("https://creativecommons.org/licenses/"):
+                return {"credit": author, "license": label, "license_url": url}
     return None
 
 
@@ -266,19 +268,38 @@ def publish_news(state, now, dry_run=False):
         credit = "Фотоиллюстрация"
         if rights["credit"] and source_is_valid(page):
             credit += (": " + html.escape(rights["credit"]) + " · " +
-                       html.escape(rights["license"]) + " · " +
-                       '<a href="' + html.escape(page, quote=True) + '">·</a>')
+                       '<a href="' + html.escape(rights["license_url"], quote=True) +
+                       '">' + html.escape(rights["license"]) + '</a> · ' +
+                       '<a href="' + html.escape(page, quote=True) +
+                       '">оригинал</a> · адапт.')
         cap += "\n" + credit
     else:
         image = group_avatar()
     if not image:
         print("NEWS_SKIPPED_NO_IMAGE")
         return False
+    if len(cap) > 1000:
+        # Safely rebuild the caption without cutting an HTML link in half.
+        short_summary = html.escape(story["summary"][:240])
+        cap = ("🦖 <b>" + html.escape(story["title"][:105]) + "</b>\n\n" +
+               short_summary + "\n\n" + "<i>" + html.escape(story["type"]) +
+               "</i> · " + '<a href="' + html.escape(story["url"], quote=True) +
+               '">Источник</a>')
+        if photo and photo[2]["credit"] and source_is_valid(photo[3]):
+            rights = photo[2]
+            cap += ("\nФотоиллюстрация: " + html.escape(rights["credit"][:70]) +
+                    ' · <a href="' + html.escape(rights["license_url"], quote=True) +
+                    '">' + html.escape(rights["license"]) + '</a>' +
+                    ' · <a href="' + html.escape(photo[3], quote=True) +
+                    '">оригинал</a> · адапт.')
+    if len(cap) > 1000:
+        print("NEWS_CAPTION_TOO_LONG")
+        return False
     with io.BytesIO(image) as fp:
         fp.name = "news.jpg"
         result = bot.telegram_send("sendPhoto", data={
             "chat_id": bot.CHAT_ID,
-            "caption": cap[:1000],
+            "caption": cap,
             "parse_mode": "HTML",
             "disable_notification": "true",
         }, files={"photo": ("news.jpg", fp, "image/jpeg")})
