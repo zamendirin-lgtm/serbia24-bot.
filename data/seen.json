@@ -41,7 +41,8 @@
     "ad387031a56f9e0fdf0b3f6f": 1794598353.337854,
     "036d6c115ab8471be34924af": 1794643317.195009,
     "c9599c0f57281670f54f7e5f": 1794648739.029185,
-    "9bd98ff9d84d89de0be48b82": 1794656502.237568
+    "9bd98ff9d84d89de0be48b82": 1794656502.237568,
+    "8428ce335f334add4825ba5b": 1794663029.98272
   },
   "photos": {
     "50f559ee5d138a92c244ad4c": 1794474084.088928,
@@ -71,7 +72,8 @@
     "a3e946114d247c4084582329": 1794598353.337854,
     "f6dbd931a548ff58fc7d5d20": 1794643317.195009,
     "0a0368d21cde10bd97b6aee4": 1794648739.029185,
-    "772e9666f563e0b2244fea3c": 1794656502.237568
+    "772e9666f563e0b2244fea3c": 1794656502.237568,
+    "caafe6a28e0c5162e9f176d1": 1794663029.98272
   },
   "phashes": {
     "2ceefee6566d6666": 1794474084.088928,
@@ -101,7 +103,8 @@
     "84606371060a1800": 1794598353.337854,
     "87c7d0d42d274b4e": 1794643317.195009,
     "c6868e8cc4ececac": 1794648739.029185,
-    "63f0c8440444646c": 1794656502.237568
+    "63f0c8440444646c": 1794656502.237568,
+    "863e3a7a7a3a4e1e": 1794663029.98272
   },
   "posted": [
     {
@@ -350,6 +353,12 @@
       "ts": 1794656502.237568,
       "title_norm": "transnacionalne kriminalne mreze na zapadnom balkanu pretnja amerikancima odeljenje stejt departmenta se oglasilo nakon posete srbiji",
       "summary_norm": "transnacionalne kriminalne mreze na zapadnom balkanu predstavljaju pretnju amerikancima koja se proteze daleko izvan granica regiona porucilo je odeljenje stejt departmenta za medunarodnu borbu protiv narkotika i sprovodenje zakona nil na svom x nalogu",
+      "source": "Danas"
+    },
+    {
+      "ts": 1794663029.98272,
+      "title_norm": "koliko zaraduje jedan odsto najbogatijih a koliko jedan odsto najsiromasnijih u srbiji",
+      "summary_norm": "prosecno domacinstvo u srbiji prosle godine imalo je 2 57 clanova i prihodovalo je 109 136 dinara mesecno pokazuje anketa o potrosnji domacinstava koju je objavio republicki zavod za statistiku rzs",
       "source": "Danas"
     }
   ]
