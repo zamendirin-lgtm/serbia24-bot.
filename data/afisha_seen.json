@@ -57,5 +57,12 @@
     "published_at": "2026-11-14T09:08:47.353277+01:00",
     "topic": "festival",
     "ai_editor": "groq"
+  },
+  "6408a2b19609d787d98dd5416a922f729f8ef94f261ed727291f5128177044ba": {
+    "url": "https://visitsubotica.rs/events/desire-central-station",
+    "event_start": "2026-11-17T20:00:00+01:00",
+    "published_at": "2026-11-14T10:52:17.266425+01:00",
+    "topic": "festival",
+    "ai_editor": "groq"
   }
 }
