@@ -33,15 +33,14 @@ class AccurateAfishaPrices(unittest.TestCase):
         events = parse_belgrade_cards(listing("A concert", "Concert Hall", "1200 RSD"), NOW)
         self.assertEqual(events[0].price, "от 1200 дин. (по данным афиши)")
 
-    def test_retries_without_preview_if_preview_is_unavailable(self):
-        rejected = Mock(ok=False, status_code=400)
+    def test_plain_text_never_asks_telegram_for_source_preview(self):
         success = Mock(ok=True, status_code=200)
         success.json.return_value = {"ok": True}
         session = Mock()
-        session.post.side_effect = [rejected, success]
+        session.post.return_value = success
         self.assertTrue(publish(session, "private-test", "@afisha", "Event",
                                 "https://www.runbgd.com/whats-on/test-event"))
-        self.assertEqual(session.post.call_count, 2)
+        self.assertEqual(session.post.call_count, 1)
         self.assertTrue(session.post.call_args.kwargs["json"]["link_preview_options"]["is_disabled"])
 
 
