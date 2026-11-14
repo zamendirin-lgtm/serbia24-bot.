@@ -44,7 +44,8 @@
     "9bd98ff9d84d89de0be48b82": 1794656502.237568,
     "8428ce335f334add4825ba5b": 1794663029.98272,
     "bcb70ad458d5b092f71d99da": 1794670811.036438,
-    "132134ffd16701308559c5d2": 1794676477.577623
+    "132134ffd16701308559c5d2": 1794676477.577623,
+    "43814145c08fdd14a528c052": 1794689867.372207
   },
   "photos": {
     "50f559ee5d138a92c244ad4c": 1794474084.088928,
@@ -77,7 +78,8 @@
     "772e9666f563e0b2244fea3c": 1794656502.237568,
     "caafe6a28e0c5162e9f176d1": 1794663029.98272,
     "632f23b8bdf7758ac907802c": 1794670811.036438,
-    "70087a41330f76fbe604426e": 1794676477.577623
+    "70087a41330f76fbe604426e": 1794676477.577623,
+    "f7f46b6628bce6ee7192615a": 1794689867.372207
   },
   "phashes": {
     "2ceefee6566d6666": 1794474084.088928,
@@ -110,7 +112,8 @@
     "63f0c8440444646c": 1794656502.237568,
     "863e3a7a7a3a4e1e": 1794663029.98272,
     "3b81332928a43133": 1794670811.036438,
-    "02a2e94bc6d45826": 1794676477.577623
+    "02a2e94bc6d45826": 1794676477.577623,
+    "8fc7030313593913": 1794689867.372207
   },
   "posted": [
     {
@@ -378,6 +381,12 @@
       "title_norm": "ultra tsrna gora vratsheni smo sa aerodroma u beogradu er srbija odluka doneta iz bezbednosnikh razloga",
       "summary_norm": "navijachka grupa ultra tsrna gora koja je krenula na fudbalsku utakmitsu na kipar saopshtila je da je njenim chlanovima sa tsrnogorskim pasoshima tokom presedanja onemogutshen let iz beograda iako navode politsija nije evidentirala nijedan prekrshaj njikhovikh navijacha kompanija er srbija medjutim navodi da je takva odluka doneta iskljuchivo na osnovu protsene bezbednosti leta i u skladu sa vazhetshim medjunarodnim vazdukhoplovnim propisima i operativnim protsedurama",
       "source": "RTS"
+    },
+    {
+      "ts": 1794689867.372207,
+      "title_norm": "moze da stane u srbiju sest i po puta a ima 37 miliona stanovnika ovo je veliki tokio",
+      "summary_norm": "kada se govori o najvecim gradovima na svetu cesto se zaboravlja da granice jednog grada ne moraju da se poklapaju sa granicama citave urbane oblasti koja se oko njega razvila takav je tokio",
+      "source": "Danas"
     }
   ]
 }
