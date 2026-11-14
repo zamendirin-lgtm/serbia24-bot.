@@ -442,13 +442,20 @@ def main():
         except (RuntimeError, requests.RequestException) as exc:
             print("POST_BLOCKED: cannot verify Telegram destination:", type(exc).__name__)
             return
+    from memes import scheduled_meme
     from video_only import publish_video_only
-    # The user wants only genuine, relevant in-chat videos, ideally portrait
-    # 9:16. No news cards, photos, GIFs, cartoons or filler posts.
+    # Original meme battlegrounds and humorous youth posts run in a few
+    # dedicated slots. Other checks look for licensed in-chat videos.
+    if scheduled_meme(state, now, dry_run=DRY_RUN):
+        if not DRY_RUN:
+            state["daily_count"] = count + 1
+            save_state(state)
+        print("MEME_CYCLE_COMPLETE")
+        return
     if publish_video_only(state, now, dry_run=DRY_RUN):
         if not DRY_RUN:
             state["daily_count"] = count + 1
-        print("VIDEO_ONLY_CYCLE_COMPLETE")
+        print("VIDEO_CYCLE_COMPLETE")
     if not DRY_RUN:
         save_state(state)
 
