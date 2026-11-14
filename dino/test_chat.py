@@ -94,8 +94,17 @@ def main():
     assert learner.learn("на питбайке задавлю собаку", after)["seen"] == 1
     assert c.classify("А если я казах, то лошадь можно переехать?", False) == "horse_safety"
     assert c.classify("А собаку можно задавить?", False) == "animal_threat"
-    assert c.choose_reply("horse_safety", 800) == c.HORSE_QUESTION_REPLY
-    assert "национальность" in c.HORSE_QUESTION_REPLY
+    assert c.choose_reply("horse_safety", 800) in c.HORSE_TROLL_REPLIES
+    assert c.choose_reply("horse_safety", 800) == c.choose_reply("horse_safety", 800)
+    # Dark humor targets an absurd idea, never ethnicity or actual violence.
+    for reply in c.HORSE_TROLL_REPLIES:
+        assert "казах" not in reply.lower()
+        assert not any(x in reply.lower() for x in ("задавлю", "сбей", "перееду", "убей"))
+        assert len(reply) <= 170
+    assert c.classify("бот молчишь, ответь хоть раз", False) == "bot_insult"
+    assert c.classify("бот не отвечает, он тупой", False) == "bot_insult"
+    assert c.classify("Сегодня бот загрузил новости", False) is None
+    assert c.classify("на питбайке задавлю собаку", False) == "animal_threat"
     assert c.GROUP_ID == -1002244148588
     print("CHAT_RULES_TESTS_OK",len(expectations))
 
