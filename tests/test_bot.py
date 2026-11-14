@@ -140,6 +140,16 @@ class NewsBotTests(unittest.TestCase):
         self.assertFalse(foreign_centered_story(article))
         self.assertTrue(relevant(article))
 
+    def test_japanese_investment_in_serbia_remains_relevant(self):
+        article = Article(
+            "RTS", "Japan investira u Srbiju u novi pogon za auto-delove",
+            "https://rts.rs/vesti/japan-investira",
+            "U Srbiju dolazi nova investicija i planirana su radna mesta.",
+            datetime.now(timezone.utc).timestamp(),
+        )
+        self.assertFalse(foreign_centered_story(article))
+        self.assertTrue(relevant(article))
+
     def test_local_japanese_company_in_belgrade_still_relevant(self):
         article = Article(
             "RTS", "Japanska kompanija otvorila fabriku u Beogradu",
