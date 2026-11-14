@@ -42,7 +42,8 @@
     "036d6c115ab8471be34924af": 1794643317.195009,
     "c9599c0f57281670f54f7e5f": 1794648739.029185,
     "9bd98ff9d84d89de0be48b82": 1794656502.237568,
-    "8428ce335f334add4825ba5b": 1794663029.98272
+    "8428ce335f334add4825ba5b": 1794663029.98272,
+    "bcb70ad458d5b092f71d99da": 1794670811.036438
   },
   "photos": {
     "50f559ee5d138a92c244ad4c": 1794474084.088928,
@@ -73,7 +74,8 @@
     "f6dbd931a548ff58fc7d5d20": 1794643317.195009,
     "0a0368d21cde10bd97b6aee4": 1794648739.029185,
     "772e9666f563e0b2244fea3c": 1794656502.237568,
-    "caafe6a28e0c5162e9f176d1": 1794663029.98272
+    "caafe6a28e0c5162e9f176d1": 1794663029.98272,
+    "632f23b8bdf7758ac907802c": 1794670811.036438
   },
   "phashes": {
     "2ceefee6566d6666": 1794474084.088928,
@@ -104,7 +106,8 @@
     "87c7d0d42d274b4e": 1794643317.195009,
     "c6868e8cc4ececac": 1794648739.029185,
     "63f0c8440444646c": 1794656502.237568,
-    "863e3a7a7a3a4e1e": 1794663029.98272
+    "863e3a7a7a3a4e1e": 1794663029.98272,
+    "3b81332928a43133": 1794670811.036438
   },
   "posted": [
     {
@@ -360,6 +363,12 @@
       "title_norm": "koliko zaraduje jedan odsto najbogatijih a koliko jedan odsto najsiromasnijih u srbiji",
       "summary_norm": "prosecno domacinstvo u srbiji prosle godine imalo je 2 57 clanova i prihodovalo je 109 136 dinara mesecno pokazuje anketa o potrosnji domacinstava koju je objavio republicki zavod za statistiku rzs",
       "source": "Danas"
+    },
+    {
+      "ts": 1794670811.036438,
+      "title_norm": "eko mafija zaradjuje milijarde kazne za unishtavanje prirode blage mozhe li zakon da zaustavi zagadjivache",
+      "summary_norm": "u izveshtaju evropske komisije o napretku srbije za 2026 godinu otsenjeno je da postoji odredjen napredak u poglavlju 27 zhivotna sredina i klimatske promene ali sa velikim neiskorishtshenim potentsijalom jedna od preporuka je uskladjivanje zakonodavstva sa evropskim direktivama o ekoloshkom kriminalu i odgovornosti za zhivotnu sredinu dok eu propisuje stroge kazne za najtezha ekoloshka krivichna dela u srbiji su kazne u praksi blage a ekotsid josh nije prepoznat u zakonodavstvu",
+      "source": "RTS"
     }
   ]
 }
