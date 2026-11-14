@@ -210,6 +210,27 @@ class AfishaTests(unittest.TestCase):
         self.assertFalse(_official_poster("https://novisad.travel/event/upad"))
         self.assertFalse(_official_poster("https://evil.test/upad.jpg"))
 
+    def test_sava_centar_blue_hall_normalized_in_venue_and_description(self):
+        from dataclasses import replace
+        e = parse_jsonld_events(PAGE, URL)[0]
+        e = replace(e, venue="Sava Centar - Plava dvorana")
+        card = format_event(
+            e,
+            "Концертный цикл Magla bend",
+            "С 26 ноября в Сава Центре, Плавая зала, будут проходить концерты.",
+        )
+        self.assertIn("Место проведения:</b> Сава Центар, Синий зал (Plava dvorana)", card)
+        self.assertIn("в Синем зале «Сава Центра»", card)
+        self.assertNotIn("Плавая зала", card)
+
+    def test_other_similarly_named_venues_not_overwritten(self):
+        from afisha_bot import normalize_sava_hall
+        self.assertEqual(normalize_sava_hall("Plava dvorana, Novi Sad"),
+                         "Plava dvorana, Novi Sad")
+        self.assertEqual(normalize_sava_hall("Sava Centar - Congress Hall"),
+                         "Sava Centar - Congress Hall")
+
+
 
 if __name__ == "__main__":
     unittest.main()
