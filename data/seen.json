@@ -40,7 +40,8 @@
     "a798931e81104ea604c83ce1": 1794590922.071784,
     "ad387031a56f9e0fdf0b3f6f": 1794598353.337854,
     "036d6c115ab8471be34924af": 1794643317.195009,
-    "c9599c0f57281670f54f7e5f": 1794648739.029185
+    "c9599c0f57281670f54f7e5f": 1794648739.029185,
+    "9bd98ff9d84d89de0be48b82": 1794656502.237568
   },
   "photos": {
     "50f559ee5d138a92c244ad4c": 1794474084.088928,
@@ -69,7 +70,8 @@
     "7b578cc018cd43979833f283": 1794583907.367809,
     "a3e946114d247c4084582329": 1794598353.337854,
     "f6dbd931a548ff58fc7d5d20": 1794643317.195009,
-    "0a0368d21cde10bd97b6aee4": 1794648739.029185
+    "0a0368d21cde10bd97b6aee4": 1794648739.029185,
+    "772e9666f563e0b2244fea3c": 1794656502.237568
   },
   "phashes": {
     "2ceefee6566d6666": 1794474084.088928,
@@ -98,7 +100,8 @@
     "6b83cbcdcd0d9894": 1794583907.367809,
     "84606371060a1800": 1794598353.337854,
     "87c7d0d42d274b4e": 1794643317.195009,
-    "c6868e8cc4ececac": 1794648739.029185
+    "c6868e8cc4ececac": 1794648739.029185,
+    "63f0c8440444646c": 1794656502.237568
   },
   "posted": [
     {
@@ -342,6 +345,12 @@
       "title_norm": "stamenkovic u pojedinim predmetima sled radnji potpuno suprotan zakonu i pravilima struke",
       "summary_norm": "clan komisije vrhovnog javnog tuzilastva tuzilac branko stamenkovic izjavio je da je u pojedinim predmetima viseg javnog tuzilastva u beogradu koje",
       "source": "N1"
+    },
+    {
+      "ts": 1794656502.237568,
+      "title_norm": "transnacionalne kriminalne mreze na zapadnom balkanu pretnja amerikancima odeljenje stejt departmenta se oglasilo nakon posete srbiji",
+      "summary_norm": "transnacionalne kriminalne mreze na zapadnom balkanu predstavljaju pretnju amerikancima koja se proteze daleko izvan granica regiona porucilo je odeljenje stejt departmenta za medunarodnu borbu protiv narkotika i sprovodenje zakona nil na svom x nalogu",
+      "source": "Danas"
     }
   ]
 }
