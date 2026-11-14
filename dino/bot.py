@@ -23,7 +23,7 @@ from PIL import Image, ImageDraw, ImageFont
 ROOT = Path(__file__).resolve().parent
 STATE = ROOT / "state.json"
 TZ = ZoneInfo(os.getenv("DINO_TIMEZONE", "Europe/Belgrade"))
-MAX_POSTS = max(1, min(50, int(os.getenv("DINO_MAX_DAILY", "50"))))
+MAX_POSTS = max(0, int(os.getenv("DINO_MAX_DAILY", "0")))  # 0 = no daily quota
 BOT_TOKEN = os.getenv("DINO_BOT_TOKEN", "")
 CHAT_ID = os.getenv("DINO_CHAT_ID", "")
 PIXABAY_KEY = os.getenv("PIXABAY_API_KEY", "")
@@ -421,8 +421,8 @@ def main():
                      if isinstance(v, (int, float)) and v > time.time() - 40 * 86400}
     state["used_media"] = state.get("used_media", [])[-700:]
     count = state.get("daily_count", 0)
-    if count >= MAX_POSTS:
-        print("Daily limit reached", count)
+    if MAX_POSTS and count >= MAX_POSTS:
+        print("Configured daily limit reached", count)
         return
     if not DRY_RUN and (not BOT_TOKEN or not CHAT_ID):
         missing = []
