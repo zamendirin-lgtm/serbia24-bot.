@@ -1,5 +1,8 @@
 name: DinoDvij — replies in group
 on:
+  push:
+    paths:
+      - 'dino/.chat-check-once'
   schedule:
     - cron: "*/5 * * * *"
   workflow_dispatch:
@@ -20,7 +23,7 @@ jobs:
     env:
       DINO_BOT_TOKEN: ${{ secrets.DINO_BOT_TOKEN }}
       DINO_CHAT_ID: "-1002244148588"
-      DINO_CHAT_DRY_RUN: ${{ inputs.dry_run || 'false' }}
+      DINO_CHAT_DRY_RUN: ${{ github.event_name == 'push' && 'true' || inputs.dry_run || 'false' }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
