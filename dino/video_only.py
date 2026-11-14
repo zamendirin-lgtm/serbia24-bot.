@@ -272,8 +272,80 @@ def to_mp4_original_ratio(source, dest):
         raise RuntimeError("Invalid Telegram MP4 file")
 
 
+def credit_filename(hit):
+    """Numeric Commons page ID; never use unsanitized external titles as paths."""
+    key = hit.get("id", "")
+    if not re.fullmatch(r"commons-video:\d+", key):
+        raise ValueError("Invalid licensed-video attribution ID")
+    return key.split(":", 1)[1] + ".md"
+
+
+def credit_url(hit):
+    # Public GitHub Markdown displays complete author/source/license/changes.
+    return ("https://github.com/zamendirin-lgtm/serbia24-bot./blob/main/"
+            "dino/credits/" + credit_filename(hit))
+
+
+def credit_document(hit):
+    """Full TASL attribution, available by one small clickable info icon."""
+    rights = hit["rights"]
+    original = hit.get("page_url", "")
+    license_url = rights.get("url", "")
+    if not rights.get("author"):
+        return None
+    if not media_url_allowed(original):
+        raise ValueError("Original video's Commons attribution URL missing")
+    if not license_url.startswith("https://creativecommons.org/licenses/"):
+        raise ValueError("Missing complete CC license URL")
+
+    title = hit["title"].removeprefix("File:").replace("_", " ").strip()
+    author = rights["author"].replace("\n", " ").strip()
+    label = rights["label"].strip()
+    # Sanitize Markdown markup and line breaks in external metadata.
+    def safe(value):
+        return re.sub(r"[\[\]()*#<>]", "", str(value).replace("\n", " ").replace(chr(96), ""))[:180]
+    title, author, label = map(safe, (title, author, label))
+    share_alike = "by-sa" in label.lower()
+    lines = [
+        "# Сведения о видео",
+        "",
+        "**Название:** " + title,
+        "",
+        "**Автор:** " + author,
+        "",
+        "**Оригинальное видео:** " + original,
+        "",
+        "**Лицензия оригинала:** [" + label + "](" + license_url + ")",
+        "",
+        "**Что изменено:** использован короткий фрагмент (до " +
+        str(MAX_SECONDS) +
+        " секунд), видео перекодировано в MP4 для Telegram, "
+        "уменьшено разрешение при сохранении соотношения сторон, "
+        "изменена частота кадров до 24 кадров/с.",
+        "",
+        "Автор не связан с этим Telegram-каналом и не подтверждал эту публикацию.",
+        "Условия и ограничения использования указаны в лицензии по ссылке выше.",
+    ]
+    if share_alike:
+        lines += ["", "Все изменения к материалу распространяются на условиях " +
+                  "[" + label + "](" + license_url + ")."]
+    return "\n".join(lines) + "\n"
+
+
+def save_credit(hit):
+    document = credit_document(hit)
+    if document is None:
+        return
+    directory = Path(__file__).resolve().parent / "credits"
+    directory.mkdir(parents=True, exist_ok=True)
+    target = directory / credit_filename(hit)
+    if target.exists() and target.read_text(encoding="utf-8") != document:
+        raise RuntimeError("Attribution changed unexpectedly for the same video")
+    target.write_text(document, encoding="utf-8")
+
+
 def minimal_caption(hit):
-    """A short real-video hook plus the smallest legally complete attribution."""
+    """Video hook with one unobtrusive link to complete TASL information."""
     title = hit.get("title", "").lower()
     if "pyrkon" in title:
         hook = "🦖 Костюмный парад на Pyrkon! Кто бы так вышел на улицу? 😂"
@@ -282,18 +354,12 @@ def minimal_caption(hit):
     else:
         hook = "🎬 Смотрите, что попалось в костюмной тусовке 👀"
     rights = hit["rights"]
-    if not rights["author"]:
+    if not rights.get("author"):
         return hook
-    page = hit.get("page_url", "")
-    if not media_url_allowed(page):
-        page = "https://commons.wikimedia.org/"
-    return (
-        hook + "\n" +
-        '<a href="' + html.escape(page, quote=True) + '">' +
-        html.escape(rights["author"][:65]) + '</a> · ' +
-        '<a href="' + html.escape(rights["url"], quote=True) + '">' +
-        html.escape(rights["label"]) + '</a> · обр.'
-    )
+    if not credit_document(hit):
+        raise ValueError("Missing required complete attribution")
+    return (hook + ' <a href="' + html.escape(credit_url(hit), quote=True) +
+            '">ⓘ</a>')
 
 
 def post_hit(hit, dry_run=False):
@@ -324,6 +390,8 @@ def post_hit(hit, dry_run=False):
             )
         if not response.get("message_id"):
             raise RuntimeError("Telegram did not confirm upload")
+        # Workflow commits the complete attribution document alongside state.
+        save_credit(hit)
         print("VIDEO_POSTED_OK", response["message_id"], "original aspect retained")
         return True
 
