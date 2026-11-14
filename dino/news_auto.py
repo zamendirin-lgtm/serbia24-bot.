@@ -267,8 +267,69 @@ def short_news_text(story):
     return brief if len(brief) >= 60 else None
 
 
-def format_news_caption(story, photo_rights=None, photo_page=None):
-    """Brief full in-chat text, tiny source link, short lawful photo credit."""
+def photo_credit_filename(photo_id):
+    """A stable numeric Commons image page ID, never external untrusted names."""
+    if not re.fullmatch(r"[0-9]{1,14}", str(photo_id)):
+        raise ValueError("Invalid Commons image ID")
+    return "news-" + str(photo_id) + ".md"
+
+
+def photo_credit_url(photo_id):
+    return ("https://github.com/zamendirin-lgtm/serbia24-bot./blob/main/"
+            "dino/credits/" + photo_credit_filename(photo_id))
+
+
+def photo_credit_document(photo_id, rights, page_url, original_title=""):
+    """Complete photo credit on one public page; caption contains only ⓘ."""
+    if not rights or not rights.get("credit"):
+        return None
+    license_url = rights.get("license_url", "")
+    if (not source_is_valid(page_url) or
+            not license_url.startswith("https://creativecommons.org/licenses/")):
+        raise ValueError("Incomplete mandatory photo attribution")
+    author = strip_markup(rights["credit"])
+    label = strip_markup(rights["license"])
+    title = strip_markup(original_title)
+    def plain(text):
+        return re.sub(r"[\[\]*#<>|]", "", str(text).replace(chr(96), ""))[:240]
+    lines = [
+        "# Фото к публикации",
+        "",
+        "**Автор:** " + plain(author),
+        "",
+        "**Название файла:** " + plain(title or "Фото с Wikimedia Commons"),
+        "",
+        "**Оригинал:** " + page_url,
+        "",
+        "**Лицензия:** [" + plain(label) + "](" + license_url + ")",
+        "",
+        "**Изменения:** фотография уменьшена, приведена к формату JPEG",
+        "и сжата для размещения в Telegram; при необходимости",
+        "исправлена ориентация согласно EXIF.",
+        "",
+        "Это тематическая фотоиллюстрация, не фотография события из новости.",
+        "Использование фото не означает поддержку публикации её автором.",
+    ]
+    if "by-sa" in license_url.lower():
+        lines += ["", "Изменённая фотография распространяется на условиях " +
+                  "[" + plain(label) + "](" + license_url + ")."]
+    return "\n".join(lines) + "\n"
+
+
+def save_photo_credit(photo_id, rights, page_url, original_title=""):
+    document = photo_credit_document(photo_id, rights, page_url, original_title)
+    if not document:
+        return
+    directory = Path(__file__).resolve().parent / "credits"
+    directory.mkdir(parents=True, exist_ok=True)
+    target = directory / photo_credit_filename(photo_id)
+    if target.exists() and target.read_text(encoding="utf-8") != document:
+        raise RuntimeError("Photo credit unexpectedly changed; manual review needed")
+    target.write_text(document, encoding="utf-8")
+
+
+def format_news_caption(story, photo_rights=None, photo_page=None, photo_id=None):
+    """Short native caption with a small source dot and single photo-info icon."""
     if not source_is_valid(story.get("url", "")):
         raise ValueError("Missing article source")
     short = short_news_text(story)
@@ -276,20 +337,14 @@ def format_news_caption(story, photo_rights=None, photo_page=None):
         raise ValueError("No self-contained short article text")
     title = "🦖 <b>" + html.escape(story["title"]) + "</b>"
     cap = (title + "\n\n" + html.escape(short) +
-           '  <a href="' + html.escape(story["url"], quote=True) + '">·</a>')
+           ' <a href="' + html.escape(story["url"], quote=True) + '">·</a>')
     if photo_rights and photo_rights.get("credit"):
-        if not photo_page or not source_is_valid(photo_page):
-            raise ValueError("CC-licensed picture needs author source page")
-        license_url = photo_rights.get("license_url", "")
-        if not license_url.startswith("https://creativecommons.org/licenses/"):
-            raise ValueError("CC-licensed picture needs license link")
-        author = photo_rights["credit"]
-        if " from " in author:
-            author = author.split(" from ", 1)[0]
-        cap += ('\n📷 <a href="' + html.escape(photo_page, quote=True) + '">' +
-                html.escape(author[:60]) + '</a> · <a href="' +
-                html.escape(license_url, quote=True) + '">' +
-                html.escape(photo_rights["license"]) + '</a> · обр.')
+        if photo_id is None:
+            raise ValueError("Must provide photo ID for visible attribution icon")
+        if not photo_credit_document(photo_id, photo_rights, photo_page):
+            raise ValueError("Missing CC photo attribution page")
+        cap += (' <a href="' + html.escape(photo_credit_url(photo_id), quote=True) +
+                '">ⓘ</a>')
     if len(cap) > 750:
         raise ValueError("News caption unexpectedly too long")
     return cap
@@ -312,7 +367,9 @@ def publish_news(state, now, dry_run=False):
     photo_id = None
     if photo:
         image, photo_id, rights, page = photo
-        caption = format_news_caption(story, rights, page)
+        # Prepare credit page before upload; Actions commits it with state.
+        save_photo_credit(photo_id, rights, page)
+        caption = format_news_caption(story, rights, page, photo_id)
     else:
         image = group_avatar()
         caption = format_news_caption(story)
