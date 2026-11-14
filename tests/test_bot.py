@@ -7,6 +7,7 @@ from zoneinfo import ZoneInfo
 
 from bot import (
     Article, canonical_url, format_post, is_duplicate, normalized_title,
+    foreign_centered_story,
     parse_feed, recent_enough, relevant, post_telegram, prepare_summary, photo_caption, rss_photo, normal_image_url,
     same_event_title, event_terms, prune_state, publication_allowed,
     interval_allows_publication, next_eligible_publication, MIN_PUBLICATION_INTERVAL_MINUTES,
@@ -99,6 +100,62 @@ class NewsBotTests(unittest.TestCase):
         self.assertFalse(relevant(
             Article("N1", "New York sports match", "https://n1info.rs/b", "", now)
         ))
+
+    def test_tokyo_population_story_mentioning_serbia_as_comparison_is_rejected(self):
+        article = Article(
+            "Danas",
+            "Može da stane u Srbiju šest i po puta, a ima 37 miliona stanovnika: Ovo je Veliki Tokio",
+            "https://www.danas.rs/zivot/moze-da-stane-u-srbiju-sest-i-po-puta-a-ima-37-miliona-stanovnika-ovo-je-veliki-tokio/",
+            "Veliki Tokio čine Tokio i tri susedne prefekture Kanagava, Saitama i Čiba; u Srbiji bi mogao da stane šest puta.",
+            datetime.now(timezone.utc).timestamp(),
+        )
+        self.assertTrue(foreign_centered_story(article))
+        self.assertFalse(relevant(article))
+
+    def test_foreign_city_in_headline_without_serbian_subject_is_rejected(self):
+        article = Article(
+            "Danas",
+            "Veliki Tokio broji skoro 37 miliona ljudi, više nego u Srbiji",
+            "https://danas.rs/zivot/tokio/",
+            "Japanska gradska regija obuhvata nekoliko prefektura.",
+            datetime.now(timezone.utc).timestamp(),
+        )
+        self.assertFalse(relevant(article))
+
+    def test_comparison_with_paris_is_not_local_news(self):
+        a = Article(
+            "Danas", "Pariz može da stane u Srbiju hiljadu puta",
+            "https://danas.rs/zivot/pariz",
+            "Francuska prestonica ima mnogo stanovnika.", 0,
+        )
+        self.assertFalse(relevant(a))
+
+    def test_serbian_japanese_agreement_still_relevant(self):
+        article = Article(
+            "RTS", "Srbija i Japan potpisali sporazum o saradnji",
+            "https://rts.rs/vesti/srbija-japan",
+            "Sporazum je potpisan u Beogradu.",
+            datetime.now(timezone.utc).timestamp(),
+        )
+        self.assertFalse(foreign_centered_story(article))
+        self.assertTrue(relevant(article))
+
+    def test_local_japanese_company_in_belgrade_still_relevant(self):
+        article = Article(
+            "RTS", "Japanska kompanija otvorila fabriku u Beogradu",
+            "https://rts.rs/vesti/fabrika",
+            "Nova fabrika zaposliće radnike u Srbiji.",
+            datetime.now(timezone.utc).timestamp(),
+        )
+        self.assertTrue(relevant(article))
+
+    def test_serbia_travel_rules_for_japan_still_relevant(self):
+        a = Article(
+            "N1", "U Srbiji uvedena nova pravila putovanja u Japan",
+            "https://n1info.rs/srbija/japan",
+            "Nova pravila važe za putnike iz Srbije.", 0,
+        )
+        self.assertTrue(relevant(a))
 
     def test_spain_news_is_not_serbian_news(self):
         now = datetime.now(timezone.utc).timestamp()
