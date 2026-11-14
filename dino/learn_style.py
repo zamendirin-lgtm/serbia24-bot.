@@ -64,7 +64,8 @@ def learn(text, prior=None):
     low = text.lower()[:1400]
     # Do not learn from private crises or harassment.
     if any(x in low for x in SERIOUS_WORDS) or any(x in low for x in (
-        "сдохни", "убейся", "шлюха", "выследи", "тебя убью", "пошёл нах", "скинь нюдс"
+        "сдохни", "убейся", "шлюха", "выследи", "тебя убью", "пошёл нах", "скинь нюдс",
+        "задавлю собак", "перееду собак", "задавлю кошк", "убью собаку",
     )):
         return state
     # Bounded aggregate-memory: halve counters to emphasize newer conversation.
