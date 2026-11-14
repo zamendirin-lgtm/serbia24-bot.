@@ -64,5 +64,12 @@
     "published_at": "2026-11-14T10:52:17.266425+01:00",
     "topic": "festival",
     "ai_editor": "groq"
+  },
+  "097c3db7c4b69ff281a2855105b65166b669f0a40680e9078da7632741cc0145": {
+    "url": "https://www.runbgd.com/whats-on/crvena-zvezda-vs-cedevita-olimpija-aba-liga-2026-11-15",
+    "event_start": "2026-11-15T00:00:00+01:00",
+    "published_at": "2026-11-14T12:46:36.945157+01:00",
+    "topic": "other",
+    "ai_editor": "groq"
   }
 }
