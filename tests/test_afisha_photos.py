@@ -70,6 +70,20 @@ class AfishaLicensedPhotoTests(unittest.TestCase):
         bad["imageinfo"][0]["thumburl"] = "https://not-wikimedia.example/stock.jpg"
         self.assertIsNone(_candidate(bad, ["magla"], 2026, "artist"))
 
+    def test_common_noun_does_not_select_unrelated_landscape(self):
+        self.assertIsNone(_candidate(
+            file_info("File:Magla fog in Serbia 2025.jpg"),
+            ["magla"], 2026, "artist",
+        ))
+
+    def test_venue_picture_explicitly_labelled_not_current_performance(self):
+        venue = file_info("File:Sava Centar building in Belgrade.jpg")
+        pic = _candidate(venue, ["sava", "centar"], 2026, "venue")
+        self.assertIsNotNone(pic)
+        self.assertIn("Фото площадки", pic.credit_html())
+        portrait = file_info("File:Vlada Divljan portrait.jpg")
+        self.assertIsNone(_candidate(portrait, ["vlada", "divljan"], 2026, "venue"))
+
     def test_names_containing_generic_words(self):
         self.assertEqual(named_subject(event('«Magla bend» — koncerti')), "Magla bend")
 
