@@ -151,6 +151,9 @@ def render_meme(entry, index):
 
 
 def post_meme(state, dry_run=False, force=False):
+    # Deprecated: the repeated VS cards were rejected by the group admin.
+    print("LEGACY_VS_MEMES_PERMANENTLY_DISABLED")
+    return False
     used = set(state.get("meme_used", []))
     available = [(i, entry) for i, entry in enumerate(MEMES) if str(i) not in used]
     if not available:
