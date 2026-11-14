@@ -265,6 +265,8 @@ def main():
     offset = old_offset
     now = time.time()
     replied = 0
+    spontaneous = 0
+    last_auto_at = int(state.get("last_spontaneous_at", 0))
     per_user = {}
     processed = 0
     try:
@@ -307,25 +309,41 @@ def main():
                     replied_to.get("id") == bot_user_id
                 )
                 category = classify(body, direct)
+                is_spontaneous = False
+                # Join discussions on its own, without needing @mention.
+                if category is None:
+                    if spontaneous >= AUTO_REPLIES_PER_RUN:
+                        continue
+                    msg_time = int(msg.get("date") or 0)
+                    if msg_time < last_auto_at + AUTO_COOLDOWN_SECONDS:
+                        continue
+                    category = spontaneous_category(body, original_msg_id)
+                    is_spontaneous = bool(category)
                 if not category:
                     continue
                 uid = user.get("id", 0)
-                if per_user.get(uid, 0) >= MAX_ANSWERS_PER_USER_PER_RUN:
+                if per_user.get(uid, 0) >= (1 if is_spontaneous else MAX_ANSWERS_PER_USER_PER_RUN):
                     continue
                 if replied >= MAX_ANSWERS_PER_RUN:
                     continue
                 response = choose_reply(category, original_msg_id)
+                sent = False
                 if DRY_RUN:
-                    print("CHAT_DRY_RUN_ANSWER", category)
+                    print("CHAT_DRY_RUN_ANSWER", category, "spontaneous", is_spontaneous)
                     replied += 1
+                    sent = True
                 else:
                     try:
                         if send_reply(response, original_msg_id):
                             replied += 1
-                    except (RuntimeError, requests.RequestException) as exc:
-                        print("CHAT_REPLY_FAILED", type(exc).__name__)
-                        # Do not retry individual messages or log their content.
-                per_user[uid] = per_user.get(uid, 0) + 1
+                            sent = True
+                    except (RuntimeError, requests.RequestException):
+                        print("CHAT_REPLY_FAILED")
+                if sent:
+                    per_user[uid] = per_user.get(uid, 0) + 1
+                    if is_spontaneous:
+                        spontaneous += 1
+                        last_auto_at = int(msg.get("date", now))
             processed += len(updates)
             if len(updates) < 100:
                 break
@@ -337,9 +355,11 @@ def main():
     if not DRY_RUN:
         state["offset"] = offset
         state["total_replies"] = int(state.get("total_replies", 0)) + replied
+        state["last_spontaneous_at"] = last_auto_at
         save_state(state)
     print("CHAT_POLL_OK", "processed", processed,
-          "replied", replied, "offset_changed", offset != old_offset)
+          "replied", replied, "spontaneous", spontaneous,
+          "offset_changed", offset != old_offset)
 
 
 if __name__ == "__main__":
