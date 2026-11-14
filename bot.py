@@ -184,9 +184,66 @@ def has_serbia_anchor(text: str, original: str = "") -> bool:
     return contains_anchor(text, SERBIA_LOCATIONS) or contains_anchor(text, SERBIA_ACTORS)
 
 
+# A Serbian newspaper often republishes foreign features or comparisons with
+# Serbia. Mentioning the word "Srbija" alone is not enough to make such an
+# article relevant to a Serbia-focused news channel.
+FOREIGN_FOCAL_PLACES = (
+    "tokio", "tokij", "japan", "kanagav", "saitam", "japansk",
+    "jakart", "indonezij", "london", "britan", "pariz", "francus",
+    "berlin", "nemack", "njujork", "new york", "singapur", "dubai",
+    "seul", "korej", "osak", "moskv", "rusij", "sangaj", "sanghaj",
+    "peking", "kair", "hongkong", "bangkok", "tajland", "madrid",
+    "spanij", "portugal", "italij", "kanad", "toront", "brazil",
+    "ukrajin", "iran", "teheran", "izrael", "indij", "egipat",
+    "tursk", "instanbul", "sindnej", "sidnej", "kina", "kinesk",
+)
+COMPARISON_ONLY = (
+    "moze da stane u srbij", "mogu da stanu u srbij",
+    "veci od srbije", "veca od srbije", "manji od srbije",
+    "manja od srbije", "vise nego u srbiji", "manje nego u srbiji",
+    "u poredjenju sa srbij", "u odnosu na srbij",
+    "koliko puta je srbija", "puta veci od srbije",
+)
+
+
+def foreign_centered_story(article: Article) -> bool:
+    """Reject worldwide stories where Serbia is incidental to the main event.
+
+    For example Danas's "Moze da stane u Srbiju ... Ovo je Veliki Tokio"
+    describes Japanese population, using Serbia only as an area comparison.
+    Allow genuine Serbia-related international news: a treaty, Serbian travel
+    rules, or an event in a Serbian city.
+    """
+    title = normalized_title(article.title)
+    if not contains_anchor(title, FOREIGN_FOCAL_PLACES):
+        return False
+    if any(phrase in title for phrase in COMPARISON_ONLY):
+        return True
+
+    # Strong domestic anchor: Serbian institution or a real Serbian locality,
+    # not just the word "Srbija" in a relative size comparison.
+    domestic_places = tuple(
+        stem for stem in SERBIA_LOCATIONS if stem != "srbij"
+    )
+    if contains_anchor(title, domestic_places + SERBIA_ACTORS):
+        return False
+
+    if re.match(r"^(?:u |iz |za |od )?srbij(?:a|i|e|u)\b", title):
+        return False
+    if re.search(r"\bu srbiji\b", title):
+        return False
+
+    # The foreign country/city is the subject; Serbian media's publication or
+    # a throwaway reference to Serbia in the excerpt does not justify posting.
+    return True
+
+
 def relevant(article: Article) -> bool:
     title = normalized_title(article.title)
     summary = normalized_title(article.summary[:450])
+
+    if foreign_centered_story(article):
+        return False
 
     # Kosovo-only stories require a Serbian state/institutional angle *in
     # the headline*, not merely an incidental mention of ethnic Serbs.
