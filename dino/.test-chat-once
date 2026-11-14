@@ -1,1 +1,1 @@
-Check DinoDvij rooster persona: respond Я петух instead of Я бот to identity questions and hecklers.
+Regression: recognize anonymous-admin reply to bot, respond to Люблю попкорн; store only own Telegram IDs.
