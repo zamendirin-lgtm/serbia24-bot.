@@ -43,7 +43,8 @@
     "c9599c0f57281670f54f7e5f": 1794648739.029185,
     "9bd98ff9d84d89de0be48b82": 1794656502.237568,
     "8428ce335f334add4825ba5b": 1794663029.98272,
-    "bcb70ad458d5b092f71d99da": 1794670811.036438
+    "bcb70ad458d5b092f71d99da": 1794670811.036438,
+    "132134ffd16701308559c5d2": 1794676477.577623
   },
   "photos": {
     "50f559ee5d138a92c244ad4c": 1794474084.088928,
@@ -75,7 +76,8 @@
     "0a0368d21cde10bd97b6aee4": 1794648739.029185,
     "772e9666f563e0b2244fea3c": 1794656502.237568,
     "caafe6a28e0c5162e9f176d1": 1794663029.98272,
-    "632f23b8bdf7758ac907802c": 1794670811.036438
+    "632f23b8bdf7758ac907802c": 1794670811.036438,
+    "70087a41330f76fbe604426e": 1794676477.577623
   },
   "phashes": {
     "2ceefee6566d6666": 1794474084.088928,
@@ -107,7 +109,8 @@
     "c6868e8cc4ececac": 1794648739.029185,
     "63f0c8440444646c": 1794656502.237568,
     "863e3a7a7a3a4e1e": 1794663029.98272,
-    "3b81332928a43133": 1794670811.036438
+    "3b81332928a43133": 1794670811.036438,
+    "02a2e94bc6d45826": 1794676477.577623
   },
   "posted": [
     {
@@ -368,6 +371,12 @@
       "ts": 1794670811.036438,
       "title_norm": "eko mafija zaradjuje milijarde kazne za unishtavanje prirode blage mozhe li zakon da zaustavi zagadjivache",
       "summary_norm": "u izveshtaju evropske komisije o napretku srbije za 2026 godinu otsenjeno je da postoji odredjen napredak u poglavlju 27 zhivotna sredina i klimatske promene ali sa velikim neiskorishtshenim potentsijalom jedna od preporuka je uskladjivanje zakonodavstva sa evropskim direktivama o ekoloshkom kriminalu i odgovornosti za zhivotnu sredinu dok eu propisuje stroge kazne za najtezha ekoloshka krivichna dela u srbiji su kazne u praksi blage a ekotsid josh nije prepoznat u zakonodavstvu",
+      "source": "RTS"
+    },
+    {
+      "ts": 1794676477.577623,
+      "title_norm": "ultra tsrna gora vratsheni smo sa aerodroma u beogradu er srbija odluka doneta iz bezbednosnikh razloga",
+      "summary_norm": "navijachka grupa ultra tsrna gora koja je krenula na fudbalsku utakmitsu na kipar saopshtila je da je njenim chlanovima sa tsrnogorskim pasoshima tokom presedanja onemogutshen let iz beograda iako navode politsija nije evidentirala nijedan prekrshaj njikhovikh navijacha kompanija er srbija medjutim navodi da je takva odluka doneta iskljuchivo na osnovu protsene bezbednosti leta i u skladu sa vazhetshim medjunarodnim vazdukhoplovnim propisima i operativnim protsedurama",
       "source": "RTS"
     }
   ]
