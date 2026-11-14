@@ -186,6 +186,31 @@ def classify(text, to_bot):
     return "banter"
 
 
+def spontaneous_category(text, message_id):
+    """Choose an occasional unsolicited remark only for active, light discussion."""
+    cleaned = text.strip()
+    if len(cleaned) < 12 or len(cleaned) > 500:
+        return None
+    low = cleaned.lower()
+    # Never crack jokes over somebody's distress or private problems.
+    if any(word in low for word in (
+        "помогите", "мне плохо", "депресс", "умер", "похорон",
+        "болит", "больниц", "суицид", "самоуб", "избил",
+        "травят", "травля", "страшно", "страда",
+    )):
+        return None
+    # Always eligible to be considered when the chat is about its interests.
+    for category, pattern in TOPIC_PATTERNS:
+        if pattern.search(cleaned):
+            return category
+    # In general chat, join only occasional open opinions/questions.
+    if not ("?" in cleaned or "!" in cleaned or CHAT_HOOK.search(cleaned)):
+        return None
+    if (message_id * 37 + 17) % 7 < 2:
+        return "chat"
+    return None
+
+
 def choose_reply(category, msg_id):
     rng = random.Random(msg_id * 7919)
     if category == "threat":
@@ -202,6 +227,8 @@ def choose_reply(category, msg_id):
         return rng.choice(ROAST)
     if category == "battle":
         return rng.choice(TRENDS)
+    if category in TOPIC_REPLIES:
+        return rng.choice(TOPIC_REPLIES[category])
     return rng.choice(BANTER if msg_id % 3 else NORMAL)
 
 
