@@ -247,6 +247,43 @@ def visible_event_dates(soup: BeautifulSoup) -> tuple[date | None, date | None]:
     return start, end
 
 
+def official_event_poster(soup: BeautifulSoup, item: dict, page_url: str) -> str:
+    """Find the actual event cover on the tourism organiser's page.
+
+    JSON-LD can omit Event.image despite a poster being shown on the page.
+    Prefer the single-event cover; accept only HTTPS image files hosted by the
+    tourism organisation, not remote photos, logos or unrelated content.
+    """
+    candidates = []
+    for node in soup.select(
+        ".tribe-events-event-image img, "
+        ".tribe-events-single-event-description .tribe-events-event-image img"
+    ):
+        for attr in ("data-src", "data-lazy-src", "src"):
+            value = node.get(attr)
+            if isinstance(value, str) and value.strip():
+                candidates.append(value.strip())
+
+    structured = item.get("image") or ""
+    if isinstance(structured, list):
+        structured = structured[0] if structured else ""
+    if isinstance(structured, dict):
+        structured = structured.get("url") or structured.get("contentUrl") or ""
+    if isinstance(structured, str):
+        candidates.append(structured)
+
+    for node in soup.select('meta[property="og:image"], meta[name="twitter:image"]'):
+        candidates.append(node.get("content", ""))
+
+    for value in candidates:
+        if not isinstance(value, str) or not value.strip():
+            continue
+        candidate = urljoin(page_url, value.strip())
+        if _official_poster(candidate):
+            return candidate
+    return ""
+
+
 def parse_jsonld_events(markup: str, url: str, city_fallback: str = "Нови-Сад") -> list[Event]:
     soup = BeautifulSoup(markup, "html.parser")
     page_start, page_end = visible_event_dates(soup)
@@ -291,20 +328,13 @@ def parse_jsonld_events(markup: str, url: str, city_fallback: str = "Нови-С
                 print("Afisha visitor-facing end date overrides conflicting JSON-LD date.")
                 end = datetime.combine(page_end, datetime.max.time().replace(microsecond=0), tzinfo=TZ)
             summary = clean(item.get("description", ""), 450)
-            image = item.get("image") or ""
-            if not image:
-                og = soup.select_one('meta[property="og:image"], meta[name="twitter:image"]')
-                image = og.get("content", "") if og else ""
-            if isinstance(image, list):
-                image = image[0] if image else ""
-            if isinstance(image, dict):
-                image = image.get("url") or ""
+            image = official_event_poster(soup, item, url)
             collected.append(Event(
                 url=source, title=title, city=city, venue=venue, start=start,
                 end=end, description=summary,
                 category=clean(item.get("eventAttendanceMode", ""), 35),
                 price=event_price(item, displayed_text),
-                image=image if isinstance(image, str) and image.startswith("https://") else "",
+                image=image,
                 ticket_url=find_ticket_link(soup, item, source),
             ))
     return collected
@@ -618,72 +648,101 @@ def select(events: list[Event], seen: dict, now: datetime) -> list[Event]:
 
 
 def _official_poster(url: str) -> bool:
-    """Official tourist organisation's promotional event photo."""
+    """Allow the official tourism source's real event image only."""
     if not isinstance(url, str):
         return False
-    parsed = urlparse(url)
+    try:
+        parsed = urlparse(url)
+    except ValueError:
+        return False
     return (
         parsed.scheme == "https"
         and parsed.hostname in ("novisad.travel", "www.novisad.travel")
         and not parsed.username
         and not parsed.password
+        and parsed.path.lower().endswith((".jpg", ".jpeg", ".png"))
     )
+
+
+def _send_event_photo(session: requests.Session, api: str, chat: str,
+                      caption: str, image_url: str) -> bool:
+    """Try Telegram photo-by-URL, then upload validated official image bytes."""
+    payload = {
+        "chat_id": chat, "photo": image_url,
+        "caption": caption, "parse_mode": "HTML",
+        "show_caption_above_media": False,
+    }
+    try:
+        sent = session.post(api + "sendPhoto", json=payload, timeout=24)
+        if sent.ok and sent.json().get("ok") is True:
+            print("Afisha event published as photo with a Russian caption.")
+            return True
+    except (requests.RequestException, ValueError):
+        pass
+
+    # Telegram sometimes cannot fetch a poster URL due to redirects/CDN policy.
+    # Upload its image bytes instead, but only after strict source/size checks.
+    try:
+        downloaded = session.get(image_url, timeout=16)
+        downloaded.raise_for_status()
+        content = downloaded.content
+        if not isinstance(content, bytes) or not (1024 <= len(content) <= 8_000_000):
+            print("Official event image was missing or unusually sized.")
+            return False
+        if content.startswith(b"\\xff\\xd8\\xff"):
+            extension, content_type = "jpg", "image/jpeg"
+        elif content.startswith(b"\\x89PNG\\r\\n\\x1a\\n"):
+            extension, content_type = "png", "image/png"
+        else:
+            print("Official image format is not supported for Telegram photos.")
+            return False
+        uploaded = session.post(
+            api + "sendPhoto",
+            data={"chat_id": chat, "caption": caption, "parse_mode": "HTML"},
+            files={"photo": ("event." + extension, content, content_type)},
+            timeout=32,
+        )
+        if uploaded.ok and uploaded.json().get("ok") is True:
+            print("Afisha event photo uploaded directly with Russian caption.")
+            return True
+    except (requests.RequestException, ValueError):
+        pass
+    return False
 
 
 def publish(session: requests.Session, token: str, chat: str, post: str,
             source_url: str, image_url: str = "") -> bool:
-    """Publish event imagery when possible: official poster, then source preview.
+    """Use a clean photo with Russian caption or text-only, never foreign previews.
 
-    A source's link preview is generated by Telegram from the source page;
-    it does not require copying third-party image files. If Telegram cannot
-    render the preview, retry a plain text message instead of losing the post.
+    Telegram link previews pull the source's Serbian/English title and synopsis,
+    making a second foreign-language block above the Russian announcement.
     """
     api = f"https://api.telegram.org/bot{token}/"
-    if image_url and _official_poster(image_url) and len(clean(post, 2000)) <= 1024:
-        try:
-            photo = session.post(
-                api + "sendPhoto",
-                json={
-                    "chat_id": chat, "photo": image_url,
-                    "caption": post, "parse_mode": "HTML",
-                    "show_caption_above_media": False,
-                },
-                timeout=24,
-            )
-            if photo.ok and photo.json().get("ok") is True:
-                print("Official event poster published with Russian caption.")
-                return True
-            print("Official photo wasn't accepted; trying source-page preview.")
-        except (requests.RequestException, ValueError):
-            print("Event poster couldn't be sent; trying source-page preview.")
-
-    payload = {"chat_id": chat, "parse_mode": "HTML", "text": post}
-    parsed = urlparse(source_url)
-    if parsed.scheme == "https" and parsed.hostname and not parsed.username and not parsed.password:
-        payload["link_preview_options"] = {
-            "url": source_url,
-            "prefer_large_media": True,
-            "show_above_text": True,
-        }
-    else:
-        payload["link_preview_options"] = {"is_disabled": True}
+    if image_url and _official_poster(image_url) and len(post) <= 1024:
+        if _send_event_photo(session, api, chat, post, image_url):
+            return True
+        print("Official poster failed; posting Russian text without a link preview.")
+    elif image_url and _official_poster(image_url):
+        print("Long Afisha caption; posting full Russian text without a link preview.")
 
     try:
-        result = session.post(api + "sendMessage", json=payload, timeout=22)
-        if result.ok and result.json().get("ok") is True:
-            return True
-        # Preview metadata can fail on an otherwise valid third-party URL.
-        if payload["link_preview_options"].get("url"):
-            print("Source preview rejected; retrying the same post without preview.")
-            payload["link_preview_options"] = {"is_disabled": True}
-            fallback = session.post(api + "sendMessage", json=payload, timeout=22)
-            if fallback.ok:
-                return fallback.json().get("ok") is True
-            result = fallback
-        print(f"Telegram status {result.status_code}; check AFISHA_CHAT_ID and bot rights.")
+        result = session.post(
+            api + "sendMessage",
+            json={
+                "chat_id": chat,
+                "parse_mode": "HTML",
+                "text": post,
+                "link_preview_options": {"is_disabled": True},
+            },
+            timeout=22,
+        )
+        if result.ok:
+            return result.json().get("ok") is True
+        print(f"Telegram status {result.status_code}; check Afisha chat and bot rights.")
     except (requests.RequestException, ValueError):
-        print("Telegram send failed.")
+        print("Telegram Afisha send failed.")
     return False
+
 
 def publication_allowed(now: datetime, *, initial: bool = False, seen: dict | None = None) -> bool:
     """No publications 22:00–07:59 in Serbia, except one explicitly requested test.
