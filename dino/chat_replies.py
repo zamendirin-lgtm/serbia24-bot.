@@ -117,8 +117,22 @@ TOPIC_REPLIES = {
         "С такими тейками спор до утра обеспечен. Давайте без дешёвых наездов.",
     ),
     "chat": (
-        "Вы тут что, новый сезон драмы снимаете без меня? 🍿",
-        "Чат опять в огне. Кто-нибудь вообще помнит, с чего началось? 💀",
+        "А что тут за новый движ? Я, походу, начало пропустил 👀",
+        "Чат сегодня живее, чем мои нейроны. И что обсуждаем? 😏",
+        "Так, я не понял прикол. Кто пояснит без трёх томов лора? 💀",
+    ),
+    "new_trend": (
+        "Это что за новый тренд залетел? Кто объяснит для опоздавших? 👀",
+        "Ага, новый движ. Только я пока не понял, что тут за прикол 😏",
+        "Подождите, я пропустил обновление молодёжного сленга? 💀",
+    ),
+    "chat_rename": (
+        "Переименовать чат? Ну кидайте варианты, только без совсем уж унылых 😂",
+        "Название — это серьёзно. Нужно чтобы мемно, а не как школьный дневник 💀",
+    ),
+    "pitbike": (
+        "Питбайк — звучит мощно. Только без опасных выходок ради лайков 🏍️",
+        "Питбайк в чате? Ну, пошли истории. Что за движ? 👀",
     ),
 }
 
@@ -134,6 +148,15 @@ CHAT_HOOK = re.compile(
     r"\b(?:серьёзно|реально|вообще|блин|ахах|хаха|прикол|ржака|"
     r"почему|кто|как|чего|может|у меня|я думаю|мне кажется|"
     r"ладно|жесть|капец|смотрите)\b", re.I
+)
+CONVERSATION_PATTERNS = (
+    ("chat_rename", re.compile(r"переимен(?:уйте|овать|уй|уем)|нов(?:ое|ый)\\s+назван", re.I)),
+    ("new_trend", re.compile(r"газяв|хрумк|нефар|в\\s+тренде|трендит|субкультур", re.I)),
+    ("pitbike", re.compile(r"питбайк|мотокросс", re.I)),
+)
+GENERAL_INTEREST = re.compile(
+    r"\\b(?:мнение|реально|серьёзно|смешно|угар|прикол|рофл|"
+    r"кто|как|почему|что|чего|новост|интересно)\\b", re.I
 )
 AUTO_COOLDOWN_SECONDS = 3 * 60
 AUTO_REPLIES_PER_RUN = 3
@@ -229,14 +252,34 @@ def spontaneous_category(text, message_id):
     # "drama" joke. Do not interrupt admin/creator conversations.
     if GROUP_ROLE_WORDS.search(cleaned):
         return None
-    # Autonomous participation is limited to actual community hobbies.
-    # A generic question or a stray word like "спор" is insufficient.
-    for category, pattern in TOPIC_PATTERNS:
-        if category == "debate":
-            continue
+    # React to genuine community topics and the current youth culture,
+    # rather than injecting fictitious quarrels in unrelated conversations.
+    for category, pattern in CONVERSATION_PATTERNS:
         if pattern.search(cleaned):
             return category
+    for category, pattern in TOPIC_PATTERNS:
+        if category != "debate" and pattern.search(cleaned):
+            return category
+    # Occasionally ask for clarification when ordinary chat is active, even
+    # without a direct mention. Unknown slang is *not* copied or made up.
+    if ("?" in cleaned or GENERAL_INTEREST.search(cleaned)):
+        if (message_id * 17 + 11) % 5 == 0:
+            return "chat"
     return None
+
+
+def is_safe_topic_reply(msg):
+    """Can occasionally join a public discussion that is a reply to someone?"""
+    body = str(msg.get("text") or msg.get("caption") or "")[:500]
+    if GROUP_ROLE_WORDS.search(body) or not body:
+        return False
+    if any(x in body.lower() for x in (
+        "помогите", "суицид", "мне плохо", "больниц", "избил", "травля"
+    )):
+        return False
+    return any(pattern.search(body) for _, pattern in (
+        CONVERSATION_PATTERNS + TOPIC_PATTERNS
+    ))
 
 
 def choose_reply(category, msg_id):
