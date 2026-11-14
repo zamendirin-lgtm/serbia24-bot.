@@ -1,6 +1,6 @@
 {
   "date": "2026-11-14",
-  "daily_count": 5,
+  "daily_count": 6,
   "seen": {},
   "used_media": [
     "commons-video:5761750"
@@ -42,5 +42,12 @@
     "11",
     "13",
     "15"
-  ]
+  ],
+  "posted_news": [
+    "canal10-2026-10-16-quadrobics"
+  ],
+  "used_news_photos": [
+    "3862418"
+  ],
+  "news_last_post_at": 1794674166.6288903
 }
