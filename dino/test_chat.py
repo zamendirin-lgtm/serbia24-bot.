@@ -78,6 +78,20 @@ def main():
     assert "не знаю" in answer and "спор" not in answer
     assert c.spontaneous_category("Смотри мою маску терриана — как тебе?", 746201) == "therian"
     assert c.spontaneous_category("В костюме динозавра я еле прошёл в дверь 😂", 746202) == "dino"
+    # Screenshot regression: a threat to a dog is not a harmless meme.
+    assert c.classify("на питбайке задавлю собаку", False) == "animal_threat"
+    assert "не рофл" in c.choose_reply("animal_threat", 778811)
+    assert c.spontaneous_category("Сейчас в тренде газява", 778812) == "new_trend"
+    assert c.spontaneous_category("Переименуйте чат в чат питбайкеров", 778813) == "chat_rename"
+    assert c.spontaneous_category("Сняли угарный ролик на питбайке", 778814) == "pitbike"
+    assert c.is_safe_topic_reply({"text": "Сейчас в тренде газява"})
+    assert not c.is_safe_topic_reply({"text": "Кто создал этот чат?"})
+    assert c.MAX_LEARNING_AGE > c.MAX_REPLY_AGE
+    # Relevant context is counted even if automatic answer is skipped.
+    before = learner.empty()
+    after = learner.learn("это реально смешной мем", before)
+    assert after["seen"] == 1 and after["topics"]["meme"] == 1
+    assert learner.learn("на питбайке задавлю собаку", after)["seen"] == 1
     assert c.GROUP_ID == -1002244148588
     print("CHAT_RULES_TESTS_OK",len(expectations))
 
