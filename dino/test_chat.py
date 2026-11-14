@@ -105,6 +105,16 @@ def main():
     assert c.classify("бот не отвечает, он тупой", False) == "bot_insult"
     assert c.classify("Сегодня бот загрузил новости", False) is None
     assert c.classify("на питбайке задавлю собаку", False) == "animal_threat"
+    assert c.classify("@DinoDvij_bot ты бот?", True) == "rooster"
+    assert c.classify("ты бот?", False) == "rooster"
+    assert c.classify("ты человек?", True) == "rooster"
+    assert c.classify("@DinoDvij_bot кто ты?", True) == "rooster"
+    assert c.classify("@dinodvij_bot ты тупой", True) == "bot_insult"
+    for category in ("rooster", "bot_insult"):
+        for msg_id in range(33, 44):
+            reply = c.choose_reply(category, msg_id)
+            assert "Я петух" in reply, reply
+            assert "я бот" not in reply.lower()
     assert c.GROUP_ID == -1002244148588
     print("CHAT_RULES_TESTS_OK",len(expectations))
 
