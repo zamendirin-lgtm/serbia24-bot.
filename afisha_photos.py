@@ -106,7 +106,7 @@ def _candidate(page: dict, tokens: list[str], year: int,
     if len(tokens) >= 2:
         if count < 2:
             return None
-    elif not tokens or count != 1 or len(tokens[0]) < 6:
+    elif not tokens or count != 1 or len(tokens[0]) < 5:
         return None
 
     # An event/archive image must say which year's edition it depicts,
