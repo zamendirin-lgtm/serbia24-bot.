@@ -1,0 +1,35 @@
+name: DinoDvij - shorten existing video caption
+on:
+  push:
+    paths:
+      - 'dino/.edit-caption-once'
+permissions:
+  contents: write
+concurrency:
+  group: dinodvij-publisher
+  cancel-in-progress: false
+jobs:
+  edit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      DINO_BOT_TOKEN: ${{ secrets.DINO_BOT_TOKEN }}
+      DINO_CHAT_ID: "-1002244148588"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install -r dino/requirements.txt
+      - name: Shorten credit caption on existing Telegram video
+        run: python dino/edit_caption_once.py
+      - name: Remember the caption edit
+        run: |
+          git add dino/state.json
+          if ! git diff --cached --quiet; then
+            git config user.name "dinodvij-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git commit -m "chore(dino): record caption edit [skip ci]"
+            git pull --rebase origin main
+            git push origin HEAD:main
+          fi
