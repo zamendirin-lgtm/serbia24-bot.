@@ -15,5 +15,6 @@ jobs:
         with:
           python-version: "3.12"
       - run: python -m pip install -r dino/requirements.txt
-      - run: python -m compileall -q dino/chat_replies.py dino/bot.py dino/memes.py
+      - run: python -m compileall -q dino/chat_replies.py dino/bot.py dino/memes.py dino/learn_style.py dino/offline_brain.py
       - run: python dino/test_chat.py
+      - run: python dino/test_brain.py
