@@ -23,7 +23,8 @@ import offline_brain
 
 STATE_FILE = Path(__file__).resolve().parent / "chat_state.json"
 GROUP_ID = -1002244148588
-MAX_EVENT_AGE = 12 * 60  # never reply to stale backlog from an interrupted job
+MAX_LEARNING_AGE = 6 * 3600  # learn from recent public group chat even after GitHub cron delays
+MAX_REPLY_AGE = 45 * 60  # delayed GitHub Actions; restrict unsolicited replies to newest messages
 MAX_ANSWERS_PER_RUN = 12
 MAX_ANSWERS_PER_USER_PER_RUN = 2
 DRY_RUN = os.environ.get("DINO_CHAT_DRY_RUN", "false").lower() in ("1", "true", "yes")
@@ -76,6 +77,15 @@ HARASSMENT_REPLY = (
 )
 
 THREAT_REPLY = "Угрозы — не дерзость, а дичь. Заканчивай и не трогай участников."
+ANIMAL_THREAT_REPLY = "Эй, собак и других животных не трогай. Угрозы им — не рофл, а дичь."
+ANIMAL_HARM = re.compile(
+    r"(?:задавл(?:ю|им|ишь|ить)|переед(?:у|ешь|ем|ет)|"
+    r"убь(?:ю|ём|ёшь|ет)|убить|зареж(?:у|ешь)|отравл(?:ю|ишь|ить))"
+    r"[^.!?\n]{0,45}(?:собак|кошк|кота|котён|щенк|пса|животн)|"
+    r"(?:собак|кошк|кота|котён|щенк|пса|животн)"
+    r"[^.!?\n]{0,45}(?:задавл|переед|убь|убить|зареж|отравл)",
+    re.I,
+)
 SEXUAL_REPLY = "Стоп. Здесь есть подростки, такой контент сюда не тащи."
 HELP_REPLY = "Я иногда сам подключаюсь к теме. Хочешь баттл — /battle, прожарку — /roast. 😈"
 GROUP_ROLES_REPLY = "Админ и создатель — разные роли. Кто именно создал этот чат, я достоверно не знаю. Выдумывать не стану 💀"
@@ -125,8 +135,8 @@ CHAT_HOOK = re.compile(
     r"почему|кто|как|чего|может|у меня|я думаю|мне кажется|"
     r"ладно|жесть|капец|смотрите)\b", re.I
 )
-AUTO_COOLDOWN_SECONDS = 8 * 60
-AUTO_REPLIES_PER_RUN = 2
+AUTO_COOLDOWN_SECONDS = 3 * 60
+AUTO_REPLIES_PER_RUN = 3
 
 # Match direct insults / harassment, not every slang word in casual chat.
 PERSONAL_ABUSE = re.compile(
@@ -175,6 +185,8 @@ def classify(text, to_bot):
     low = cleaned.lower()
     if THREATS.search(cleaned):
         return "threat"
+    if ANIMAL_HARM.search(cleaned):
+        return "animal_threat"
     if SEXUAL.search(cleaned):
         return "sexual"
     # If a user swears at the bot itself, joke about the wording rather than
@@ -231,6 +243,8 @@ def choose_reply(category, msg_id):
     rng = random.Random(msg_id * 7919)
     if category == "threat":
         return THREAT_REPLY
+    if category == "animal_threat":
+        return ANIMAL_THREAT_REPLY
     if category == "sexual":
         return SEXUAL_REPLY
     if category == "harassment":
@@ -317,7 +331,8 @@ def main():
                 if not user or user.get("is_bot") or msg.get("sender_chat"):
                     continue
                 original_msg_id = msg.get("message_id")
-                if not original_msg_id or now - int(msg.get("date", 0)) > MAX_EVENT_AGE:
+                msg_age = now - int(msg.get("date", 0))
+                if not original_msg_id or msg_age > MAX_LEARNING_AGE or msg_age < -120:
                     continue
                 body = str(msg.get("text") or msg.get("caption") or "")[:1500]
                 if not body:
@@ -325,6 +340,10 @@ def main():
                 # Anonymous aggregate vocabulary/format training. No text or
                 # user ID is persisted; serious distress is ignored.
                 state["style"] = learn_style.learn(body, state["style"])
+                # Learning is broader than replying; a delayed job must not
+                # revive an obsolete discussion just to be noisy.
+                if msg_age > MAX_REPLY_AGE:
+                    continue
                 replied_to = msg.get("reply_to_message", {}).get("from", {})
                 direct = bool(
                     MENTION.search(body) or BOT_COMMAND.search(body) or
@@ -337,7 +356,7 @@ def main():
                     # Do not butt into two people answering one another;
                     # only directly addressed questions or urgent moderation
                     # bypass this filter.
-                    if msg.get("reply_to_message"):
+                    if msg.get("reply_to_message") and not is_safe_topic_reply(msg):
                         continue
                     if spontaneous >= AUTO_REPLIES_PER_RUN:
                         continue
