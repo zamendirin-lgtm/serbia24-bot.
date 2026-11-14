@@ -26,8 +26,8 @@ CURATED = [
     {
         "key": "canal10-2026-10-16-quadrobics",
         "published": "2026-10-16",
-        "title": "Почему квадробика снова вызывает споры в интернете",
-        "summary": "16 октября издание Canal 10 рассказало о популярности териан и квадробики в TikTok и Instagram. В материале также обсуждаются нагрузки на запястья и спину при прыжках на четвереньках. А вы считаете квадробику спортом или интернет-трендом?",
+        "title": "Квадробика: спорт или просто хайп?",
+        "summary": "Маски, прыжки на четвереньках и видосы в TikTok — вокруг этого до сих пор спорят. Но есть нюанс: при таких прыжках нагрузка идёт на запястья и спину. Об этом Canal 10 писал 16 октября. Так это тренировка или больше движ ради просмотров? 👀",
         "url": "https://www.canal10.com.ni/noticia/therians-que-hay-detras-de-la-tendencia-viral-que-domina-tiktok-y-redes-sociales/",
         "search": "quadrobics animal mask",
         "type": "Разбор · 16 октября 2026",
@@ -35,8 +35,8 @@ CURATED = [
     {
         "key": "tovima-2026-05-21-therians",
         "published": "2026-05-21",
-        "title": "Терианы: самовыражение или тренд, раздутый соцсетями?",
-        "summary": "Издание To Vima описало распространение роликов с масками и движениями животных. Одни участники воспринимают это как часть своей идентичности, другие — как творческое увлечение. Из-за популярности коротких видео об этих различиях часто забывают.",
+        "title": "Терианы: свой стиль или хайп из соцсетей?",
+        "summary": "Маски животных и необычные движения залетают в короткие видео. Для одних это часть самовыражения, для других — просто творческое хобби. А в комментах всё часто сводят к одному слову: «кринж». To Vima разбирал эту тему 21 мая.",
         "url": "https://www.tovima.com/culture/therians-trend-goes-viral-identity-or-online-myth/amp/",
         "search": "therian animal masks",
         "type": "Интересное · 21 мая 2026",
@@ -44,8 +44,8 @@ CURATED = [
     {
         "key": "unsw-2025-10-quadrobics",
         "published": "2025-10-01",
-        "title": "Квадробика: реально тренировка или просто эффектный контент?",
-        "summary": "Специалисты Университета Нового Южного Уэльса разобрали физические нагрузки и обещания пользы от квадробики — движения на четвереньках, популярного в коротких видео. Они предлагают критически оценивать заявления об эффективности такой тренировки.",
+        "title": "Квадробика вместо зала? Не всё так просто",
+        "summary": "Прыжки на четвереньках выглядят эффектно, но заменят ли они обычную тренировку? Специалисты UNSW ещё в октябре 2025 года разбирали нагрузки и обещания пользы от квадробики. Красивый видос — ещё не доказательство, что тренд работает так, как обещают.",
         "url": "https://www.unsw.edu.au/newsroom/news/2025/10/experts-unpack-quadrobics-the-fitness-trend-that-claims-leaping-around-on-all-fours-will-make-you-fit",
         "search": "quadrobics",
         "type": "Разбор · октябрь 2025",
@@ -243,8 +243,41 @@ def group_avatar():
         return None
 
 
+def format_news_caption(story, photo_rights=None, photo_page=None):
+    """Readable youth-style article caption with unobtrusive linked sources.
+
+    License-required photo author, license and adaptation remain as a single
+    small credit. The article source is linked in the headline.
+    """
+    if not source_is_valid(story.get("url", "")):
+        raise ValueError("Missing article source")
+    title = (('🦖 <a href="' + html.escape(story["url"], quote=True) +
+             '"><b>' + html.escape(story["title"]) + '</b></a>'))
+    credit = ""
+    if photo_rights and photo_rights.get("credit"):
+        if not photo_page or not source_is_valid(photo_page):
+            raise ValueError("Licensed image requires its own source page")
+        license_url = photo_rights.get("license_url", "")
+        if not license_url.startswith("https://creativecommons.org/licenses/"):
+            raise ValueError("Licensed image requires a license URL")
+        author = photo_rights["credit"]
+        # Commons fields sometimes append the author's hometown; keep name.
+        if " from " in author:
+            author = author.split(" from ", 1)[0]
+        credit = ('\n\n📷 <a href="' + html.escape(photo_page, quote=True) +
+                  '">' + html.escape(author[:70]) + '</a> · <a href="' +
+                  html.escape(license_url, quote=True) + '">' +
+                  html.escape(photo_rights["license"]) + '</a> · обр.')
+    for limit in (650, 530, 410, 290, 190):
+        text = story["summary"][:limit].rstrip()
+        caption = title + '\n\n' + html.escape(text) + credit
+        if len(caption) <= 1000:
+            return caption
+    raise ValueError("Cannot fit safe complete HTML caption")
+
+
 def publish_news(state, now, dry_run=False):
-    """One item per run; only after previous article's cooldown."""
+    """One dated, sourced article with a nice licensed photo when available."""
     cooldown = 3 * 3600
     if time.time() - float(state.get("news_last_post_at", 0)) < cooldown:
         print("NEWS_COOLDOWN")
@@ -252,54 +285,26 @@ def publish_news(state, now, dry_run=False):
     story = choose_news(state, now)
     if not story or not source_is_valid(story["url"]):
         return False
-    # Never pretend older context is today's breaking news.
-    cap = ("🦖 <b>" + html.escape(story["title"]) + "</b>\n\n" +
-           html.escape(story["summary"]) + "\n\n" +
-           "<i>" + html.escape(story["type"]) + "</i> · " +
-           '<a href="' + html.escape(story["url"], quote=True) + '">Источник</a>')
     if dry_run:
-        print("NEWS_PREVIEW_OK", story["key"], strip_markup(cap)[:170])
+        print("NEWS_PREVIEW_OK", story["key"], strip_markup(
+            format_news_caption(story))[:170])
         return True
     photo = commons_photo(story["search"], state)
-    image, photo_id = None, None
+    photo_id = None
     if photo:
         image, photo_id, rights, page = photo
-        # Make it clear that a stock photo isn't a photo from the news.
-        credit = "Фотоиллюстрация"
-        if rights["credit"] and source_is_valid(page):
-            credit += (": " + html.escape(rights["credit"]) + " · " +
-                       '<a href="' + html.escape(rights["license_url"], quote=True) +
-                       '">' + html.escape(rights["license"]) + '</a> · ' +
-                       '<a href="' + html.escape(page, quote=True) +
-                       '">оригинал</a> · адапт.')
-        cap += "\n" + credit
+        caption = format_news_caption(story, rights, page)
     else:
         image = group_avatar()
+        caption = format_news_caption(story)
     if not image:
         print("NEWS_SKIPPED_NO_IMAGE")
-        return False
-    if len(cap) > 1000:
-        # Safely rebuild the caption without cutting an HTML link in half.
-        short_summary = html.escape(story["summary"][:240])
-        cap = ("🦖 <b>" + html.escape(story["title"][:105]) + "</b>\n\n" +
-               short_summary + "\n\n" + "<i>" + html.escape(story["type"]) +
-               "</i> · " + '<a href="' + html.escape(story["url"], quote=True) +
-               '">Источник</a>')
-        if photo and photo[2]["credit"] and source_is_valid(photo[3]):
-            rights = photo[2]
-            cap += ("\nФотоиллюстрация: " + html.escape(rights["credit"][:70]) +
-                    ' · <a href="' + html.escape(rights["license_url"], quote=True) +
-                    '">' + html.escape(rights["license"]) + '</a>' +
-                    ' · <a href="' + html.escape(photo[3], quote=True) +
-                    '">оригинал</a> · адапт.')
-    if len(cap) > 1000:
-        print("NEWS_CAPTION_TOO_LONG")
         return False
     with io.BytesIO(image) as fp:
         fp.name = "news.jpg"
         result = bot.telegram_send("sendPhoto", data={
             "chat_id": bot.CHAT_ID,
-            "caption": cap,
+            "caption": caption,
             "parse_mode": "HTML",
             "disable_notification": "true",
         }, files={"photo": ("news.jpg", fp, "image/jpeg")})
