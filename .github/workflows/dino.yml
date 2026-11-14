@@ -48,7 +48,7 @@ jobs:
       - name: Save state only when changed
         if: ${{ env.DINO_DRY_RUN != 'true' }}
         run: |
-          git add dino/state.json
+          git add dino/state.json dino/credits/
           if ! git diff --cached --quiet; then
             git config user.name "dinodvij-actions[bot]"
             git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
