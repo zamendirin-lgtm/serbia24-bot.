@@ -41,16 +41,15 @@ class LicensedPhoto:
     subject_label: str
 
     def credit_html(self) -> str:
-        """Attribution next to the image with a link to original + licence."""
+        """Compact clickable photo icon; Commons source page shows full credits.
+
+        For CC BY/CC BY-SA, link to the exact Commons file description page
+        that contains photographer name, licence and required attribution.
+        Creative Commons permits a reasonable hyperlink attribution for
+        online media (CC 4.0 section 3(a)(2)).
+        """
         src = html.escape(self.file_page, quote=True)
-        licence = html.escape(self.license_url, quote=True)
-        name = html.escape(self.author)
-        label = html.escape(self.subject_label)
-        lic_name = html.escape(self.license_name)
-        return (
-            f'📷 {label}: <a href="{src}">{name}</a>, '
-            f'<a href="{licence}">{lic_name}</a>'
-        )
+        return f'<a href="{src}">📷</a>'
 
 
 def normalize(value: str) -> str:
