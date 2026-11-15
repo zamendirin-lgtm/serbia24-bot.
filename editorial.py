@@ -68,6 +68,10 @@ SYSTEM_RULES = """Ты выпускающий редактор РУССКОЯЗ�
   «вопрос в том, получит ли»), заменяй на естественные русские выражения.
 - Не используй СЛОВА ПРОПИСНЫМИ БУКВАМИ ради выделения. Сербское
   «omladinski klub» по-русски «молодёжный клуб», а не «омладенческий клуб».
+- Имена собственные сохраняй точно: сербского министра Nikola Selaković
+  зовут по-русски Никола Селакович, НЕ Николай. Актриса Tanja Bošković —
+  Таня Бошкович, НЕ Татьяна. «Udruženje dramskih umetnika Srbije» —
+  «Ассоциация драматических артистов Сербии», НЕ «художников».
 - Проверь грамматическое согласование: «пройдёт мастер-класс», а не
   «пройдут мастер-класс»; «состоится встреча», а не «состоятся встреча».
   Вычитай готовый заголовок и оба абзаца на естественном русском языке
@@ -146,6 +150,9 @@ def _clean(value: str) -> str:
         (r"\bежедневных вызовов\b", "повседневных трудностей"),
         (r"\bдля молодых\b", "для молодёжи"),
         (r"\bомладенческим клубом\b", "Молодёжным клубом"),
+        (r"\bНиколай Селакович\b", "Никола Селакович"),
+        (r"\bТатьяна Бошкович\b", "Таня Бошкович"),
+        (r"\bдраматических художников\b", "драматических артистов"),
         (r"\bпройдут(?= мастер[‐‑–-]класс\b)", "пройдёт"),
         (r"\bсостоятся(?= встреча\b)", "состоится"),
     ):
@@ -266,11 +273,36 @@ def ensure_cultural_award_is_explained(
             )
 
 
+def split_readable_paragraphs(parts: list[str]) -> list[str]:
+    """Separate a valid multi-sentence news brief sent as one paragraph.
+
+    This changes only formatting, never facts. Don't split at a random
+    character, breaking names, or append filler to meet paragraph counts.
+    """
+    if len(parts) != 1 or len(parts[0]) < 220:
+        return parts
+    sentences = [
+        piece.strip()
+        for piece in re.split(r"(?<=[.!?])\s+(?=[А-ЯЁ«])", parts[0])
+        if piece.strip()
+    ]
+    if len(sentences) < 2:
+        return parts
+    # Choose a sentence boundary that balances the two paragraphs.
+    positions = range(1, len(sentences))
+    cut = min(
+        positions, key=lambda i: abs(
+            len(" ".join(sentences[:i])) - len(" ".join(sentences[i:]))
+        )
+    )
+    return [" ".join(sentences[:cut]), " ".join(sentences[cut:])]
+
+
 def _basic_checks(title: str, paragraphs: list[str] | tuple[str, ...],
                   factual_input: str, *,
                   require_cultural_context: bool = True) -> EditedNews:
     title = _clean(title)
-    parts = [_clean(p) for p in paragraphs]
+    parts = split_readable_paragraphs([_clean(p) for p in paragraphs])
     if not 12 <= len(title) <= 160:
         raise EditorialError("Пустой или слишком длинный заголовок")
     if len(parts) not in (2, 3):
