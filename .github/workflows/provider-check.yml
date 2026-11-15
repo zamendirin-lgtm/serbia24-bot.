@@ -12,7 +12,7 @@ permissions:
 jobs:
   verify:
     runs-on: ubuntu-latest
-    timeout-minutes: 8
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -37,6 +37,10 @@ jobs:
         env:
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
         run: python -m scripts.nbs_currency_quality_smoke
+      - name: Check national arts pension terms and 5-to-10 candidates with second AI review (no Telegram)
+        env:
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+        run: python -m scripts.culture_award_quality_smoke
       - name: Verify real N1 documentary has film name in final Russian article (no Telegram posts)
         env:
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
