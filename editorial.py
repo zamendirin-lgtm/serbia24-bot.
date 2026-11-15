@@ -266,7 +266,8 @@ def ensure_cultural_award_is_explained(
 
 
 def _basic_checks(title: str, paragraphs: list[str] | tuple[str, ...],
-                  factual_input: str) -> EditedNews:
+                  factual_input: str, *,
+                  require_cultural_context: bool = True) -> EditedNews:
     title = _clean(title)
     parts = [_clean(p) for p in paragraphs]
     if not 12 <= len(title) <= 160:
@@ -301,7 +302,8 @@ def _basic_checks(title: str, paragraphs: list[str] | tuple[str, ...],
     ensure_russian(title, parts)
     ensure_resolved_context(title, parts)
     ensure_conditional_rules_explained(title, parts, factual_input)
-    ensure_cultural_award_is_explained(title, parts, factual_input)
+    if require_cultural_context:
+        ensure_cultural_award_is_explained(title, parts, factual_input)
     return EditedNews(title, tuple(parts), "checked")
 
 
@@ -386,6 +388,11 @@ def edit_with_groq(source_title: str, source_paragraphs: list[str],
                 raise EditorialError("Groq-редактор отклонил недостаточно содержательную новость")
             edited = _basic_checks(
                 parsed.get("title", ""), parsed.get("paragraphs", []), original,
+                # Let the independent proofreader resolve unexplained terms.
+                # The final review itself still enforces the strict glossary.
+                require_cultural_context=(
+                    os.getenv("EDITOR_REVIEW_ENABLED", "0").strip() != "1"
+                ),
             )
             return EditedNews(edited.title, edited.paragraphs, "groq")
         except (WrongLanguageError, MissingContextError, MissingConditionError, UnexplainedTermError) as exc:
