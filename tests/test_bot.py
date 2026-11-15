@@ -12,6 +12,7 @@ from bot import (
     same_event_title, event_terms, prune_state, publication_allowed,
     interval_allows_publication, next_eligible_publication, MIN_PUBLICATION_INTERVAL_MINUTES,
     branded_fallback_photo, extract_article_paragraphs, select_news_paragraphs,
+    financial_exception_context,
     film_premiere_context,
     translate_article, complete_sentences_for_budget,
     image_dhash, photo_url_key, is_repeated_photo,
@@ -529,6 +530,32 @@ class NewsBotTests(unittest.TestCase):
           <media:content url="https://rts.rs/photos/a.jpg" type="image/jpeg"/>
           </item></channel></rss>""").entries[0]
         self.assertEqual(rss_photo(entry, "https://rts.rs/article"), "https://rts.rs/photos/a.jpg")
+
+    def test_financial_exception_30_60_days_extracted_from_deeper_source(self):
+        headline = "NBS menja pravila za menjače: do 60 dana za prodaju efektive bankama"
+        blocks = [
+            "Narodna banka Srbije izmenila je pravila za poslovanje menjačnica, što se odnosi na prodaju efektivnog stranog novca bankama.",
+            "Prema novim odredbama, menjači koji kupe efektivu od banaka mogu da je vrate banci u roku od 30 dana od kupovine.",
+            "Izmene odluke biće na snazi do sredine januara i odnose se na ovlašćene menjače i javnog poštanskog operatora.",
+            "Izuzetak je predviđen ako su menjači u prethodnih 14 dana prodali građanima najmanje 10 odsto više efektive nego što su otkupili od fizičkih lica.",
+            "U tom slučaju rok se produžava na 60 dana, navodi Narodna banka Srbije u odluci objavljenoj u Službenom glasniku.",
+        ]
+        exception = financial_exception_context(blocks, headline)
+        self.assertIn("14 dana", exception)
+        self.assertIn("10 odsto", exception)
+        extracted = select_news_paragraphs(blocks, headline)
+        self.assertTrue(extracted)
+        self.assertIn("14 dana", " ".join(extracted))
+        self.assertIn("10 odsto", " ".join(extracted))
+        self.assertLessEqual(len(extracted), 3)
+
+    def test_financial_exception_not_added_without_source_evidence(self):
+        headline = "Menjači dobijaju rok od 60 dana"
+        blocks = [
+            "NBS je donela odluku o pravilima prodaje efektive bankama u roku od 30 dana.",
+            "Novo pravilo odnosi se na ovlašćene menjače i poštanskog operatora.",
+        ]
+        self.assertEqual(financial_exception_context(blocks, headline), "")
 
     def test_film_title_from_later_article_paragraph_is_preserved(self):
         headline = ("Kikić pred premijeru dokumentarca o rudarenju u istočnoj Srbiji: "
