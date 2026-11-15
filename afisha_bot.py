@@ -7,6 +7,7 @@ not copied. Curated, owner-authorized JSON is accepted for other Serbian cities.
 from __future__ import annotations
 
 import hashlib
+from difflib import SequenceMatcher
 import html
 import json
 import os
@@ -648,6 +649,68 @@ def event_series_key(url: str) -> str:
     return (parsed.hostname or "") + path
 
 
+def _event_slug(url: str) -> tuple[str, str, str]:
+    """Extract source host, event slug and its optional ISO date from a URL."""
+    try:
+        p = urlparse(url)
+    except ValueError:
+        return "", "", ""
+    host = (p.hostname or "").removeprefix("www.")
+    slug = p.path.rstrip("/").rsplit("/", 1)[-1].casefold()
+    match = re.search(r"-(20\d{2}-\d{2}-\d{2})$", slug)
+    occurrence = match.group(1) if match else ""
+    if match:
+        slug = slug[:match.start()]
+    return host, slug, occurrence
+
+
+def same_real_event(event: Event, previous: dict) -> bool:
+    """Detect slightly different RUN BGD slugs for the *same* dated event.
+
+    Example source aliases:
+      jelena-radanovic-novi-show-druzina-ljubavi-2026-11-17
+      jelena-radanovic-novi-show-duzna-u-ljubavi-2026-11-17
+
+    The URL hashes differ, but performer, show, date and venue are the same.
+    Require a matching date and very close distinctive slug; never collapse
+    multiple separate shows merely because a musician or date matches.
+    """
+    if not isinstance(previous, dict) or not previous.get("url"):
+        return False
+    prev_url = str(previous["url"])
+    if event_series_key(event.url) == event_series_key(prev_url):
+        return True
+    host, slug, url_date = _event_slug(event.url)
+    prev_host, prev_slug, prev_date = _event_slug(prev_url)
+    if host != prev_host or host not in ("runbgd.com",) or not slug or not prev_slug:
+        return False
+    stamp = parse_date(previous.get("event_start"))
+    if stamp and stamp.date() != event.start.date():
+        return False
+    # Only compare source slug aliases for a known same-day event.
+    if (url_date and url_date != event.start.date().isoformat()) or (
+        prev_date and prev_date != event.start.date().isoformat()
+    ):
+        return False
+    if not (url_date and prev_date) and not stamp:
+        return False
+    if previous.get("city") and previous["city"].strip().casefold() != event.city.strip().casefold():
+        return False
+    if previous.get("venue") and previous["venue"].strip().casefold() != event.venue.strip().casefold():
+        return False
+    a, b = slug.split("-"), prev_slug.split("-")
+    if len(a) < 5 or len(b) < 5:
+        return False
+    # Require the same performer/show prefix and distinctive last word, not
+    # merely "Jelena Radanovic" playing two separate gigs.
+    if a[:4] != b[:4] or a[-1] != b[-1] or len(a[-1]) < 5:
+        return False
+    # Different show numbers/editions are distinct, despite similar slugs.
+    if [w for w in a if w.isdigit()] != [w for w in b if w.isdigit()]:
+        return False
+    return SequenceMatcher(None, slug, prev_slug).ratio() >= 0.90
+
+
 def select(events: list[Event], seen: dict, now: datetime) -> list[Event]:
     """Rank by useful details, novelty, type and near-term date, never random order."""
     daily = posted_today(seen, now)
@@ -659,11 +722,21 @@ def select(events: list[Event], seen: dict, now: datetime) -> list[Event]:
         for row in seen.values() if isinstance(row, dict) and row.get("url")
     }
     deduped = {}
+    past_records = [row for row in seen.values() if isinstance(row, dict)]
     for e in events:
         if e.key in seen or not event_in_window(e, now):
             continue
         series = event_series_key(e.url)
         if series in past_series or series in deduped:
+            continue
+        # The source sometimes publishes the same performance under a revised
+        # transliteration/slug. Same event must be announced just once.
+        if any(same_real_event(e, row) for row in past_records):
+            continue
+        if any(same_real_event(e, {
+            "url": other.url, "event_start": other.start.isoformat(),
+            "city": other.city, "venue": other.venue,
+        }) for other in deduped.values()):
             continue
         deduped[series] = e
     scored = []
@@ -876,6 +949,9 @@ def main() -> int:
                 "published_at": now.isoformat(),
                 "topic": event_topic(event),
                 "ai_editor": approved.provider,
+                "title": event.title,
+                "city": event.city,
+                "venue": event.venue,
             }
             STATE.parent.mkdir(parents=True, exist_ok=True)
             STATE.write_text(json.dumps(seen, ensure_ascii=False, indent=2) + "\n",
