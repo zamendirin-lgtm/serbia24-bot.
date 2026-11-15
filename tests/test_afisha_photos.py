@@ -40,16 +40,22 @@ class AfishaLicensedPhotoTests(unittest.TestCase):
     def test_licensed_band_photo_and_credit(self):
         candidate = _candidate(file_info(), ["magla"], 2026, "artist")
         self.assertIsNotNone(candidate)
-        self.assertIn("Фото исполнителя", candidate.credit_html())
-        self.assertIn("Photographer Name", candidate.credit_html())
-        self.assertIn("CC BY 4.0", candidate.credit_html())
-        self.assertIn("commons.wikimedia.org", candidate.credit_html())
+        self.assertEqual(
+            candidate.credit_html(),
+            '<a href="https://commons.wikimedia.org/wiki/File:Magla_bend_at_music_festival_2024.jpg">📷</a>',
+        )
+        # Full author and licence metadata stay available on the linked file
+        # description page but no verbose credit line appears in Telegram.
+        self.assertNotIn("Фото исполнителя", candidate.credit_html())
+        self.assertNotIn("Photographer Name", candidate.credit_html())
+        self.assertNotIn("CC BY 4.0", candidate.credit_html())
 
     def test_previous_year_archive_is_clearly_labelled(self):
         item = _candidate(file_info("File:Magla bend festival 2025.jpg"),
                           ["magla"], 2026, "archive")
         self.assertIsNotNone(item)
-        self.assertIn("Архивное фото", item.credit_html())
+        self.assertIn(">📷</a>", item.credit_html())
+        self.assertNotIn("Архивное фото", item.credit_html())
         unrelated_year = _candidate(file_info("File:Magla bend 2016.jpg"),
                                     ["magla"], 2026, "archive")
         self.assertIsNone(unrelated_year)
@@ -80,7 +86,8 @@ class AfishaLicensedPhotoTests(unittest.TestCase):
         venue = file_info("File:Sava Centar building in Belgrade.jpg")
         pic = _candidate(venue, ["sava", "centar"], 2026, "venue")
         self.assertIsNotNone(pic)
-        self.assertIn("Фото площадки", pic.credit_html())
+        self.assertIn(">📷</a>", pic.credit_html())
+        self.assertNotIn("Фото площадки", pic.credit_html())
         portrait = file_info("File:Vlada Divljan portrait.jpg")
         self.assertIsNone(_candidate(portrait, ["vlada", "divljan"], 2026, "venue"))
 
