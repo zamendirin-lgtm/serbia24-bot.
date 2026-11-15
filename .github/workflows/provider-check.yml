@@ -37,7 +37,7 @@ jobs:
         env:
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
         run: python -m scripts.nbs_currency_quality_smoke
-      - name: Check national arts pension glossary and five-to-ten change with two-stage Groq (no Telegram)
+      - name: Check national arts pension definitions and five-to-ten change, including number words (no Telegram)
         env:
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
         run: python -m scripts.culture_award_quality_smoke
