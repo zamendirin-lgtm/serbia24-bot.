@@ -236,6 +236,18 @@ class EditorialTests(unittest.TestCase):
             corrected, source,
         )
 
+    def test_cultural_award_accepts_before_after_numbers_written_as_words(self):
+        source = (
+            "Ministar kulture Selaković dobio pravo na nacionalne penzije "
+            "sa pet na deset kandidata."
+        )
+        title = "Министр культуры сможет предложить вдвое больше кандидатов"
+        paragraphs = [
+            "Национальная пенсия в Сербии — пожизненная ежемесячная денежная выплата за выдающийся вклад в культуру. Министр культуры получил дополнительные полномочия.",
+            "Теперь министр может предложить правительству до десяти кандидатов вместо прежних пяти, помимо заявок профессиональных творческих объединений.",
+        ]
+        ensure_cultural_award_is_explained(title, paragraphs, source)
+
     def test_normal_retirement_pension_not_treated_as_arts_award(self):
         ensure_cultural_award_is_explained(
             "Пенсии в Сербии проиндексируют в декабре",
