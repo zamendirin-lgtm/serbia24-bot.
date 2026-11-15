@@ -1,6 +1,6 @@
 {
-  "date": "2026-11-14",
-  "daily_count": 9,
+  "date": "2026-11-15",
+  "daily_count": 1,
   "seen": {},
   "used_media": [
     "commons-video:5761750",
@@ -15,7 +15,7 @@
   "rejected_media": [],
   "video_search_cache": {
     "version": 2,
-    "cycle": 30621,
+    "cycle": 30659,
     "hits": [
       {
         "id": "commons-video:5761750",
@@ -82,12 +82,14 @@
   ],
   "posted_news": [
     "canal10-2026-10-16-quadrobics",
-    "tovima-2026-05-21-therians"
+    "tovima-2026-05-21-therians",
+    "unsw-2025-10-quadrobics"
   ],
   "used_news_photos": [
     "3862418",
-    "156631916"
+    "156631916",
+    "185234507"
   ],
-  "news_last_post_at": 1794692688.4026191,
+  "news_last_post_at": 1794728980.8163412,
   "video_info_caption_741512": true
 }
