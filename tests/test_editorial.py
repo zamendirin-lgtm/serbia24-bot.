@@ -7,6 +7,7 @@ from editorial import (
     SYSTEM_RULES, EditedNews, EditorialError,
     conservative_polish, edit_news, edit_with_gemini, edit_with_groq, _numbers, _clean,
     ensure_conditional_rules_explained, MissingConditionError, _basic_checks,
+    ensure_cultural_award_is_explained, UnexplainedTermError,
 )
 
 TITLE = "В Нови-Саде открыли новый медицинский центр"
@@ -110,6 +111,69 @@ class EditorialTests(unittest.TestCase):
         corrected = _clean("В Крагуеваце вечером пройдут мастер‑класс о внимании.")
         self.assertIn("пройдёт мастер‑класс", corrected)
         self.assertNotIn("пройдут мастер", corrected)
+
+    def test_national_arts_pensions_must_be_defined_for_readers(self):
+        source = (
+            "Ministar kulture Selaković dobio dodatna ovlašćenja za "
+            "nacionalne penzije. Udruženje dramskih umetnika Srbije ponovo "
+            "predložilo Bošković, Savina i Kovačevića."
+        )
+        vague = [
+            "Ministar kulture Nikola Selaković dobio je proširena ovlašćenja da predlaže vladi nove kandidate za nacionalne penzije.",
+            "Udruženje dramskih umetnika Srbije ponovo je kandidovalo tri predstavnika čiji su raniji zahtevi odbijeni.",
+        ]
+        with self.assertRaisesRegex(UnexplainedTermError, "пожизненная"):
+            ensure_cultural_award_is_explained(
+                "Селакович получил больше прав для национальных пенсий",
+                vague, source,
+            )
+
+    def test_clear_national_arts_pension_passes(self):
+        source = (
+            "Selakoviću proširena ovlašćenja za nacionalne penzije: "
+            "ministar ima pravo da predloži dodatne kandidate umetnika."
+        )
+        paragraphs = [
+            "Национальная пенсия в Сербии — пожизненная ежемесячная денежная выплата за выдающийся вклад в культуру. Министр может выдвигать кандидатов.",
+            "Ассоциация драматических артистов потребовала дождаться формирования нового правительства, чтобы решение было принято профессиональной комиссией.",
+        ]
+        ensure_cultural_award_is_explained(
+            "В Сербии изменили порядок национальных пенсий для артистов",
+            paragraphs, source,
+        )
+
+    def test_national_pension_expansion_must_state_old_and_new_limit(self):
+        source = (
+            "U septembru je izmenjen propis o nacionalnim penzijama, "
+            "ministar može samostalno da predloži od pet na deset kandidata."
+        )
+        vague = [
+            "Министр культуры получил расширенные полномочия в сфере национальных пенсий. Это пожизненные ежемесячные денежные выплаты за заслуги в культуре.",
+            "По новым правилам министр может выдвигать до 10 кандидатов на получение государственной награды, но прежнее ограничение не упоминается.",
+        ]
+        with self.assertRaisesRegex(UnexplainedTermError, "5 кандидатов"):
+            ensure_cultural_award_is_explained(
+                "Министр культуры предложит до 10 кандидатов на национальные пенсии",
+                vague, source,
+            )
+        corrected = [
+            "В Сербии расширили полномочия министра культуры. Он может предложить до 10 кандидатов вместо прежних 5 на пожизненную ежемесячную денежную выплату за вклад в культуру.",
+            "Ассоциация драматических артистов требует отложить решение до формирования нового правительства и независимой профессиональной комиссии.",
+        ]
+        ensure_cultural_award_is_explained(
+            "Изменили правила национальных пенсий для артистов",
+            corrected, source,
+        )
+
+    def test_normal_retirement_pension_not_treated_as_arts_award(self):
+        ensure_cultural_award_is_explained(
+            "Пенсии в Сербии проиндексируют в декабре",
+            [
+                "Правительство Сербии увеличит выплаты пенсионерам по возрасту.",
+                "Повышение затронет получателей обычных страховых пенсий.",
+            ],
+            "Penzije u Srbiji biće uvećane u decembru.",
+        )
 
     def test_nbs_60_vs_30_day_omitted_exception_rejected(self):
         source = (
