@@ -785,6 +785,47 @@ def film_premiere_context(blocks: list[str], headline: str) -> str:
     return ""
 
 
+def financial_exception_context(blocks: list[str], headline: str) -> str:
+    """Preserve a stated 30/60-day exception rather than losing its condition.
+
+    This merely copies factual source material from a later paragraph. No
+    regulatory conditions are supplied by the code or inferred by the model.
+    """
+    title = normalized_title(headline)
+    if not contains_anchor(
+        title, ("menjac", "efektiv", "deviz", "valut", "banka", "banke", "nbs")
+    ):
+        return ""
+    source = " ".join([headline, *blocks[:20]])
+    source_norm = normalized_title(source)
+    if not ("30 dana" in source_norm and "60 dana" in source_norm):
+        return ""
+    if not (
+        re.search(r"\b14\s+dana\b", source_norm)
+        and re.search(r"\b10\s*(?:odsto|posto|%)\b", source_norm)
+    ):
+        return ""
+    for block in blocks[:20]:
+        normalized = normalized_title(block)
+        if not (
+            re.search(r"\b14\s+dana\b", normalized)
+            and re.search(r"\b10\s*(?:odsto|posto|%)\b", normalized)
+        ):
+            continue
+        for sentence in split_news_sentences(block):
+            check = normalized_title(sentence)
+            if (
+                re.search(r"\b14\s+dana\b", check)
+                and re.search(r"\b10\s*(?:odsto|posto|%)\b", check)
+                and 45 <= len(sentence) <= 550
+                and sentence[-1] in ".!…"
+            ):
+                return sentence
+        if 45 <= len(block) <= 550 and block[-1] in ".!…":
+            return block
+    return ""
+
+
 def select_news_paragraphs(blocks: list[str], headline: str) -> list[str]:
     """Keep the opening, closely related facts; never stitch distant topics."""
     # Some sites flatten all HTML paragraphs into a single text block.
@@ -847,6 +888,15 @@ def select_news_paragraphs(blocks: list[str], headline: str) -> list[str]:
             paras[2] = film_context
         else:
             paras.append(film_context)
+
+    # Keep the decisive qualifier of 60-day foreign-cash bank rules.
+    # It often appears below the first two paragraphs in Serbian reports.
+    exception_context = financial_exception_context(blocks, headline)
+    if exception_context and not any(exception_context in p for p in paras):
+        if len(paras) >= 3:
+            paras[2] = exception_context
+        else:
+            paras.append(exception_context)
 
     # For a price-focused article, extract a concrete currency amount when
     # it appears in the original body but not in the opening paragraphs.
