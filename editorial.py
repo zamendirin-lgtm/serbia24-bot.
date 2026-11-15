@@ -50,6 +50,20 @@ SYSTEM_RULES = """Ты выпускающий редактор РУССКОЯЗ�
 - Не используй английские слова вроде workshop, event, challenge или update.
   Вместо них пиши «мастер-класс», «мероприятие», «трудности», «обновление».
   Названия компаний и официальные аббревиатуры (SKC, RTS) сохраняй.
+- ОБЪЯСНЯЙ НЕЗНАКОМЫЕ ПОНЯТИЯ. Перед публикацией спроси себя:
+  «Если я впервые слышу об этой теме, пойму ли я, о чём речь?».
+  Например, сербская «nacionalna penzija» для деятелей культуры — не
+  обычная пенсия по возрасту. По официальным правилам Министерства
+  культуры Сербии это пожизненная ежемесячная денежная выплата за
+  выдающийся вклад в культуру. В новости об этих выплатах обязательно
+  объясни смысл прямо в первом абзаце.
+  Если у министра расширены полномочия с 5 до 10 кандидатов, укажи
+  ПРЕЖНИЙ и НОВЫЙ лимит, иначе читатель не увидит сути изменения.
+  Если статья говорит о «техническом правительстве», кратко объясни
+  это обычным языком (например, «до формирования нового правительства»).
+  Сократи обороты «согласно изменённому регламенту», «расширенные
+  полномочия», «репрезентативные ассоциации» — вместо этого
+  расскажи, кто что может делать и почему это важно.
 - Избегай машинного перевода («серию активностей», «ежедневные вызовы»,
   «вопрос в том, получит ли»), заменяй на естественные русские выражения.
 - Не используй СЛОВА ПРОПИСНЫМИ БУКВАМИ ради выделения. Сербское
@@ -212,6 +226,45 @@ def ensure_conditional_rules_explained(
             )
 
 
+class UnexplainedTermError(ValueError):
+    """A news-specific concept or the reason for a major change was not explained."""
+
+
+def ensure_cultural_award_is_explained(
+    title: str, paragraphs: list[str] | tuple[str, ...], source: str,
+) -> None:
+    """Serbian 'national pensions' for artists are not ordinary pensions.
+
+    Background: Serbia's Ministry of Culture 2026 official competition states
+    that these are lifetime monthly state cash awards for outstanding
+    contribution to culture (kultura.gov.rs/konkurs/sr/30/6ac82c3d63bc2).
+    """
+    source_lower = source.lower()
+    body = " ".join([title, *paragraphs]).lower()
+    if not (
+        re.search(r"nacionaln\w*\s+penzij\w*|национальн\w*\s+пенси\w*", source_lower + " " + body, re.I)
+        and re.search(r"культур|kultur|umetn|артист|художник|селаков|selakov", source_lower + " " + body, re.I)
+    ):
+        return
+    if not (
+        re.search(r"пожизненн\w*", body)
+        and re.search(r"ежемесячн\w*", body)
+        and re.search(r"выплат\w*|денежн\w*|вознагражден\w*|пособи\w*", body)
+        and re.search(r"культур\w*|артист\w*|художник\w*|искусств\w*", body)
+    ):
+        raise UnexplainedTermError(
+            "Не объяснено, что национальная пенсия — пожизненная ежемесячная выплата за вклад в культуру"
+        )
+
+    # When the comparison is present in selected factual source, the news
+    # must tell readers what changed instead of only saying "expanded powers".
+    if re.search(r"\b(?:sa|od)\s+pet\s+na\s+deset\b", source_lower, re.I):
+        if not (re.search(r"(?<!\d)5(?!\d)", body) and re.search(r"(?<!\d)10(?!\d)", body)):
+            raise UnexplainedTermError(
+                "Расширение полномочий не объяснено: раньше 5 кандидатов, теперь 10"
+            )
+
+
 def _basic_checks(title: str, paragraphs: list[str] | tuple[str, ...],
                   factual_input: str) -> EditedNews:
     title = _clean(title)
@@ -248,6 +301,7 @@ def _basic_checks(title: str, paragraphs: list[str] | tuple[str, ...],
     ensure_russian(title, parts)
     ensure_resolved_context(title, parts)
     ensure_conditional_rules_explained(title, parts, factual_input)
+    ensure_cultural_award_is_explained(title, parts, factual_input)
     return EditedNews(title, tuple(parts), "checked")
 
 
@@ -307,6 +361,10 @@ def edit_with_groq(source_title: str, source_paragraphs: list[str],
                 "Если упоминается премьера документального фильма, "
                 "обязательно назови фильм в связке 'фильм «Название»', "
                 "если это название содержится в предоставленном источнике. "
+                "Если упоминается национальная пенсия деятелей культуры, "
+                "обязательно объясни, что это пожизненная ежемесячная денежная "
+                "выплата за вклад в культуру, а не обычная пенсия. "
+                "Если полномочия расширены с 5 до 10 кандидатов, укажи оба числа. "
                 "Если закон предусматривает разные сроки для разных случаев, "
                 "объясни ОБА срока и точное условие исключения. "
                 "Например, 60 дней вместо 30 возможны только при специальном "
@@ -330,7 +388,7 @@ def edit_with_groq(source_title: str, source_paragraphs: list[str],
                 parsed.get("title", ""), parsed.get("paragraphs", []), original,
             )
             return EditedNews(edited.title, edited.paragraphs, "groq")
-        except (WrongLanguageError, MissingContextError, MissingConditionError) as exc:
+        except (WrongLanguageError, MissingContextError, MissingConditionError, UnexplainedTermError) as exc:
             if attempt == 0:
                 LOG.warning(
                     "Groq упустил важный контекст или условие (%s); повторяем",
