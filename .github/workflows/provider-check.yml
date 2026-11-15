@@ -37,7 +37,7 @@ jobs:
         env:
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
         run: python -m scripts.nbs_currency_quality_smoke
-      - name: Check arts pensions in plain Russian, lifetime awards and minister nominations (no Telegram)
+      - name: Final plain-Russian arts pension review with natural sentence paragraphs (no Telegram)
         env:
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
         run: python -m scripts.culture_award_quality_smoke
