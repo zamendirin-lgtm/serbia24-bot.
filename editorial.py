@@ -259,7 +259,9 @@ def ensure_cultural_award_is_explained(
     # When the comparison is present in selected factual source, the news
     # must tell readers what changed instead of only saying "expanded powers".
     if re.search(r"\b(?:sa|od)\s+pet\s+na\s+deset\b", source_lower, re.I):
-        if not (re.search(r"(?<!\d)5(?!\d)", body) and re.search(r"(?<!\d)10(?!\d)", body)):
+        five = re.search(r"(?<!\d)5(?!\d)|\bпят(?:ь|и|ью)\b", body, re.I)
+        ten = re.search(r"(?<!\d)10(?!\d)|\bдесят(?:ь|и|ью)\b", body, re.I)
+        if not (five and ten):
             raise UnexplainedTermError(
                 "Расширение полномочий не объяснено: раньше 5 кандидатов, теперь 10"
             )
