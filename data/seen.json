@@ -49,7 +49,8 @@
     "e66fb9272f4d705ad5c0bbb2": 1794730126.90966,
     "75c5af262dfe7d9b982c14e6": 1794737243.693098,
     "35c33d89deff85621bb6619e": 1794744980.119907,
-    "a86de738c916b4496ade1306": 1794751740.731467
+    "a86de738c916b4496ade1306": 1794751740.731467,
+    "278f3c74ffbacd09a9935530": 1794757316.4157
   },
   "photos": {
     "50f559ee5d138a92c244ad4c": 1794474084.088928,
@@ -87,7 +88,8 @@
     "154f6cfbad011f38c5e17812": 1794730126.90966,
     "bc38fb2c337bfecb5db7830c": 1794737243.693098,
     "9c7b11b05d3b9a95dd254010": 1794744980.119907,
-    "25fe8c4e320a47779ccf48f0": 1794751740.731467
+    "25fe8c4e320a47779ccf48f0": 1794751740.731467,
+    "9816e0c571d1bd817d3bb7d9": 1794757316.4157
   },
   "phashes": {
     "2ceefee6566d6666": 1794474084.088928,
@@ -125,7 +127,8 @@
     "c7f1c86c1a18dc7c": 1794730126.90966,
     "0c0c0c0c0c0e8c8c": 1794737243.693098,
     "9a4c250f0f8d9c96": 1794744980.119907,
-    "e2e0a421e60419e6": 1794751740.731467
+    "e2e0a421e60419e6": 1794751740.731467,
+    "233326360e975569": 1794757316.4157
   },
   "posted": [
     {
@@ -423,6 +426,12 @@
       "title_norm": "rashkovitsh ivitsh srbija je duboko ranjeno drushtvo istina je najbolji lek",
       "summary_norm": "dugogodishnje krize politichke podele i sukobi ostavili su duboke posleditse po drushtvo otsenjuje psikhijatar i bivsha politicharka sanda rashkovitsh ivitsh smatra da najvetshu odgovornost za atmosferu netrpeljivosti snosi pretkhodna vlast ali upozorava da u dugotrajnim sukobima politichki neistomishljenitsi postaju neprijatelji prema kojima nestaje empatija izlaz iz takvog stanja vidi u istini suochavanju sa odgovornoshtshu i obnavljanju rada institutsija",
       "source": "RTS"
+    },
+    {
+      "ts": 1794757316.4157,
+      "title_norm": "prihodi od poreza u industriji igara na srecu porasli 11 puta u poslednjih 15 godina u drzavnu kasu slije se 220 miliona evra godisnje od igara na srecu",
+      "summary_norm": "prema najnovijim istrazivanjima bloomberg adria u srbiji je u poslednjih pet godina zatvoreno 245 kladionica sto ukazuje na znacajne promene na trzistu igara na srecu i sve zahtevnije uslove poslovanja za priredivace u prilog tome ide i cinjenica da su porezi za poslednjih 15 godina porasli cak 11 puta a da profiti priredivaca znacajno opadaju iz godine u godinu",
+      "source": "Danas"
     }
   ]
 }
