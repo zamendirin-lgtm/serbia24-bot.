@@ -826,6 +826,34 @@ def financial_exception_context(blocks: list[str], headline: str) -> str:
     return ""
 
 
+def national_culture_award_context(blocks: list[str], headline: str) -> str:
+    """Retain the key before/after minister nomination limit from deeper text.
+
+    The entire article is available, but the first 2-3 paragraphs may only
+    discuss the nominees. Without the change from five to ten, the news about
+    extended minister powers doesn't explain what actually changed.
+    """
+    subject = normalized_title(headline)
+    if not (
+        contains_anchor(subject, ("nacionaln penzij", "nacionaln priznan", "selakov"))
+        and contains_anchor(subject, ("ministar", "ovlascenj", "penzij", "priznan"))
+    ):
+        return ""
+    for block in blocks[:35]:
+        for sentence in split_news_sentences(block):
+            norm = normalized_title(sentence)
+            if not (
+                "pet" in norm.split() and "deset" in norm.split()
+                or re.search(r"\b5\b.*\b10\b|\b10\b.*\b5\b", norm)
+            ):
+                continue
+            if not contains_anchor(norm, ("ministar", "kandidat", "predloz", "predlog", "umetn")):
+                continue
+            if len(sentence) <= 440 and sentence[-1] in ".!…":
+                return sentence
+    return ""
+
+
 def select_news_paragraphs(blocks: list[str], headline: str) -> list[str]:
     """Keep the opening, closely related facts; never stitch distant topics."""
     # Some sites flatten all HTML paragraphs into a single text block.
@@ -888,6 +916,14 @@ def select_news_paragraphs(blocks: list[str], headline: str) -> list[str]:
             paras[2] = film_context
         else:
             paras.append(film_context)
+
+    # A cultural-award article must state the concrete rule change.
+    award_context = national_culture_award_context(blocks, headline)
+    if award_context and not any(award_context in p for p in paras):
+        if len(paras) >= 3:
+            paras[2] = award_context
+        else:
+            paras.append(award_context)
 
     # Keep the decisive qualifier of 60-day foreign-cash bank rules.
     # It often appears below the first two paragraphs in Serbian reports.
