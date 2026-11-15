@@ -248,12 +248,11 @@ def ensure_cultural_award_is_explained(
         return
     if not (
         re.search(r"пожизненн\w*", body)
-        and re.search(r"ежемесячн\w*", body)
         and re.search(r"выплат\w*|денежн\w*|вознагражден\w*|пособи\w*", body)
         and re.search(r"культур\w*|артист\w*|художник\w*|искусств\w*", body)
     ):
         raise UnexplainedTermError(
-            "Не объяснено, что национальная пенсия — пожизненная ежемесячная выплата за вклад в культуру"
+            "Не объяснено, что национальная пенсия — пожизненная выплата за вклад в культуру"
         )
 
     # When the comparison is present in selected factual source, the news
