@@ -119,6 +119,51 @@ class AfishaTests(unittest.TestCase):
         self.assertEqual(select(events + events, {}, NOW), events)
         self.assertEqual(select(events, {events[0].key: {}}, NOW), [])
 
+    def test_two_source_aliases_same_show_date_are_not_published_twice(self):
+        from afisha_bot import same_real_event
+        from dataclasses import replace
+        original = Event(
+            "https://www.runbgd.com/whats-on/jelena-radanovic-novi-show-druzina-ljubavi-2026-11-17",
+            "Jelena Radanovic novi show Druzina ljubavi", "Белград", "Dorćol Platz",
+            datetime(2026, 11, 17, tzinfo=NOW.tzinfo),
+            description="Live concert by Jelena Radanovic.",
+        )
+        revised = replace(
+            original,
+            url="https://www.runbgd.com/whats-on/jelena-radanovic-novi-show-duzna-u-ljubavi-2026-11-17",
+            title="Jelena Radanovic novi show Duzna u ljubavi",
+        )
+        previous = {"url": original.url, "event_start": original.start.isoformat(),
+                    "city": original.city, "venue": original.venue}
+        self.assertTrue(same_real_event(revised, previous))
+        self.assertEqual(select([revised], {original.key: previous}, NOW), [])
+        self.assertEqual(len(select([original, revised], {}, NOW)), 1)
+
+    def test_same_artist_can_have_different_real_events(self):
+        from afisha_bot import same_real_event
+        from dataclasses import replace
+        e = Event(
+            "https://www.runbgd.com/whats-on/jelena-radanovic-novi-show-druzina-ljubavi-2026-11-17",
+            "Jelena Radanovic", "Белград", "Dorćol Platz",
+            datetime(2026, 11, 17, tzinfo=NOW.tzinfo),
+        )
+        history = {"url": e.url, "event_start": e.start.isoformat(),
+                   "city": e.city, "venue": e.venue}
+        self.assertFalse(same_real_event(
+            replace(e, url="https://www.runbgd.com/whats-on/jelena-radanovic-novi-show-drugi-koncert-2026-11-17"), history
+        ))
+        self.assertFalse(same_real_event(
+            replace(e, start=datetime(2026, 11, 18, tzinfo=NOW.tzinfo),
+                    url="https://www.runbgd.com/whats-on/jelena-radanovic-novi-show-duzna-u-ljubavi-2026-11-18"), history
+        ))
+        self.assertFalse(same_real_event(
+            replace(e, venue="Sava Centar",
+                    url="https://www.runbgd.com/whats-on/jelena-radanovic-novi-show-duzna-u-ljubavi-2026-11-17"), history
+        ))
+        self.assertFalse(same_real_event(
+            replace(e, url="https://www.runbgd.com/whats-on/jelena-radanovic-koncert-2-2026-11-17"), history
+        ))
+
     def test_unsafe_event_url(self):
         self.assertFalse(safe_source_url("https://evil.test/event"))
         self.assertFalse(safe_source_url("http://novisad.travel/event"))
