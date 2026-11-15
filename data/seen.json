@@ -48,7 +48,8 @@
     "43814145c08fdd14a528c052": 1794689867.372207,
     "e66fb9272f4d705ad5c0bbb2": 1794730126.90966,
     "75c5af262dfe7d9b982c14e6": 1794737243.693098,
-    "35c33d89deff85621bb6619e": 1794744980.119907
+    "35c33d89deff85621bb6619e": 1794744980.119907,
+    "a86de738c916b4496ade1306": 1794751740.731467
   },
   "photos": {
     "50f559ee5d138a92c244ad4c": 1794474084.088928,
@@ -85,7 +86,8 @@
     "f7f46b6628bce6ee7192615a": 1794689867.372207,
     "154f6cfbad011f38c5e17812": 1794730126.90966,
     "bc38fb2c337bfecb5db7830c": 1794737243.693098,
-    "9c7b11b05d3b9a95dd254010": 1794744980.119907
+    "9c7b11b05d3b9a95dd254010": 1794744980.119907,
+    "25fe8c4e320a47779ccf48f0": 1794751740.731467
   },
   "phashes": {
     "2ceefee6566d6666": 1794474084.088928,
@@ -122,7 +124,8 @@
     "8fc7030313593913": 1794689867.372207,
     "c7f1c86c1a18dc7c": 1794730126.90966,
     "0c0c0c0c0c0e8c8c": 1794737243.693098,
-    "9a4c250f0f8d9c96": 1794744980.119907
+    "9a4c250f0f8d9c96": 1794744980.119907,
+    "e2e0a421e60419e6": 1794751740.731467
   },
   "posted": [
     {
@@ -414,6 +417,12 @@
       "title_norm": "narodna banka srbije menja pravila za menjacnice",
       "summary_norm": "narodna banka srbije nbs izmenila je pravila za obavljanje menjackih poslova kojima je javnom postanskom operatoru i ovlascenim menjacima omoguceno",
       "source": "N1"
+    },
+    {
+      "ts": 1794751740.731467,
+      "title_norm": "rashkovitsh ivitsh srbija je duboko ranjeno drushtvo istina je najbolji lek",
+      "summary_norm": "dugogodishnje krize politichke podele i sukobi ostavili su duboke posleditse po drushtvo otsenjuje psikhijatar i bivsha politicharka sanda rashkovitsh ivitsh smatra da najvetshu odgovornost za atmosferu netrpeljivosti snosi pretkhodna vlast ali upozorava da u dugotrajnim sukobima politichki neistomishljenitsi postaju neprijatelji prema kojima nestaje empatija izlaz iz takvog stanja vidi u istini suochavanju sa odgovornoshtshu i obnavljanju rada institutsija",
+      "source": "RTS"
     }
   ]
 }
