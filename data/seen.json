@@ -45,7 +45,8 @@
     "8428ce335f334add4825ba5b": 1794663029.98272,
     "bcb70ad458d5b092f71d99da": 1794670811.036438,
     "132134ffd16701308559c5d2": 1794676477.577623,
-    "43814145c08fdd14a528c052": 1794689867.372207
+    "43814145c08fdd14a528c052": 1794689867.372207,
+    "e66fb9272f4d705ad5c0bbb2": 1794730126.90966
   },
   "photos": {
     "50f559ee5d138a92c244ad4c": 1794474084.088928,
@@ -79,7 +80,8 @@
     "caafe6a28e0c5162e9f176d1": 1794663029.98272,
     "632f23b8bdf7758ac907802c": 1794670811.036438,
     "70087a41330f76fbe604426e": 1794676477.577623,
-    "f7f46b6628bce6ee7192615a": 1794689867.372207
+    "f7f46b6628bce6ee7192615a": 1794689867.372207,
+    "154f6cfbad011f38c5e17812": 1794730126.90966
   },
   "phashes": {
     "2ceefee6566d6666": 1794474084.088928,
@@ -113,7 +115,8 @@
     "863e3a7a7a3a4e1e": 1794663029.98272,
     "3b81332928a43133": 1794670811.036438,
     "02a2e94bc6d45826": 1794676477.577623,
-    "8fc7030313593913": 1794689867.372207
+    "8fc7030313593913": 1794689867.372207,
+    "c7f1c86c1a18dc7c": 1794730126.90966
   },
   "posted": [
     {
@@ -387,6 +390,12 @@
       "title_norm": "moze da stane u srbiju sest i po puta a ima 37 miliona stanovnika ovo je veliki tokio",
       "summary_norm": "kada se govori o najvecim gradovima na svetu cesto se zaboravlja da granice jednog grada ne moraju da se poklapaju sa granicama citave urbane oblasti koja se oko njega razvila takav je tokio",
       "source": "Danas"
+    },
+    {
+      "ts": 1794730126.90966,
+      "title_norm": "ponovo se obrusio plafon u osnovnoj skoli u kikindi roditelji kazu da su za to saznali iz medija",
+      "summary_norm": "u osnovnoj skoli jovan popovic u kikindi ponovo se obrusio plafon sada srecom u vreme praznicnih dana kada nije bilo nastave ali to ne umanjuje z",
+      "source": "N1"
     }
   ]
 }
