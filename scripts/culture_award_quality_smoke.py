@@ -6,6 +6,8 @@ and what actually changed (five vs ten minister nominees).
 from __future__ import annotations
 
 import os
+from unittest.mock import patch
+import editorial
 from datetime import datetime, timezone
 
 from bot import (
@@ -36,7 +38,18 @@ def main() -> None:
     print("Source contains old-new comparison:",
           any("pet" in p.lower() and "deset" in p.lower() for p in paragraphs))
 
-    title, body = translate_article(article, FreeTranslator())
+    basic = editorial._basic_checks
+    def traced_checks(title, paragraphs, factual_input, **kwargs):
+        try:
+            return basic(title, paragraphs, factual_input, **kwargs)
+        except Exception as exc:
+            print("News candidate rejected because:", type(exc).__name__, str(exc))
+            print("Candidate title:", title)
+            print("Candidate text:", " ".join(paragraphs))
+            raise
+
+    with patch.object(editorial, "_basic_checks", side_effect=traced_checks):
+        title, body = translate_article(article, FreeTranslator())
     ensure_cultural_award_is_explained(title, body.split("\n\n"), TITLE + " " + " ".join(paragraphs))
     if "пожизнен" not in body.lower() or "ежемесячн" not in body.lower():
         raise RuntimeError("National cultural awards were not explained")
