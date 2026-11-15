@@ -99,5 +99,16 @@
     "published_at": "2026-11-15T12:47:52.585755+01:00",
     "topic": "other",
     "ai_editor": "groq"
+  },
+  "cff5b054faef80c85e9c24f00e47909433aeb8c2644160d0591be9d62afd3dbd": {
+    "url": "https://novisad.travel/en/kalendar-dogadjaja/international-tourism-fair/",
+    "event_start": "2026-11-26T00:00:00+01:00",
+    "published_at": "2026-11-15T14:36:45.216195+01:00",
+    "topic": "fair",
+    "title": "International Tourism Fair",
+    "city": "Нови-Сад",
+    "venue": "Novi Sad Fair",
+    "test_publish": true,
+    "message_id": 25
   }
 }
