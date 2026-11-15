@@ -13,6 +13,7 @@ from bot import (
     interval_allows_publication, next_eligible_publication, MIN_PUBLICATION_INTERVAL_MINUTES,
     branded_fallback_photo, extract_article_paragraphs, select_news_paragraphs,
     financial_exception_context,
+    national_culture_award_context,
     film_premiere_context,
     translate_article, complete_sentences_for_budget,
     image_dhash, photo_url_key, is_repeated_photo,
@@ -530,6 +531,32 @@ class NewsBotTests(unittest.TestCase):
           <media:content url="https://rts.rs/photos/a.jpg" type="image/jpeg"/>
           </item></channel></rss>""").entries[0]
         self.assertEqual(rss_photo(entry, "https://rts.rs/article"), "https://rts.rs/photos/a.jpg")
+
+    def test_arts_award_before_after_five_ten_preserved(self):
+        headline = (
+            "Selakoviću proširena ovlašćenja za nacionalne penzije: "
+            "Ministarstvo ranije odbilo Bošković, Savina i Kovačevića"
+        )
+        source = [
+            "Udruženje dramskih umetnika Srbije ponovo je predložilo Tanju Bošković, Egona Savina i Sinišu Kovačevića za nacionalne penzije.",
+            "Udruženje je od nadležnog ministarstva zatražilo da se odlučivanje odloži do formiranja nove vlade.",
+            "Izmene uredbe iz septembra proširile su ovlašćenja ministra kulture u postupku dodele nacionalnih priznanja.",
+            "Prethodna odredba dozvoljavala je ministru da predloži do pet umetnika, dok nova dozvoljava deset kandidata.",
+        ]
+        context = national_culture_award_context(source, headline)
+        self.assertIn("pet umetnika", context)
+        self.assertIn("deset kandidata", context)
+        selected = select_news_paragraphs(source, headline)
+        self.assertIn("pet umetnika", " ".join(selected))
+        self.assertLessEqual(len(selected), 3)
+
+    def test_no_arts_award_context_made_up_without_source(self):
+        headline = "Selaković o nacionalnim penzijama"
+        source = [
+            "Udruženje dramskih umetnika Srbije ponovo je predložilo kandidature.",
+            "Ministarstvo kulture razmatra dostavljene predloge tokom decembra.",
+        ]
+        self.assertEqual(national_culture_award_context(source, headline), "")
 
     def test_financial_exception_30_60_days_extracted_from_deeper_source(self):
         headline = "NBS menja pravila za menjače: do 60 dana za prodaju efektive bankama"
