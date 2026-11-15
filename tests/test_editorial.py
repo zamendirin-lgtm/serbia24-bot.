@@ -9,6 +9,7 @@ from editorial import (
     ensure_conditional_rules_explained, MissingConditionError, _basic_checks,
     ensure_cultural_award_is_explained, UnexplainedTermError,
     review_with_groq,
+    split_readable_paragraphs,
 )
 
 TITLE = "В Нови-Саде открыли новый медицинский центр"
@@ -112,6 +113,28 @@ class EditorialTests(unittest.TestCase):
         corrected = _clean("В Крагуеваце вечером пройдут мастер‑класс о внимании.")
         self.assertIn("пройдёт мастер‑класс", corrected)
         self.assertNotIn("пройдут мастер", corrected)
+
+    def test_one_long_ai_paragraph_is_split_by_complete_sentences(self):
+        together = (
+            "Национальные пенсии — это пожизненные государственные выплаты деятелям "
+            "культуры за выдающийся вклад в искусство. "
+            "Министр культуры Никола Селакович получил право предложить до "
+            "десяти кандидатов на получение этих выплат вместо прежних пяти, "
+            "сообщает издание Danas. "
+            "Ассоциация артистов повторно выдвинула трёх человек и призвала "
+            "дождаться формирования нового правительства."
+        )
+        parts = split_readable_paragraphs([together])
+        self.assertEqual(len(parts), 2)
+        self.assertEqual(" ".join(parts), together)
+        self.assertTrue(parts[0].endswith("."))
+        self.assertTrue(parts[1].endswith("."))
+
+    def test_proper_serbian_names_not_russified(self):
+        self.assertEqual(_clean("Николай Селакович"), "Никола Селакович")
+        self.assertEqual(_clean("Татьяна Бошкович"), "Таня Бошкович")
+        self.assertEqual(_clean("Ассоциация драматических художников"),
+                         "Ассоциация драматических артистов")
 
     def test_second_ai_reader_review_improves_awkward_news(self):
         article = "Nove izmene zakona"
