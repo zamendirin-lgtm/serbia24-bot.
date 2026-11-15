@@ -2,9 +2,6 @@ name: Serbia24 AI providers verification
 
 on:
   workflow_dispatch:
-  push:
-    paths:
-      - '.github/workflows/provider-check.yml'
 
 permissions:
   contents: read
