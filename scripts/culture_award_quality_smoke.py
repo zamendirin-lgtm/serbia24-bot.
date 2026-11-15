@@ -51,7 +51,7 @@ def main() -> None:
     with patch.object(editorial, "_basic_checks", side_effect=traced_checks):
         title, body = translate_article(article, FreeTranslator())
     ensure_cultural_award_is_explained(title, body.split("\n\n"), TITLE + " " + " ".join(paragraphs))
-    if "пожизнен" not in body.lower() or "ежемесячн" not in body.lower():
+    if "пожизнен" not in body.lower() or "выплат" not in body.lower():
         raise RuntimeError("National cultural awards were not explained")
     print("Two-stage Groq review passed: no Telegram publication")
     print("Accepted headline:", title)
