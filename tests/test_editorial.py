@@ -8,6 +8,7 @@ from editorial import (
     conservative_polish, edit_news, edit_with_gemini, edit_with_groq, _numbers, _clean,
     ensure_conditional_rules_explained, MissingConditionError, _basic_checks,
     ensure_cultural_award_is_explained, UnexplainedTermError,
+    review_with_groq,
 )
 
 TITLE = "В Нови-Саде открыли новый медицинский центр"
@@ -111,6 +112,76 @@ class EditorialTests(unittest.TestCase):
         corrected = _clean("В Крагуеваце вечером пройдут мастер‑класс о внимании.")
         self.assertIn("пройдёт мастер‑класс", corrected)
         self.assertNotIn("пройдут мастер", corrected)
+
+    def test_second_ai_reader_review_improves_awkward_news(self):
+        article = "Nove izmene zakona"
+        initial = EditedNews(TITLE, (PARA1, PARA2), "groq")
+        class Response:
+            def raise_for_status(self):
+                return None
+            def json(self):
+                return {"choices": [{"message": {"content": json.dumps({
+                    "approved": True,
+                    "title": "В Нови-Саде открыли медицинский центр: кто может записаться",
+                    "paragraphs": [PARA1, PARA2],
+                }, ensure_ascii=False)}}]}
+        with patch("editorial.requests.post", return_value=Response()) as post:
+            reviewed = review_with_groq(
+                article, SERBIAN, initial, api_key="test-groq",
+            )
+        self.assertEqual(reviewed.mode, "groq+review")
+        self.assertIn("Нови-Саде", reviewed.title)
+        self.assertEqual(len(reviewed.paragraphs), 2)
+        instructions = post.call_args.kwargs["json"]["messages"][0]["content"]
+        self.assertIn("пожизненная", instructions)
+        self.assertIn("обычных жителей", instructions)
+
+    def test_second_ai_reader_rejection_blocks_news(self):
+        class Response:
+            def raise_for_status(self):
+                return None
+            def json(self):
+                return {"choices": [{"message": {
+                    "content": '{"approved":false,"title":"","paragraphs":[]}'
+                }}]}
+        with patch("editorial.requests.post", return_value=Response()):
+            with self.assertRaisesRegex(EditorialError, "отклонил"):
+                review_with_groq(
+                    "Novi centar", SERBIAN,
+                    EditedNews(TITLE, (PARA1, PARA2), "groq"),
+                    api_key="test-groq",
+                )
+
+    def test_second_ai_reader_is_called_when_enabled(self):
+        with patch.dict(os.environ, {
+            "GROQ_API_KEY": "groq-test", "GEMINI_API_KEY": "",
+            "EDITOR_REVIEW_ENABLED": "1",
+        }), patch("editorial.edit_with_groq",
+                 return_value=EditedNews(TITLE, (PARA1, PARA2), "groq")) as first, \
+             patch("editorial.review_with_groq",
+                   return_value=EditedNews(TITLE, (PARA1, PARA2), "groq+review")) as second:
+            reviewed = edit_news("Novi centar", SERBIAN, TITLE,
+                                 PARA1 + "\n\n" + PARA2)
+        self.assertEqual(reviewed.mode, "groq+review")
+        first.assert_called_once()
+        second.assert_called_once()
+
+    def test_second_ai_reader_cannot_invent_money(self):
+        class Response:
+            def raise_for_status(self):
+                pass
+            def json(self):
+                return {"choices": [{"message": {"content": json.dumps({
+                    "approved": True, "title": TITLE,
+                    "paragraphs": [PARA1 + " Стоимость 8888 динаров.", PARA2],
+                }, ensure_ascii=False)}}]}
+        with patch("editorial.requests.post", return_value=Response()):
+            with self.assertRaisesRegex(EditorialError, "цифры"):
+                review_with_groq(
+                    "Novi centar", SERBIAN,
+                    EditedNews(TITLE, (PARA1, PARA2), "groq"),
+                    api_key="test-groq",
+                )
 
     def test_national_arts_pensions_must_be_defined_for_readers(self):
         source = (
