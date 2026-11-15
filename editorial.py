@@ -73,6 +73,15 @@ SYSTEM_RULES = """Ты выпускающий редактор РУССКОЯЗ�
   Если статья касается премьеры фильма, НАЗОВИ ФИЛЬМ в публикации, укажи
   дату и место показа, когда они есть в источнике. Если первоисточник
   не даёт идентифицировать фильм, лучше верни publish=false; не угадывай.
+- КОГДА НОВОСТЬ О ПРАВИЛАХ И ЗАКОНАХ: человеческим языком объясни,
+  кому правило адресовано, что изменилось, сколько длится и ПРИ КАКИХ УСЛОВИЯХ.
+  Исключение нельзя подавать как правило для всех. Два разных срока
+  («30 дней» и «60 дней») без причины различия — НЕПОЛНАЯ новость.
+  Например, если источником установлено: 30 дней обычно, а 60 дней
+  ТОЛЬКО если обменник за предыдущие 14 дней продал валюты гражданам
+  как минимум на 10% больше, чем купил у них, — раскрой ИМЕННО это
+  условие; эти цифры используй только если они есть в источнике.
+  Не путай операции обменников с банками и обмен валюты гражданами.
 - В ПЕРВОМ абзаце раскрой обещание заголовка (кто, что, где, когда),
   во ВТОРОМ объясни обстоятельства, цифры и последствия. ТРЕТИЙ только если
   добавляет новый полезный факт. Не растягивай интригу и не требуй перехода
@@ -93,6 +102,11 @@ SYSTEM_RULES = """Ты выпускающий редактор РУССКОЯЗ�
 
 class EditorialError(ValueError):
     """Draft is unsuitable for automatic publication."""
+
+class MissingConditionError(ValueError):
+    """Important conditions of the reported rule were omitted by the editor."""
+
+
 
 
 @dataclass(frozen=True)
@@ -144,6 +158,60 @@ def _numbers(text: str) -> set[str]:
     return {s for s in re.findall(r"(?<!\w)\d+(?:[.,]\d+)*(?!\w)", text)}
 
 
+def ensure_conditional_rules_explained(
+    title: str, paragraphs: list[str] | tuple[str, ...], source: str,
+) -> None:
+    """Never turn an exceptional 60-day currency rule into a general one.
+
+    This check is source-grounded and deliberately narrow. It does not apply
+    to ordinary numbers, articles about other topics, or one-term news.
+    """
+    combined = " ".join((title, *paragraphs)).lower()
+    original = source.lower()
+    currency_terms = re.search(
+        r"валют|обменник|меняч|банк|nbs|нбс|menja|efektiv|deviz|"
+        r"пошт|pošt|posta",
+        combined + " " + original, re.I,
+    )
+    if not currency_terms:
+        return
+
+    def has_day(text: str, number: int) -> bool:
+        return bool(re.search(
+            rf"(?<!\d){number}\s*(?:дн(?:я|ей|ь)|сут(?:ки|ок)?|"
+            rf"dana|dan|дана)(?!\w)", text, re.I,
+        ))
+
+    if not (has_day(original, 30) and has_day(original, 60)):
+        return
+
+    # Both deadlines in the underlying article require both deadlines
+    # explained in the post. Otherwise, the headline could mislead.
+    if not (has_day(combined, 30) and has_day(combined, 60)):
+        raise MissingConditionError("Не указаны оба срока: 30 и 60 дней")
+
+    if not re.search(
+        r"если|при\s+услови|при\s+соблюдени|исключен|"
+        r"только\s+(?:при|в|если)|в\s+(?:этом|таком)\s+случае|"
+        r"когда\s+(?:обменник|покупк|продаж)",
+        combined, re.I,
+    ):
+        raise MissingConditionError("Не объяснено, когда срок 60 дней допустим")
+
+    # For the NBS rule of November 2026, its actual qualifier is a 14-day
+    # reference period and 10% difference in retail currency transactions.
+    # Only demand these figures when the primary source contains both.
+    if re.search(r"(?<!\d)14(?!\d)", original) and re.search(
+        r"(?<!\d)10\s*%|(?<!\d)10\s*(?:odsto|процент)", original, re.I,
+    ):
+        if not re.search(r"(?<!\d)14(?!\d)", combined) or not re.search(
+            r"(?<!\d)10\s*(?:%|процент)", combined, re.I,
+        ):
+            raise MissingConditionError(
+                "Не раскрыто условие 14 дней / 10% для срока 60 дней"
+            )
+
+
 def _basic_checks(title: str, paragraphs: list[str] | tuple[str, ...],
                   factual_input: str) -> EditedNews:
     title = _clean(title)
@@ -179,6 +247,7 @@ def _basic_checks(title: str, paragraphs: list[str] | tuple[str, ...],
         raise EditorialError("Неверная разметка новости")
     ensure_russian(title, parts)
     ensure_resolved_context(title, parts)
+    ensure_conditional_rules_explained(title, parts, factual_input)
     return EditedNews(title, tuple(parts), "checked")
 
 
@@ -238,6 +307,10 @@ def edit_with_groq(source_title: str, source_paragraphs: list[str],
                 "Если упоминается премьера документального фильма, "
                 "обязательно назови фильм в связке 'фильм «Название»', "
                 "если это название содержится в предоставленном источнике. "
+                "Если закон предусматривает разные сроки для разных случаев, "
+                "объясни ОБА срока и точное условие исключения. "
+                "Например, 60 дней вместо 30 возможны только при специальном "
+                "условии; укажи его цифры из оригинала. "
                 "Ни одно ключевое упоминание нельзя оставлять без объяснения. "
                 "Не придумывай названия, даты или другие факты."
             )
@@ -257,11 +330,16 @@ def edit_with_groq(source_title: str, source_paragraphs: list[str],
                 parsed.get("title", ""), parsed.get("paragraphs", []), original,
             )
             return EditedNews(edited.title, edited.paragraphs, "groq")
-        except (WrongLanguageError, MissingContextError) as exc:
+        except (WrongLanguageError, MissingContextError, MissingConditionError) as exc:
             if attempt == 0:
-                LOG.warning("Groq не прошёл проверку языка/контекста (%s); повторяем", type(exc).__name__)
+                LOG.warning(
+                    "Groq упустил важный контекст или условие (%s); повторяем",
+                    type(exc).__name__,
+                )
                 continue
-            raise EditorialError("Groq дважды вернул текст с ошибкой языка или недостающим контекстом") from None
+            raise EditorialError(
+                "Groq дважды вернул неполное объяснение правил или некорректный язык"
+            ) from None
         except EditorialError:
             raise
         except (requests.RequestException, KeyError, IndexError, TypeError,
