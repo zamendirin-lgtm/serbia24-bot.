@@ -1,0 +1,39 @@
+name: Serbia24 Afisha — one authorized test event with photo
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/afisha-test-event-once.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: serbia24-afisha
+  cancel-in-progress: false
+
+jobs:
+  test-event:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install dependencies
+        run: python -m pip install -r requirements.txt
+      - name: Run tests and channel guards
+        run: python -m unittest discover -s tests -p 'test_afisha*.py'
+      - name: Verify Afisha destination
+        env:
+          AFISHA_BOT_TOKEN: ${{ secrets.AFISHA_BOT_TOKEN || secrets.PROPERTY_BOT_TOKEN }}
+          AFISHA_CHAT_ID: '@Serbia24Afisha'
+        run: python scripts/check_afisha_telegram.py
+      - name: Publish one verified tourism fair test with event photo
+        env:
+          AFISHA_BOT_TOKEN: ${{ secrets.AFISHA_BOT_TOKEN || secrets.PROPERTY_BOT_TOKEN }}
+        run: PYTHONPATH=. python scripts/afisha_test_event_once.py
+      - name: Persist publication history
+        run: python scripts/persist_afisha.py
