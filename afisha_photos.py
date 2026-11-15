@@ -66,13 +66,22 @@ def significant(value: str) -> list[str]:
 
 
 def named_subject(event) -> str:
-    """Extract quoted performer/project names, otherwise use the event title."""
-    title = str(event.title)
+    """Extract the event's named artist/project without its generic promo subtitle.
+
+    Keep the artist's complete name; searching the whole concert announcement
+    can hide a relevant licensed photo under unrelated words and venue details.
+    """
+    title = str(event.title).strip()
     quoted = re.search(r'[«“"]([^»”"]{4,65})[»”"]', title)
     if quoted:
         return quoted.group(1).strip()
-    # Segment before a separator often contains the event/artist name.
-    return re.split(r"\s+[|—–]\s+", title, maxsplit=1)[0][:85].strip()
+    # Example: "Jelena Radanovic — Novi show Druzina ljubavi" should search
+    # for Jelena Radanovic, not the entire promotional subtitle.
+    return re.split(
+        r"\s+(?:[|—–]|-(?=\s))\s+"
+        r"|\s*:\s*(?=(?:novi|new)\s+(?:show|koncert|concert))",
+        title, maxsplit=1, flags=re.IGNORECASE,
+    )[0][:85].strip()
 
 
 def _meta(info: dict, field: str) -> str:
@@ -209,10 +218,10 @@ def _lookup(session: requests.Session, subject: str, year: int,
 
 
 def find_licensed_photo(session: requests.Session, event) -> LicensedPhoto | None:
-    """Try performer photo first and a labelled previous-years event image second.
+    """Use a licensed photo of the actual act or previous edition only.
 
-    No random image of a venue or city is silently claimed as the concert.
-    No hit is a normal outcome for smaller acts and one-off productions.
+    An image of the venue building (even a correct one) is not a relevant
+    substitute for performer or event imagery. No hit is a normal outcome.
     """
     if not event.title or not isinstance(event.start, datetime):
         return None
@@ -247,12 +256,8 @@ def find_licensed_photo(session: requests.Session, event) -> LicensedPhoto | Non
         found = _lookup(session, subject, event.start.year, "artist")
         if found:
             return found
-    archived = _lookup(session, subject, event.start.year, "archive")
-    if archived:
-        return archived
-    # Last resort: an actual photo of the named venue, explicitly labelled
-    # as the venue (never presented as the current event or its performers).
-    venue = str(getattr(event, "venue", "")).strip()
-    if venue:
-        return _lookup(session, venue, event.start.year, "venue")
-    return None
+    # Previous editions of this same event can illustrate recurring events.
+    # A photo of the building or surrounding street is NOT suitable for a
+    # concert announcement, even when correctly labelled "Фото площадки".
+    # Leave the post text-only rather than using irrelevant venue photography.
+    return _lookup(session, subject, event.start.year, "archive")

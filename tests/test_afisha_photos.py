@@ -111,6 +111,38 @@ class AfishaLicensedPhotoTests(unittest.TestCase):
         # Only the archive query is attempted; not an artist photo query.
         self.assertEqual(session.get.call_count, 1)
 
+
+    def test_never_use_venue_photo_as_concert_image(self):
+        e = event(title="Jelena Radanovic — novi show Druzina ljubavi", category="Music")
+        e.venue = "Dorćol Platz"
+        e.description = "Live concert from the singer."
+        response = Mock()
+        response.json.return_value = {"query": {"pages": [
+            file_info("File:Dorcol Platz building 2024.jpg")
+        ]}}
+        session = Mock()
+        session.get.return_value = response
+        self.assertIsNone(find_licensed_photo(session, e))
+        # The venue must never be queried after artist and archive searches.
+        self.assertEqual(session.get.call_count, 2)
+        self.assertTrue(all(
+            "Dorcol" not in str(call.kwargs.get("params", {}).get("gsrsearch", ""))
+            for call in session.get.call_args_list
+        ))
+
+    def test_find_actual_singer_not_generic_show_title(self):
+        e = event(title="Jelena Radanovic — Novi show Druzina ljubavi", category="Music")
+        self.assertEqual(named_subject(e), "Jelena Radanovic")
+        e.title = "Jelena Radanovic - Novi show Druzina ljubavi"
+        self.assertEqual(named_subject(e), "Jelena Radanovic")
+        e.title = "Jelena Radanovic: novi koncert"
+        self.assertEqual(named_subject(e), "Jelena Radanovic")
+        # Do not accept a different singer who happens to share the first name.
+        self.assertIsNone(_candidate(
+            file_info("File:Jelena Markovic concert 2025.jpg"),
+            ["jelena", "radanovic"], 2026, "artist",
+        ))
+
     def test_source_event_without_licensed_photo_returns_none(self):
         session = Mock()
         resp = Mock()
