@@ -1,0 +1,951 @@
+{
+  "created_at": "2026-11-16T21:02:20.739452+00:00",
+  "scope": "Public posts accessible from Telegram preview at time of retrieval",
+  "limitation": "Scores judge clarity, structure and internal consistency; factual claims NOT independently checked against each source.",
+  "accessible_news_posts": 51,
+  "scored_posts": 51,
+  "not_scored": 0,
+  "below_8": 14,
+  "at_least_8": 37,
+  "average_score": 7.94,
+  "records": [
+    {
+      "id": 7,
+      "url": "https://t.me/serbia24live/7",
+      "published": "2026-11-12T00:15:09+00:00",
+      "source_url": "https://www.danas.rs/sport/novi-beograd-jadran-liga-sampiona-vaterpolo",
+      "headline": "🇷🇸 Ватерполисты из Нового Белграда обыграли Ядрана в Лиге чемпионов",
+      "text_length": 286,
+      "score": 8,
+      "scores": {
+        "clarity": 2,
+        "completeness": 2,
+        "russian": 2,
+        "headline": 0,
+        "logic": 2
+      },
+      "issues": [],
+      "needs_source_check": false
+    },
+    {
+      "id": 8,
+      "url": "https://t.me/serbia24live/8",
+      "published": "2026-11-12T00:15:14+00:00",
+      "source_url": "https://www.danas.rs/vesti/ekonomija/drekslmajer-o-zatvaranju-fabrike-u-zrenjaninu-odluka-nije-povezana-s-promenom-vlasti",
+      "headline": "🇷🇸 Дрексльмайер о закрытии завода в Зренянине: Решение не связано со сменой правительства",
+      "text_length": 423,
+      "score": 10,
+      "scores": {
+        "clarity": 2,
+        "completeness": 2,
+        "russian": 2,
+        "headline": 2,
+        "logic": 2
+      },
+      "issues": [],
+      "needs_source_check": false
+    },
+    {
+      "id": 12,
+      "url": "https://t.me/serbia24live/12",
+      "published": "2026-11-12T01:17:55+00:00",
+      "source_url": "https://www.b92.net/info/politika/284201/branko-ruzic-nova-partija-crvena-linija-nece-biti-rekonstruisani-sps/vest",
+      "headline": "🇷🇸 Бранко Ружич: «Новая партия «Красная линия» не будет реконструирована СПС»",
+      "text_length": 348,
+      "score": 8,
+      "scores": {
+        "clarity": 1,
+        "completeness": 1,
+        "russian": 2,
+        "headline": 2,
+        "logic": 2
+      },
+      "issues": [],
+      "needs_source_check": false
+    },
+    {
+      "id": 13,
+      "url": "https://t.me/serbia24live/13",
+      "published": "2026-11-12T02:31:31+00:00",
+      "source_url": "https://n1info.rs/vesti/putevi-srbije-upozorili-vozace-magla-oko-loznice-pozege-arilja",
+      "headline": "🇷🇸 Сербские дороги предупреждают водителей: Туман вокруг Лозницы, Пожеги, Арильи...",
+      "text_length": 223,
+      "score": 10,
+      "scores": {
+        "clarity": 2,
+        "completeness": 2,
+        "russian": 2,
+        "headline": 2,
+        "logic": 2
+      },
+      "issues": [],
+      "needs_source_check": false
+    },
+    {
+      "id": 15,
+      "url": "https://t.me/serbia24live/15",
+      "published": "2026-11-12T03:30:22+00:00",
+      "source_url": "https://www.danas.rs/vesti/drustvo/policijska-uprava-sombor-uhapseno-pet-osoba-iz-beograda-zbog-sumnje-na-iznudu",
+      "headline": "🇷🇸 Департамент полиции Сомбора: Арестованы пять человек из Белграда по подозрению в вымогательстве",
+      "text_length": 266,
+      "score": 9,
+      "scores": {
+        "clarity": 2,
+        "completeness": 1,
+        "russian": 2,
+        "headline": 2,
+        "logic": 2
+      },
+      "issues": [],
+      "needs_source_check": false
+    },
+    {
+      "id": 16,
+      "url": "https://t.me/serbia24live/16",
+      "published": "2026-11-12T03:30:26+00:00",
+      "source_url": "https://www.rts.rs/vesti/ekonomija/6081355/ekspo-prilika-za-promociju-srbije-turisticki-radnici-pripremaju-aranzmane-za-goste-iz-celog-sveta.html",
+      "headline": "🇷🇸 Выставка – это возможность прорекламировать Сербию, туристические работники готовят мероприятия для гостей со всего мира.",
+      "text_length": 464,
+      "score": 6,
+      "scores": {
+        "clarity": 1,
+        "completeness": 1,
+        "russian": 2,
+        "headline": 1,
+        "logic": 1
+      },
+      "issues": [
+        "неясные детали, отсутствие конкретных цифр"
+      ],
+      "needs_source_check": false
+    },
+    {
+      "id": 17,
+      "url": "https://t.me/serbia24live/17",
+      "published": "2026-11-12T09:01:34+00:00",
+      "source_url": "https://www.danas.rs/kultura/radionica-koncentracija-u-doba-digitalnih-distrakcija-u-omladinskom-klubu-kragujevackog-skc-a",
+      "headline": "🇷🇸 Семинар «Концентрация в эпоху цифровых отвлечений» в Молодёжном клубе ЮКЦ в Крагуеваце",
+      "text_length": 585,
+      "score": 5,
+      "scores": {
+        "clarity": 1,
+        "completeness": 1,
+        "russian": 1,
+        "headline": 1,
+        "logic": 1
+      },
+      "issues": [
+        "путаный текст, избыточные детали"
+      ],
+      "needs_source_check": false
+    },
+    {
+      "id": 18,
+      "url": "https://t.me/serbia24live/18",
+      "published": "2026-11-12T09:01:42+00:00",
+      "source_url": "https://www.danas.rs/vesti/politika/milo-djukanovic-pitanje-je-da-li-ce-srbija-dobiti-vladu-srbije-ili-vladu-srba-u-regionu",
+      "headline": "🇷🇸 Мило Джуканович: Вопрос в том, получит ли Сербия правительство Сербии или правительство сербов в регионе",
+      "text_length": 593,
+      "score": 7,
+      "scores": {
+        "clarity": 1,
+        "completeness": 2,
+        "russian": 2,
+        "headline": 1,
+        "logic": 1
+      },
+      "issues": [
+        "сложные политические утверждения без контекста"
+      ],
+      "needs_source_check": true
+    },
+    {
+      "id": 19,
+      "url": "https://t.me/serbia24live/19",
+      "published": "2026-11-12T09:32:19+00:00",
+      "source_url": "https://n1info.rs/region/djukanovic-srbija-menja-vlast-ili-politiku-crna-gora-naruseni",
+      "headline": "🇷🇸 Джуканович: Сербия должна показать, меняет ли она только правительство или политику, больше всего пострадали отношения с Черногорией",
+      "text_length": 586,
+      "score": 1,
+      "scores": {
+        "clarity": 0,
+        "completeness": 0,
+        "russian": 0,
+        "headline": 1,
+        "logic": 0
+      },
+      "issues": [
+        "неясный смысл, плохой русский"
+      ],
+      "needs_source_check": false
+    },
+    {
+      "id": 20,
+      "url": "https://t.me/serbia24live/20",
+      "published": "2026-11-12T09:32:29+00:00",
+      "source_url": "https://www.danas.rs/vesti/politika/portal-iz-zgrade-pokrajinske-vlade-u-novom-sadu-nestala-umetnicka-slika",
+      "headline": "🇷🇸 Портал: Из здания правительства провинции в Нови-Саде исчезла художественная картина",
+      "text_length": 846,
+      "score": 5,
+      "scores": {
+        "clarity": 1,
+        "completeness": 1,
+        "russian": 1,
+        "headline": 1,
+        "logic": 1
+      },
+      "issues": [
+        "стилистические ошибки, неоднозначные формулировки"
+      ],
+      "needs_source_check": false
+    },
+    {
+      "id": 25,
+      "url": "https://t.me/serbia24live/25",
+      "published": "2026-11-12T09:41:23+00:00",
+      "source_url": "https://www.danas.rs/sport/maja-ognjenovic-izbori-u-srbiji",
+      "headline": "🇷🇸 Майя Огненович: «Народ Сербии заслуживает того, чтобы жить хорошо и нормально»",
+      "text_length": 391,
+      "score": 0,
+      "scores": {
+        "clarity": 0,
+        "completeness": 0,
+        "russian": 0,
+        "headline": 0,
+        "logic": 0
+      },
+      "issues": [
+        "бессвязный текст, неверные имена"
+      ],
+      "needs_source_check": false
+    },
+    {
+      "id": 26,
+      "url": "https://t.me/serbia24live/26",
+      "published": "2026-11-12T09:41:27+00:00",
+      "source_url": "https://www.b92.net/info/politika/284279/trece-ojt-u-beogradu-odbrana-osumnjicenih-trazi-dopunu-o-izuzecu-tuzioca-obavesteni-smo-elektronskom-postom/vest",
+      "headline": "🇷🇸 Третий OJT в Белграде: защита подозреваемых просит внести поправку об освобождении прокурора от ответственности, нам сообщили по электронной почте",
+      "text_length": 825,
+      "score": 0,
+      "scores": {
+        "clarity": 0,
+        "completeness": 0,
+        "russian": 0,
+        "headline": 0,
+        "logic": 0
+      },
+      "issues": [
+        "полный набор ошибок, непонятный смысл"
+      ],
+      "needs_source_check": false
+    },
+    {
+      "id": 27,
+      "url": "https://t.me/serbia24live/27",
+      "published": "2026-11-12T10:02:12+00:00",
+      "source_url": "https://www.danas.rs/vesti/politika/vucic-odbrana-bezbednost-sluzbe",
+      "headline": "🇷🇸 Вучич заявил о «распаде» оборонного сектора Сербии после заявлений студенческого движения",
+      "text_length": 564,
+      "score": 5,
+      "scores": {
+        "clarity": 0,
+        "completeness": 0,
+        "russian": 2,
+        "headline": 2,
+        "logic": 1
+      },
+      "issues": [],
+      "needs_source_check": false
+    },
+    {
+      "id": 29,
+      "url": "https://t.me/serbia24live/29",
+      "published": "2026-11-12T10:17:42+00:00",
+      "source_url": "https://www.rts.rs/vesti/drustvo/6081617/mitropolit-backi-irinej-koma.html",
+      "headline": "🏥 Митрополит Бачковский Ириней в искусственной коме: СПЦ просит верующих молиться",
+      "text_length": 446,
+      "score": 8,
+      "scores": {
+        "clarity": 1,
+        "completeness": 2,
+        "russian": 2,
+        "headline": 2,
+        "logic": 1
+      },
+      "issues": [],
+      "needs_source_check": false
+    },
+    {
+      "id": 30,
+      "url": "https://t.me/serbia24live/30",
+      "published": "2026-11-12T10:17:53+00:00",
+      "source_url": "https://n1info.rs/vesti/uns-pronaci-i-kazniti-odgovorne-za-pretnje-bivsim-novinarima-euronews-srbija",
+      "headline": "🇷🇸 UNS потребовала от органов раскрыть угрозы бывшим журналистам Euronews Сербия",
+      "text_length": 738,
+      "score": 6,
+      "scores": {
+        "clarity": 0,
+        "completeness": 1,
+        "russian": 2,
+        "headline": 2,
+        "logic": 1
+      },
+      "issues": [],
+      "needs_source_check": false
+    },
+    {
+      "id": 31,
+      "url": "https://t.me/serbia24live/31",
+      "published": "2026-11-12T10:21:45+00:00",
+      "source_url": "https://www.danas.rs/sport/prlainovic-tri-iskljucenja-radnicki-pro-reko",
+      "headline": "🇷🇸 Тренер «Раднички» вернул в игру Андрия Прлайновича после трёх удалений, и команда победила «Про Реко» 16:14",
+      "text_length": 480,
+      "score": 8,
+      "scores": {
+        "clarity": 1,
+        "completeness": 1,
+        "russian": 2,
+        "headline": 2,
+        "logic": 2
+      },
+      "issues": [],
+      "needs_source_check": false
+    },
+    {
+      "id": 32,
+      "url": "https://t.me/serbia24live/32",
+      "published": "2026-11-12T11:24:45+00:00",
+      "source_url": "https://www.danas.rs/sport/srbija-nemacka-prenos-uzivo-livestream",
+      "headline": "🇷🇸 Сербия встретится с Германией в Лиге Наций в пятницу на стадионе «Райко Митич»",
+      "text_length": 664,
+      "score": 8,
+      "scores": {
+        "clarity": 2,
+        "completeness": 2,
+        "russian": 2,
+        "headline": 0,
+        "logic": 2
+      },
+      "issues": [],
+      "needs_source_check": false
+    },
+    {
+      "id": 33,
+      "url": "https://t.me/serbia24live/33",
+      "published": "2026-11-12T12:31:27+00:00",
+      "source_url": "https://www.rts.rs/vesti/drustvo/6081804/udruzenje-tuzilaca-srbije.html",
+      "headline": "🏠 Ассоциация прокуроров Сербии требует установить ответственность за нарушения в Высшей прокуратуре",
+      "text_length": 707,
+      "score": 8,
+      "scores": {
+        "clarity": 2,
+        "completeness": 2,
+        "russian": 2,
+        "headline": 0,
+        "logic": 2
+      },
+      "issues": [],
+      "needs_source_check": false
+    },
+    {
+      "id": 34,
+      "url": "https://t.me/serbia24live/34",
+      "published": "2026-11-12T13:43:11+00:00",
+      "source_url": "https://www.danas.rs/vesti/ekonomija/nis-benzinske-stanice-janaf-gorivo",
+      "headline": "⛽ NIS уверяет, что АЗС продолжают получать топливо, несмотря на приостановку поставок сырой нефти по JANAF",
+      "text_length": 640,
+      "score": 8,
+      "scores": {
+        "clarity": 2,
+        "completeness": 2,
+        "russian": 2,
+        "headline": 0,
+        "logic": 2
+      },
+      "issues": [],
+      "needs_source_check": false
+    },
+    {
+      "id": 35,
+      "url": "https://t.me/serbia24live/35",
+      "published": "2026-11-12T13:50:45+00:00",
+      "source_url": "https://n1info.rs/biznis/culibrk-o-povecanju-kamatne-stope-nbs-to-je-signal-da-ce-inflacija-biti-veca-nego-sto-je-planirano",
+      "headline": "💶 Главный редактор «Радар» считает повышение ставки НБС сигналом роста инфляции",
+      "text_length": 542,
+      "score": 8,
+      "scores": {
+        "clarity": 2,
+        "completeness": 2,
+        "russian": 2,
+        "headline": 0,
+        "logic": 2
+      },
+      "issues": [],
+      "needs_source_check": false
+    },
+    {
+      "id": 36,
+      "url": "https://t.me/serbia24live/36",
+      "published": "2026-11-12T13:51:21+00:00",
+      "source_url": "https://biznis.kurir.rs/info-biz/10160270/burger-king-otvorio-prvi-restoran-u-beogradu",
+      "headline": "🍔 Burger King открылся в Сербии: сколько стоят бургеры и большие комбо?",
+      "text_length": 673,
+      "score": 10,
+      "scores": {
+        "clarity": 2,
+        "completeness": 2,
+        "russian": 2,
+        "headline": 2,
+        "logic": 2
+      },
+      "issues": [],
+      "needs_source_check": false
+    },
+    {
+      "id": 39,
+      "url": "https://t.me/serbia24live/39",
+      "published": "2026-11-12T15:41:56+00:00",
+      "source_url": "https://n1info.rs/vesti/kikic-dokumentarac-rudarenje-istocna-srbija",
+      "headline": "🇷🇸 Кикич: в Восточной Сербии добыча полезных ископаемых не должна ставить иностранный капитал в приоритет",
+      "text_length": 748,
+      "score": 8,
+      "scores": {
+        "clarity": 1,
+        "completeness": 2,
+        "russian": 2,
+        "headline": 2,
+        "logic": 1
+      },
+      "issues": [],
+      "needs_source_check": false
+    },
+    {
+      "id": 40,
+      "url": "https://t.me/serbia24live/40",
+      "published": "2026-11-12T16:45:49+00:00",
+      "source_url": "https://www.danas.rs/vesti/drustvo/profesori-srednje-skole-unutrasnjih-poslova-traze-smenu-direktorke",
+      "headline": "🎓 Преподаватели средней школы внутренних дел «Якоб Ненадович» требуют заменить исполняющего обязанности директора",
+      "text_length": 610,
+      "score": 10,
+      "scores": {
+        "clarity": 2,
+        "completeness": 2,
+        "russian": 2,
+        "headline": 2,
+        "logic": 2
+      },
+      "issues": [],
+      "needs_source_check": false
+    },
+    {
+      "id": 41,
+      "url": "https://t.me/serbia24live/41",
+      "published": "2026-11-12T17:39:39+00:00",
+      "source_url": "https://n1info.rs/biznis/culibrk-javna-preduzeca-ce-biti-ostecena-zbog-alta-banke-odgovornost-nbs",
+      "headline": "🏦 Милан Чулибрк: убытки публичных компаний из‑за Альта‑банка и необходимость расследовать ответственность НБС",
+      "text_length": 656,
+      "score": 10,
+      "scores": {
+        "clarity": 2,
+        "completeness": 2,
+        "russian": 2,
+        "headline": 2,
+        "logic": 2
+      },
+      "issues": [],
+      "needs_source_check": false
+    },
+    {
+      "id": 42,
+      "url": "https://t.me/serbia24live/42",
+      "published": "2026-11-12T18:36:39+00:00",
+      "source_url": "https://n1info.rs/english/news/central-bank-says-fx-reserves-down",
+      "headline": "🏦 Центральный банк Сербии сообщил о падении валютных резервов в октябре",
+      "text_length": 460,
+      "score": 10,
+      "scores": {
+        "clarity": 2,
+        "completeness": 2,
+        "russian": 2,
+        "headline": 2,
+        "logic": 2
+      },
+      "issues": [],
+      "needs_source_check": false
+    },
+    {
+      "id": 43,
+      "url": "https://t.me/serbia24live/43",
+      "published": "2026-11-12T19:35:34+00:00",
+      "source_url": "https://www.danas.rs/vesti/drustvo/batut-broj-obolelih-dijabetes",
+      "headline": "🇷🇸 В Сербии 660 000 взрослых с диабетом, треть из них не знают о болезни",
+      "text_length": 662,
+      "score": 10,
+      "scores": {
+        "clarity": 2,
+        "completeness": 2,
+        "russian": 2,
+        "headline": 2,
+        "logic": 2
+      },
+      "issues": [],
+      "needs_source_check": false
+    },
+    {
+      "id": 45,
+      "url": "https://t.me/serbia24live/45",
+      "published": "2026-11-13T07:51:37+00:00",
+      "source_url": "https://www.rts.rs/vesti/drustvo/6082201/novi-pazar-je-najmladji-grad-u-srbiji-ali-mladi-odlaze--sta-bi-moglo-da-ih-zadrzi.html",
+      "headline": "🇷🇸 Нови Пазар – самый молодой город Сербии, но молодёжь массово уезжает в поисках работы",
+      "text_length": 647,
+      "score": 7,
+      "scores": {
+        "clarity": 1,
+        "completeness": 2,
+        "russian": 1,
+        "headline": 2,
+        "logic": 1
+      },
+      "issues": [
+        "неясные названия организаций, стилистические неточности"
+      ],
+      "needs_source_check": false
+    },
+    {
+      "id": 46,
+      "url": "https://t.me/serbia24live/46",
+      "published": "2026-11-13T09:32:07+00:00",
+      "source_url": "https://n1info.rs/vesti/cls-za-kasnjenja-odgovran-sapic",
+      "headline": "🇷🇸 CLS обвиняет мэра Шапича в срыве сроков инфраструктурных проектов Белграда",
+      "text_length": 587,
+      "score": 10,
+      "scores": {
+        "clarity": 2,
+        "completeness": 2,
+        "russian": 2,
+        "headline": 2,
+        "logic": 2
+      },
+      "issues": [],
+      "needs_source_check": false
+    },
+    {
+      "id": 47,
+      "url": "https://t.me/serbia24live/47",
+      "published": "2026-11-13T11:30:53+00:00",
+      "source_url": "https://n1info.rs/biznis/vlada-smanjenje-akciza-na-naftu",
+      "headline": "🌦️ Правительство Сербии продлит до 22 ноября временное снижение акцизов на нефтепродукты",
+      "text_length": 578,
+      "score": 10,
+      "scores": {
+        "clarity": 2,
+        "completeness": 2,
+        "russian": 2,
+        "headline": 2,
+        "logic": 2
+      },
+      "issues": [],
+      "needs_source_check": false
+    },
+    {
+      "id": 48,
+      "url": "https://t.me/serbia24live/48",
+      "published": "2026-11-13T13:48:34+00:00",
+      "source_url": "https://www.rts.rs/vesti/ekonomija/6082536/cene-gorivo-benzin-dizel.html",
+      "headline": "⛽ Цены на топливо в Сербии останутся неизменными до пятницы",
+      "text_length": 290,
+      "score": 10,
+      "scores": {
+        "clarity": 2,
+        "completeness": 2,
+        "russian": 2,
+        "headline": 2,
+        "logic": 2
+      },
+      "issues": [],
+      "needs_source_check": false
+    },
+    {
+      "id": 49,
+      "url": "https://t.me/serbia24live/49",
+      "published": "2026-11-13T15:32:02+00:00",
+      "source_url": "https://www.danas.rs/vesti/ekonomija/srbiji-sve-potrebniji-stranci-nedostatak-radnika-izazvao-rat-platama",
+      "headline": "🇷🇸 Нехватка квалифицированных работников в Сербии приводит к резкому росту зарплат",
+      "text_length": 653,
+      "score": 9,
+      "scores": {
+        "clarity": 1,
+        "completeness": 2,
+        "russian": 2,
+        "headline": 2,
+        "logic": 2
+      },
+      "issues": [],
+      "needs_source_check": false
+    },
+    {
+      "id": 50,
+      "url": "https://t.me/serbia24live/50",
+      "published": "2026-11-13T17:29:00+00:00",
+      "source_url": "https://n1info.rs/biznis/nenad-zivkovic-data-centar-azotara-pancevo",
+      "headline": "🏦 На месте банкрота Azotare Pančevo готовятся построить дата‑центр, но вопросы с водой, электроэнергией и отоплением остаются открытыми",
+      "text_length": 649,
+      "score": 7,
+      "scores": {
+        "clarity": 1,
+        "completeness": 1,
+        "russian": 2,
+        "headline": 2,
+        "logic": 1
+      },
+      "issues": [
+        "текст содержит неоднозначные формулировки, не все детали раскрыты"
+      ],
+      "needs_source_check": false
+    },
+    {
+      "id": 51,
+      "url": "https://t.me/serbia24live/51",
+      "published": "2026-11-13T19:32:54+00:00",
+      "source_url": "https://www.rts.rs/vesti/drustvo/6083328/fabrika-vali-valjevo-zatvaranje-poslovi.html",
+      "headline": "🇷🇸 Валийский завод закрывается: 737 работников ищут новые места, но предложение из Лозницы отклонено",
+      "text_length": 643,
+      "score": 10,
+      "scores": {
+        "clarity": 2,
+        "completeness": 2,
+        "russian": 2,
+        "headline": 2,
+        "logic": 2
+      },
+      "issues": [],
+      "needs_source_check": false
+    },
+    {
+      "id": 52,
+      "url": "https://t.me/serbia24live/52",
+      "published": "2026-11-14T08:02:12+00:00",
+      "source_url": "https://www.b92.net/info/hronika/284864/muskarac-stradao-u-saobracajnoj-nesreci-na-novom-beogradu/vest",
+      "headline": "🚗 В Новом Белграде погиб 60‑летний мужчина в ДТП, а в Сремчице умерла женщина от пожара",
+      "text_length": 365,
+      "score": 10,
+      "scores": {
+        "clarity": 2,
+        "completeness": 2,
+        "russian": 2,
+        "headline": 2,
+        "logic": 2
+      },
+      "issues": [],
+      "needs_source_check": false
+    },
+    {
+      "id": 53,
+      "url": "https://t.me/serbia24live/53",
+      "published": "2026-11-14T09:32:33+00:00",
+      "source_url": "https://n1info.rs/vesti/stamenkovic-u-pojedinim-predmetima-sled-radnji-potpuno-suprotan-zakonu-i-pravilima-struke",
+      "headline": "🇷🇸 Стенкович: в 34 делах из Генпрокуратуры Белграда выявлены нарушения, противоречащие закону",
+      "text_length": 591,
+      "score": 10,
+      "scores": {
+        "clarity": 2,
+        "completeness": 2,
+        "russian": 2,
+        "headline": 2,
+        "logic": 2
+      },
+      "issues": [],
+      "needs_source_check": false
+    },
+    {
+      "id": 54,
+      "url": "https://t.me/serbia24live/54",
+      "published": "2026-11-14T11:41:58+00:00",
+      "source_url": "https://www.danas.rs/vesti/drustvo/nil-stejt-department",
+      "headline": "🇷🇸 Госдепартамент назвал транснациональные преступные сети на Западных Балканах угрозой для США после визита в Белград",
+      "text_length": 770,
+      "score": 7,
+      "scores": {
+        "clarity": 1,
+        "completeness": 2,
+        "russian": 1,
+        "headline": 2,
+        "logic": 1
+      },
+      "issues": [
+        "неясные названия организаций"
+      ],
+      "needs_source_check": false
+    },
+    {
+      "id": 55,
+      "url": "https://t.me/serbia24live/55",
+      "published": "2026-11-14T13:30:39+00:00",
+      "source_url": "https://www.danas.rs/vesti/ekonomija/koliko-zaradjuju-najbogatiji-najsiromasniji",
+      "headline": "🇷🇸 Семьи в Сербии тратят почти половину бюджета на еду и жильё",
+      "text_length": 436,
+      "score": 10,
+      "scores": {
+        "clarity": 2,
+        "completeness": 2,
+        "russian": 2,
+        "headline": 2,
+        "logic": 2
+      },
+      "issues": [],
+      "needs_source_check": false
+    },
+    {
+      "id": 56,
+      "url": "https://t.me/serbia24live/56",
+      "published": "2026-11-14T15:40:37+00:00",
+      "source_url": "https://www.rts.rs/vesti/drustvo/6083621/odisnjem-izvestaju-evropske-komisije-ekoloski-kriminal.html",
+      "headline": "🇷🇸 Экомафия зарабатывает миллиарды, штрафы за уничтожение природы могут стать эффективным инструментом",
+      "text_length": 690,
+      "score": 9,
+      "scores": {
+        "clarity": 1,
+        "completeness": 2,
+        "russian": 2,
+        "headline": 2,
+        "logic": 2
+      },
+      "issues": [],
+      "needs_source_check": false
+    },
+    {
+      "id": 57,
+      "url": "https://t.me/serbia24live/57",
+      "published": "2026-11-14T17:14:52+00:00",
+      "source_url": "https://www.rts.rs/vesti/drustvo/6083695/crna-gora-aerodrom-navijaci-er-srbija.html",
+      "headline": "🇷🇸 «Ультра Черногория»: пассажиров с черногорскими паспортами вернули в Белграде из‑за решения по соображениям безопасности",
+      "text_length": 587,
+      "score": 6,
+      "scores": {
+        "clarity": 1,
+        "completeness": 2,
+        "russian": 1,
+        "headline": 1,
+        "logic": 1
+      },
+      "issues": [],
+      "needs_source_check": false
+    },
+    {
+      "id": 59,
+      "url": "https://t.me/serbia24live/59",
+      "published": "2026-11-15T08:08:59+00:00",
+      "source_url": "https://n1info.rs/vesti/ponovo-se-obrusio-plafon-u-osnovnoj-skoli-u-kikindi",
+      "headline": "🎓 В начальной школе «Йован Попович» в Кикинде снова обрушился потолок во время каникул",
+      "text_length": 618,
+      "score": 10,
+      "scores": {
+        "clarity": 2,
+        "completeness": 2,
+        "russian": 2,
+        "headline": 2,
+        "logic": 2
+      },
+      "issues": [],
+      "needs_source_check": false
+    },
+    {
+      "id": 60,
+      "url": "https://t.me/serbia24live/60",
+      "published": "2026-11-15T10:07:37+00:00",
+      "source_url": "https://www.danas.rs/kultura/selakovic-nacionalne-penzije-boskovic-savin-kovacevic",
+      "headline": "🏛️ Министр Селакович получил право предлагать дополнительные кандидатуры на национальные пенсии",
+      "text_length": 815,
+      "score": 7,
+      "scores": {
+        "clarity": 1,
+        "completeness": 2,
+        "russian": 2,
+        "headline": 0,
+        "logic": 2
+      },
+      "issues": [],
+      "needs_source_check": false
+    },
+    {
+      "id": 61,
+      "url": "https://t.me/serbia24live/61",
+      "published": "2026-11-15T12:16:30+00:00",
+      "source_url": "https://n1info.rs/biznis/narodna-banka-srbije-menja-pravila-za-menjacnice",
+      "headline": "🇷🇸 Обменникам в Сербии разрешили возвращать валюту банкам позже — но есть условие",
+      "text_length": 804,
+      "score": 8,
+      "scores": {
+        "clarity": 2,
+        "completeness": 2,
+        "russian": 2,
+        "headline": 0,
+        "logic": 2
+      },
+      "issues": [],
+      "needs_source_check": false
+    },
+    {
+      "id": 62,
+      "url": "https://t.me/serbia24live/62",
+      "published": "2026-11-15T14:09:16+00:00",
+      "source_url": "https://www.rts.rs/vesti/politika/6084174/sto-apostol-sanda-raskovic-ivic.html",
+      "headline": "🏥 Санда Рашкович Ивич: общество Сербии живёт в постоянном стрессе, правда — лучшее лекарство",
+      "text_length": 593,
+      "score": 8,
+      "scores": {
+        "clarity": 2,
+        "completeness": 2,
+        "russian": 2,
+        "headline": 0,
+        "logic": 2
+      },
+      "issues": [],
+      "needs_source_check": false
+    },
+    {
+      "id": 63,
+      "url": "https://t.me/serbia24live/63",
+      "published": "2026-11-15T15:42:22+00:00",
+      "source_url": "https://www.danas.rs/vesti/ekonomija/igre-na-srecu-prihod-drzava-kladionice",
+      "headline": "💶 Налоговые поступления от азартных игр в Сербии выросли в 11 раз за 15 лет, сейчас – 220 млн евро в год",
+      "text_length": 590,
+      "score": 8,
+      "scores": {
+        "clarity": 2,
+        "completeness": 2,
+        "russian": 2,
+        "headline": 0,
+        "logic": 2
+      },
+      "issues": [],
+      "needs_source_check": false
+    },
+    {
+      "id": 64,
+      "url": "https://t.me/serbia24live/64",
+      "published": "2026-11-15T17:55:07+00:00",
+      "source_url": "https://n1info.rs/vesti/nema-guzva-na-granicama-kraj-praznika-i-raspusta-donosi-pojacan-saobracaj",
+      "headline": "🚗 После праздников и каникул ожидается рост трафика, но на границах задержек нет",
+      "text_length": 590,
+      "score": 9,
+      "scores": {
+        "clarity": 2,
+        "completeness": 2,
+        "russian": 2,
+        "headline": 1,
+        "logic": 2
+      },
+      "issues": [],
+      "needs_source_check": false
+    },
+    {
+      "id": 65,
+      "url": "https://t.me/serbia24live/65",
+      "published": "2026-11-16T08:44:58+00:00",
+      "source_url": "https://www.b92.net/info/politika/285264/ovo-je-plan-studentske-liste-za-vojsku-srbije-vojne-sluzbe-bezbednosti-i-industriju/vest",
+      "headline": "🇷🇸 Студенческий список предложил план модернизации армии и служб безопасности Сербии",
+      "text_length": 624,
+      "score": 9,
+      "scores": {
+        "clarity": 2,
+        "completeness": 2,
+        "russian": 2,
+        "headline": 1,
+        "logic": 2
+      },
+      "issues": [],
+      "needs_source_check": false
+    },
+    {
+      "id": 66,
+      "url": "https://t.me/serbia24live/66",
+      "published": "2026-11-16T10:27:32+00:00",
+      "source_url": "https://n1info.rs/vesti/transparentnost-srbija-skupstina-moze-odmah-da-ukine-stetne-jednokratne-zakone",
+      "headline": "🏛️ Парламент может отменить разовые законы для отдельных проектов, требует Transparency Serbia",
+      "text_length": 650,
+      "score": 9,
+      "scores": {
+        "clarity": 2,
+        "completeness": 2,
+        "russian": 2,
+        "headline": 1,
+        "logic": 2
+      },
+      "issues": [],
+      "needs_source_check": false
+    },
+    {
+      "id": 67,
+      "url": "https://t.me/serbia24live/67",
+      "published": "2026-11-16T14:16:26+00:00",
+      "source_url": "https://n1info.rs/biznis/mali-srbija-na-racunu-ima-4446-milijardi-dinara-od-1-decembra-vece-plate-u-javnom-sektoru-i-penzije",
+      "headline": "🇷🇸 Министр финансов: на счёте Сербии 444,6 млрд динаров, с 1 декабря зарплаты в госслужбе вырастут на 8 %, а пенсии — на 7,5 %",
+      "text_length": 523,
+      "score": 9,
+      "scores": {
+        "clarity": 2,
+        "completeness": 2,
+        "russian": 2,
+        "headline": 1,
+        "logic": 2
+      },
+      "issues": [],
+      "needs_source_check": false
+    },
+    {
+      "id": 68,
+      "url": "https://t.me/serbia24live/68",
+      "published": "2026-11-16T16:20:06+00:00",
+      "source_url": "https://www.danas.rs/vesti/ekonomija/mreza-inspektora-srbije-komunalni-inspektor",
+      "headline": "🇷🇸 Инспектора из Крагуеваца могут снова перевести после жалоб на давление со стороны начальства",
+      "text_length": 871,
+      "score": 9,
+      "scores": {
+        "clarity": 2,
+        "completeness": 2,
+        "russian": 2,
+        "headline": 1,
+        "logic": 2
+      },
+      "issues": [],
+      "needs_source_check": false
+    },
+    {
+      "id": 69,
+      "url": "https://t.me/serbia24live/69",
+      "published": "2026-11-16T18:29:47+00:00",
+      "source_url": "https://n1info.rs/vesti/dusan-vucicevic-fpn-konstitutivna-sednica-skupstine",
+      "headline": "🇷🇸 «Парламент Сербии превратился в конвейер по одобрению законов»: политолог ждёт перемен",
+      "text_length": 659,
+      "score": 10,
+      "scores": {
+        "clarity": 2,
+        "completeness": 2,
+        "russian": 2,
+        "headline": 2,
+        "logic": 2
+      },
+      "issues": [],
+      "needs_source_check": false
+    },
+    {
+      "id": 70,
+      "url": "https://t.me/serbia24live/70",
+      "published": "2026-11-16T20:27:58+00:00",
+      "source_url": "https://www.rts.rs/vesti/hronika/6085132/portal-nova-grad-beograd-blokirao-racun-alta-banke-na-dan-oduzimanja-dozvole-za-rad.html",
+      "headline": "🏦 В день отзыва лицензии Alta Banka её счёт заблокировали власти Белграда",
+      "text_length": 784,
+      "score": 8,
+      "scores": {
+        "clarity": 1,
+        "completeness": 2,
+        "russian": 2,
+        "headline": 1,
+        "logic": 2
+      },
+      "issues": [],
+      "needs_source_check": false
+    }
+  ]
+}
