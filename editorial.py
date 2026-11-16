@@ -388,6 +388,7 @@ def edit_with_groq(source_title: str, source_paragraphs: list[str],
         "include_reasoning": False,
         "stream": False,
     }
+    last_problem = ""
     for attempt in range(2):
         if attempt:
             payload["messages"][0]["content"] = (
@@ -406,7 +407,10 @@ def edit_with_groq(source_title: str, source_paragraphs: list[str],
                 "Например, 60 дней вместо 30 возможны только при специальном "
                 "условии; укажи его цифры из оригинала. "
                 "Ни одно ключевое упоминание нельзя оставлять без объяснения. "
-                "Не придумывай названия, даты или другие факты."
+                "Не придумывай названия, даты или другие факты. "
+                "Все абзацы должны быть законченными, примерно 100–360 символов; "
+                "не превышай 420 символов на один абзац. "
+                "Конкретная причина отклонения: " + last_problem[:220]
             )
         try:
             response = requests.post(
@@ -439,7 +443,16 @@ def edit_with_groq(source_title: str, source_paragraphs: list[str],
             raise EditorialError(
                 "Groq дважды вернул неполное объяснение правил или некорректный язык"
             ) from None
-        except EditorialError:
+        except EditorialError as exc:
+            # Explicit rejection for insufficient facts is not recoverable by
+            # padding it with invented material. Other mistakes, such as an
+            # overlong paragraph, can be corrected once by rewriting.
+            if "отклонил недостаточно содержательную" in str(exc):
+                raise
+            if attempt == 0:
+                last_problem = str(exc)
+                LOG.warning("Черновик Groq не прошёл проверку (%s), исправляем один раз", type(exc).__name__)
+                continue
             raise
         except (requests.RequestException, KeyError, IndexError, TypeError,
                 ValueError) as exc:
