@@ -55,7 +55,7 @@ class ReaderQualityTests(unittest.TestCase):
             "Komunalni inspektor Vladislav Bosić pozvan je na proveru "
             "kompetencija za eventualni premeštaj u poresku upravu."
         )
-        with self.assertRaisesRegex(QualityRejected, "состоявшийся перевод"):
+        with self.assertRaisesRegex(QualityRejected, "гарантированный или состоявшийся"):
             source_grounded_status_guard(source,
                 "Инспектора уже перевели в налоговую службу",
                 ["Его перевод состоялся несмотря на возражения.",
