@@ -84,10 +84,32 @@ def source_grounded_status_guard(source: str, title: str, paragraphs: list[str] 
     """
     original = source.lower()
     finished = " ".join((title, *paragraphs)).lower()
-    if (
+    if not (
         re.search(r"inspektor|inspektor[au]|bosi[cć]", original)
         and re.search(r"prover|proveru|testir|procen|procenu", original)
         and re.search(r"moguć|moguc|eventual|ukoliko|ako|najav", original)
-        and re.search(r"\b(?:перевели|перевед[её]н|уже перев[её]л|перевод состоялся)\b", finished)
     ):
-        raise QualityRejected("Проверку для возможного перевода нельзя описывать как состоявшийся перевод")
+        return
+
+    # Inspect individual sentences so a conditional in one paragraph cannot
+    # excuse an unconditional claim in another ("Это будет второй перевод").
+    sentences = [title, *re.split(r"(?<=[.!?])\s+", " ".join(paragraphs))]
+    assertion = re.compile(
+        r"\b(?:перевели|уже переводят|уже перевед[её]н|перевод состоялся)\b"
+        r"|\b(?:это|он|она|сотрудник)\s+будет\b.{0,80}\bперевод\w*"
+        r"|\bбудет\s+перевед[её]н\w*"
+        r"|\bвторой\s+перевод\b"
+        r"|\bзаконност\w*\s+перевода\b",
+        re.I,
+    )
+    conditional = re.compile(
+        r"\bесли\b|\bможет\b|\bвозможн\w*|\bпредполага\w*|"
+        r"\bпланиру\w*|\bв\s+случае\b|\bпри\s+условии\b|"
+        r"\bпотенциальн\w*|\bпока\s+не\s+реш\w*",
+        re.I,
+    )
+    for sentence in sentences:
+        if assertion.search(sentence) and not conditional.search(sentence):
+            raise QualityRejected(
+                "Возможный перевод инспектора нельзя описывать как гарантированный или состоявшийся"
+            )
