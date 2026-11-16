@@ -585,7 +585,7 @@ def is_routine_sports_fixture(event: Event) -> bool:
     ) is not None
     fixture = re.search(
         r"\b(?:vs\.?|versus|against|protiv|против|"
-        r"utakmic[a-zčć]*|meč|mec|меч|матч[а-я]*|"
+        r"utakmic[a-zčć]*|match(?:es)?|derby|derbi|meč|mec|меч|матч[а-я]*|"
         r"game|round|kolo|кол[а-я]*|тур[а-я]*)\b",
         joined, re.IGNORECASE,
     ) is not None
