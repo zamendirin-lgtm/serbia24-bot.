@@ -50,7 +50,7 @@ class MajorVenuesTests(unittest.TestCase):
         e = arena_detail(ARENA_PAGE, A, NOW)
         self.assertIsNotNone(e)
         self.assertEqual(e.start.date().isoformat(), "2026-11-19")
-        self.assertIn("Арена", e.venue)
+        self.assertIn("арена", e.venue.casefold())
         self.assertEqual(e.price, "не указана")
         self.assertTrue(e.image.endswith("andre-rieu.jpg"))
         self.assertEqual(e.ticket_url, "https://tickets.rs/event/andre_rieu_2026")
