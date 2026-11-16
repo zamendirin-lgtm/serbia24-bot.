@@ -56,7 +56,8 @@
     "99fa249a5bd4b0296b228ebc": 1794824830.780979,
     "cc4c926583e402bad53c84b2": 1794838569.034125,
     "e8df2e698d4721825ac1e874": 1794845979.858723,
-    "68e8c2e20a04cf8484f4706c": 1794853775.560795
+    "68e8c2e20a04cf8484f4706c": 1794853775.560795,
+    "8bf7cdee077d1c1f73053be5": 1794860858.819275
   },
   "photos": {
     "50f559ee5d138a92c244ad4c": 1794474084.088928,
@@ -100,7 +101,8 @@
     "de3338caed56ba79cc9cef9a": 1794818672.823471,
     "f70f5bb9c6b17846b6ab44ae": 1794824830.780979,
     "64b91f20be4229cd0112405f": 1794838569.034125,
-    "acd464c39bd11722dd1216d7": 1794853775.560795
+    "acd464c39bd11722dd1216d7": 1794853775.560795,
+    "004fb8eefd4495555086c819": 1794860858.819275
   },
   "phashes": {
     "2ceefee6566d6666": 1794474084.088928,
@@ -144,7 +146,8 @@
     "0104091b9d390307": 1794818672.823471,
     "b28e9e4d4d95e260": 1794824830.780979,
     "c6e4e6e6c747c795": 1794838569.034125,
-    "1b190c5434343474": 1794853775.560795
+    "1b190c5434343474": 1794853775.560795,
+    "9e3d1d1919581c1e": 1794860858.819275
   },
   "posted": [
     {
@@ -484,6 +487,12 @@
       "title_norm": "vucicevic parlament bio protocni bojler za zakone iz vlade ocekujem da ce se dosta toga promeniti",
       "summary_norm": "profesor fakulteta politickih nauka dusan vucicevic za n1 je rekao da je parlament bio neka vrsta protocnog bojlera za zakone koje je predlagala vlad",
       "source": "N1"
+    },
+    {
+      "ts": 1794860858.819275,
+      "title_norm": "portal nova grad beograd blokirao rachun alta banke na dan oduzimanja dozvole za rad",
+      "summary_norm": "sekretarijat za finansije grada beograda aktivirao je menitsu i blokirao rachun alta banke na dan kada joj je narodna banka srbije oduzela dozvolu za rad objavio je portal nova pozivajutshi se na odgovor nbs banka je narednog dana bila u blokadi od milijardu dinara ali nije poznato koliki iznos grad beograd potrazhuje",
+      "source": "RTS"
     }
   ]
 }
