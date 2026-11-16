@@ -147,6 +147,10 @@ class EditorialTests(unittest.TestCase):
                     "approved": True,
                     "title": "В Нови-Саде открыли медицинский центр: кто может записаться",
                     "paragraphs": [PARA1, PARA2],
+                    "quality": {"scores": {
+                        "clarity": 2, "completeness": 2, "russian": 2,
+                        "headline": 2, "fidelity": 2
+                    }, "critical_issues": []},
                 }, ensure_ascii=False)}}]}
         with patch("editorial.requests.post", return_value=Response()) as post:
             reviewed = review_with_groq(
@@ -174,6 +178,83 @@ class EditorialTests(unittest.TestCase):
                     EditedNews(TITLE, (PARA1, PARA2), "groq"),
                     api_key="test-groq",
                 )
+
+    def test_editor_rejects_7_of_10_even_when_ai_says_approved(self):
+        class Response:
+            def raise_for_status(self): pass
+            def json(self):
+                return {"choices": [{"message": {"content": json.dumps({
+                    "approved": True, "title": TITLE,
+                    "paragraphs": [PARA1, PARA2],
+                    "quality": {
+                        "scores": {"clarity": 1, "completeness": 1, "russian": 1,
+                                   "headline": 2, "fidelity": 2},
+                        "critical_issues": []
+                    }
+                }, ensure_ascii=False)}}]}
+        with patch("editorial.requests.post", return_value=Response()):
+            with self.assertRaisesRegex(EditorialError, "7/10"):
+                review_with_groq("Novi centar", SERBIAN,
+                    EditedNews(TITLE, (PARA1, PARA2), "groq"), api_key="test")
+
+    def test_editor_rejects_unverified_fact_even_at_9_of_10(self):
+        class Response:
+            def raise_for_status(self): pass
+            def json(self):
+                return {"choices": [{"message": {"content": json.dumps({
+                    "approved": True, "title": TITLE,
+                    "paragraphs": [PARA1, PARA2],
+                    "quality": {
+                        "scores": {"clarity": 2, "completeness": 2, "russian": 2,
+                                   "headline": 2, "fidelity": 1},
+                        "critical_issues": []
+                    }
+                }, ensure_ascii=False)}}]}
+        with patch("editorial.requests.post", return_value=Response()):
+            with self.assertRaisesRegex(EditorialError, "точность"):
+                review_with_groq("Novi centar", SERBIAN,
+                    EditedNews(TITLE, (PARA1, PARA2), "groq"), api_key="test")
+
+    def test_editor_rejects_wrong_status_even_at_10_of_10(self):
+        class Response:
+            def raise_for_status(self): pass
+            def json(self):
+                return {"choices": [{"message": {"content": json.dumps({
+                    "approved": True, "title": TITLE,
+                    "paragraphs": [PARA1, PARA2],
+                    "quality": {
+                        "scores": {"clarity": 2, "completeness": 2, "russian": 2,
+                                   "headline": 2, "fidelity": 2},
+                        "critical_issues": ["wrong_status"]
+                    }
+                }, ensure_ascii=False)}}]}
+        with patch("editorial.requests.post", return_value=Response()):
+            with self.assertRaisesRegex(EditorialError, "wrong_status"):
+                review_with_groq("Novi centar", SERBIAN,
+                    EditedNews(TITLE, (PARA1, PARA2), "groq"), api_key="test")
+
+    def test_strict_eight_of_ten_has_no_unreviewed_gemini_fallback(self):
+        with patch.dict(os.environ, {
+            "GROQ_API_KEY": "fake-groq", "GEMINI_API_KEY": "fake-gemini",
+            "EDITOR_REVIEW_ENABLED": "1",
+        }), patch("editorial.edit_with_groq", return_value=EditedNews(
+                TITLE, (PARA1, PARA2), "groq")), \
+             patch("editorial.review_with_groq",
+                   side_effect=EditorialError("Редакторская оценка 6/10")) as reviewer, \
+             patch("editorial.edit_with_gemini") as gemini:
+            with self.assertRaisesRegex(EditorialError, "6/10"):
+                edit_news("Novi centar", SERBIAN, TITLE, PARA1+"\n\n"+PARA2)
+            reviewer.assert_called_once()
+            gemini.assert_not_called()
+
+    def test_strict_mode_without_groq_key_fails_closed(self):
+        with patch.dict(os.environ, {
+            "GROQ_API_KEY": "", "GEMINI_API_KEY": "fake-gemini",
+            "EDITOR_REVIEW_ENABLED": "1",
+        }), patch("editorial.edit_with_gemini") as gemini:
+            with self.assertRaisesRegex(EditorialError, "8/10"):
+                edit_news("Novi centar", SERBIAN, TITLE, PARA1+"\n\n"+PARA2)
+            gemini.assert_not_called()
 
     def test_second_ai_reader_is_called_when_enabled(self):
         with patch.dict(os.environ, {
