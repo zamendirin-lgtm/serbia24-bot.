@@ -24,7 +24,7 @@ jobs:
           python-version: '3.12'
       - name: Install parser
         run: python -m pip install requests beautifulsoup4
-      - name: Retrieve only public Telegram message history
+      - name: Retrieve public Telegram captions and original-source links
         run: python scripts/audit_channel.py
       - name: Save audit snapshot to repo
         run: |
