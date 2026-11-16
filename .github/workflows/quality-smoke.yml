@@ -1,0 +1,28 @@
+name: Serbia24 strict 8-of-10 editorial smoke
+
+on:
+  push:
+    paths:
+      - '.github/workflows/quality-smoke.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  editorial:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install news bot dependencies
+        run: python -m pip install -r requirements.txt
+      - name: Exercise 8/10 quality gate on real articles (no Telegram publishing)
+        env:
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          GROQ_MODEL: 'openai/gpt-oss-120b'
+          EDITOR_REVIEW_ENABLED: '1'
+        run: python -m scripts.quality_smoke
