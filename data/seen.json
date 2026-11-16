@@ -52,7 +52,8 @@
     "a86de738c916b4496ade1306": 1794751740.731467,
     "278f3c74ffbacd09a9935530": 1794757316.4157,
     "6cce5b0b2812aece2d9c0177": 1794765289.998571,
-    "ccb6964fc86e03f6de364e34": 1794818672.823471
+    "ccb6964fc86e03f6de364e34": 1794818672.823471,
+    "99fa249a5bd4b0296b228ebc": 1794824830.780979
   },
   "photos": {
     "50f559ee5d138a92c244ad4c": 1794474084.088928,
@@ -93,7 +94,8 @@
     "25fe8c4e320a47779ccf48f0": 1794751740.731467,
     "9816e0c571d1bd817d3bb7d9": 1794757316.4157,
     "5e0b5e2381bad1c4fd35ccfb": 1794765289.998571,
-    "de3338caed56ba79cc9cef9a": 1794818672.823471
+    "de3338caed56ba79cc9cef9a": 1794818672.823471,
+    "f70f5bb9c6b17846b6ab44ae": 1794824830.780979
   },
   "phashes": {
     "2ceefee6566d6666": 1794474084.088928,
@@ -134,7 +136,8 @@
     "e2e0a421e60419e6": 1794751740.731467,
     "233326360e975569": 1794757316.4157,
     "9bed693b2bcc8c1e": 1794765289.998571,
-    "0104091b9d390307": 1794818672.823471
+    "0104091b9d390307": 1794818672.823471,
+    "b28e9e4d4d95e260": 1794824830.780979
   },
   "posted": [
     {
@@ -450,6 +453,12 @@
       "title_norm": "ovo je plan studentske liste za vojsku srbije vojne sluzbe bezbednosti i industriju",
       "summary_norm": "popularizacija vojnog poziva postovanje strucnih sluzbi i ravnomeran i racionalan razvoj svih delova vojske glavni su ciljevi plana novih vlasti za ministarstvo odbrane i vojsku srbije",
       "source": "B92"
+    },
+    {
+      "ts": 1794824830.780979,
+      "title_norm": "transparentnost srbija skupstina moze odmah da ukine jednokratne zakone za pojedine projekte",
+      "summary_norm": "konstituisanjem novog saziva narodne skupstine 17 novembra pocinje formiranje vlasti koja je poverenje gradana dobila na obecanju borbe protiv korupc",
+      "source": "N1"
     }
   ]
 }
