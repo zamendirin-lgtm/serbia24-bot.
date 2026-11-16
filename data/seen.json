@@ -53,7 +53,8 @@
     "278f3c74ffbacd09a9935530": 1794757316.4157,
     "6cce5b0b2812aece2d9c0177": 1794765289.998571,
     "ccb6964fc86e03f6de364e34": 1794818672.823471,
-    "99fa249a5bd4b0296b228ebc": 1794824830.780979
+    "99fa249a5bd4b0296b228ebc": 1794824830.780979,
+    "cc4c926583e402bad53c84b2": 1794838569.034125
   },
   "photos": {
     "50f559ee5d138a92c244ad4c": 1794474084.088928,
@@ -95,7 +96,8 @@
     "9816e0c571d1bd817d3bb7d9": 1794757316.4157,
     "5e0b5e2381bad1c4fd35ccfb": 1794765289.998571,
     "de3338caed56ba79cc9cef9a": 1794818672.823471,
-    "f70f5bb9c6b17846b6ab44ae": 1794824830.780979
+    "f70f5bb9c6b17846b6ab44ae": 1794824830.780979,
+    "64b91f20be4229cd0112405f": 1794838569.034125
   },
   "phashes": {
     "2ceefee6566d6666": 1794474084.088928,
@@ -137,7 +139,8 @@
     "233326360e975569": 1794757316.4157,
     "9bed693b2bcc8c1e": 1794765289.998571,
     "0104091b9d390307": 1794818672.823471,
-    "b28e9e4d4d95e260": 1794824830.780979
+    "b28e9e4d4d95e260": 1794824830.780979,
+    "c6e4e6e6c747c795": 1794838569.034125
   },
   "posted": [
     {
@@ -458,6 +461,12 @@
       "ts": 1794824830.780979,
       "title_norm": "transparentnost srbija skupstina moze odmah da ukine jednokratne zakone za pojedine projekte",
       "summary_norm": "konstituisanjem novog saziva narodne skupstine 17 novembra pocinje formiranje vlasti koja je poverenje gradana dobila na obecanju borbe protiv korupc",
+      "source": "N1"
+    },
+    {
+      "ts": 1794838569.034125,
+      "title_norm": "mali srbija na racunu ima 444 6 milijardi dinara od 1 decembra vece plate u javnom sektoru i penzije",
+      "summary_norm": "ministar finansija u tehnickom mandatu sinisa mali izjavio da srbija trenutno na racunu ima oko 444 6 milijardi dinara i da su makroekonomski pokazate",
       "source": "N1"
     }
   ]
