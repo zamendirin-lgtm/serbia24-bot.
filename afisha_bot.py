@@ -556,6 +556,42 @@ def load_seen() -> dict:
         return {}
 
 
+
+def is_routine_sports_fixture(event: Event) -> bool:
+    """Block regular competitive matches, not sport-themed cultural events.
+
+    RUN BGD also lists EuroLeague, ABA league, football and volleyball games.
+    A schedule of team fixtures belongs in a sports channel, not an Afisha
+    centred on concerts, festivals, exhibitions and family activities.
+    Requiring a sport context AND a match cue avoids blocking an exhibition
+    on basketball history, a sports fair, or a concert at a sports arena.
+    """
+    title = clean(event.title, 220).casefold()
+    category = clean(event.category, 90).casefold()
+    description = clean(event.description, 450).casefold()
+    joined = " ".join((title, category, description))
+    sport_context = re.search(
+        r"\b(?:euroleague|euro\s*league|evroliga|evroligi|евролиг[а-я]*|"
+        r"aba[\s-]*liga|aba[\s-]*league|аба[\s-]*лиг[а-я]*|"
+        r"eurocup|euroliga|fiba|uefa|nba|"
+        r"basketball|košark[aeiu]?|kosark[aeiu]?|баскетбол[а-я]*|"
+        r"football|soccer|fudbal[a-z]*|футбол[а-я]*|"
+        r"volleyball|odbojka|волейбол[а-я]*|"
+        r"handball|rukomet|гандбол[а-я]*|"
+        r"hockey|hokej|хокке[а-я]*|"
+        r"superliga|суперлиг[а-я]*|"
+        r"sport(?:s|ski|ska|sko)?|спорт[а-я]*)\b",
+        joined, re.IGNORECASE,
+    ) is not None
+    fixture = re.search(
+        r"\b(?:vs\.?|versus|against|protiv|против|"
+        r"utakmic[a-zčć]*|meč|mec|меч|матч[а-я]*|"
+        r"game|round|kolo|кол[а-я]*|тур[а-я]*)\b",
+        joined, re.IGNORECASE,
+    ) is not None
+    return bool(sport_context and fixture)
+
+
 def event_topic(event: Event) -> str:
     title = (event.title + " " + event.description[:130]).casefold()
     groups = (
@@ -725,6 +761,8 @@ def select(events: list[Event], seen: dict, now: datetime) -> list[Event]:
     past_records = [row for row in seen.values() if isinstance(row, dict)]
     for e in events:
         if e.key in seen or not event_in_window(e, now):
+            continue
+        if is_routine_sports_fixture(e):
             continue
         series = event_series_key(e.url)
         if series in past_series or series in deduped:
