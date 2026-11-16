@@ -70,6 +70,27 @@ class SavaCentarTests(unittest.TestCase):
         self.assertIsNotNone(event)
         self.assertEqual(event.price, "от 2 500 дин.")
 
+
+    def test_grouped_same_day_ballet_shows_and_both_times_in_caption(self):
+        from dataclasses import replace
+        from afisha_bot import Event, format_event, same_real_event
+        evening = parse_detail(HTML, SRC, NOW)
+        afternoon = replace(
+            evening,
+            url="https://savacentar.rs/dogadjaji/krcko-orascic-popodne/",
+            start=datetime(2026, 12, 20, 15, tzinfo=NOW.tzinfo),
+        )
+        self.assertTrue(same_real_event(afternoon, {
+            "url": evening.url,
+            "title": evening.title,
+            "event_start": evening.start.isoformat(),
+            "venue": evening.venue,
+        }))
+        self.assertEqual(len(select([afternoon, evening], {}, NOW)), 1)
+        card = format_event(afternoon, "Балет «Щелкунчик»", "Классический семейный балет Чайковского.")
+        self.assertIn("20.12.2026, в 15:00 и 20:00", card)
+        self.assertEqual(card.count(">📷</a>"), 1)
+
     def test_calendar_does_not_cut_off_big_december_shows(self):
         page = "".join(
             '<a href="/dogadjaji/predstava-' + str(i) + '/">Show</a>'

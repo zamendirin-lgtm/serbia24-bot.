@@ -164,6 +164,22 @@ class AfishaTests(unittest.TestCase):
             replace(e, url="https://www.runbgd.com/whats-on/jelena-radanovic-koncert-2-2026-11-17"), history
         ))
 
+
+    def test_major_ballet_with_long_lead_time_is_not_filtered(self):
+        from afisha_bot import interest_score
+        item = Event(
+            url="https://savacentar.rs/dogadjaji/krcko-orascic/",
+            title="Krcko Oraščić", city="Белград",
+            venue="Сава Центар, Синий зал (Plava dvorana)",
+            start=datetime(2026, 12, 20, 20, tzinfo=NOW.tzinfo),
+            category="Ballet",
+            description="Два показа балета Чайковского, в 15:00 и 20:00. Новогодний балет для семьи.",
+            price="от 2 500 дин.", image="https://savacentar.rs/media/krcko.png",
+            ticket_url="https://tickets.rs/tour/the_nutcracker_2818",
+        )
+        self.assertTrue(event_in_window(item, NOW))
+        self.assertGreater(interest_score(item, NOW), 100)
+
     def test_unsafe_event_url(self):
         self.assertFalse(safe_source_url("https://evil.test/event"))
         self.assertFalse(safe_source_url("http://novisad.travel/event"))
