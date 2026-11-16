@@ -54,7 +54,8 @@
     "6cce5b0b2812aece2d9c0177": 1794765289.998571,
     "ccb6964fc86e03f6de364e34": 1794818672.823471,
     "99fa249a5bd4b0296b228ebc": 1794824830.780979,
-    "cc4c926583e402bad53c84b2": 1794838569.034125
+    "cc4c926583e402bad53c84b2": 1794838569.034125,
+    "e8df2e698d4721825ac1e874": 1794845979.858723
   },
   "photos": {
     "50f559ee5d138a92c244ad4c": 1794474084.088928,
@@ -468,6 +469,12 @@
       "title_norm": "mali srbija na racunu ima 444 6 milijardi dinara od 1 decembra vece plate u javnom sektoru i penzije",
       "summary_norm": "ministar finansija u tehnickom mandatu sinisa mali izjavio da srbija trenutno na racunu ima oko 444 6 milijardi dinara i da su makroekonomski pokazate",
       "source": "N1"
+    },
+    {
+      "ts": 1794845979.858723,
+      "title_norm": "mreza inspektora srbije reagovala zbog prebacivanja u poresku upravu komunalnog inspektora koji je prijavljivao pritiske",
+      "summary_norm": "organizacija mreza inspektora srbije mins izrazila je zabrinutost povodom postupanja gradske uprave grada kragujevca prema vladisavu bosicu doskora komunalnom inspektoru koji je prijavljivao pritiske i ometanje u obavljanju inspekcijskih poslova saopstila je mins",
+      "source": "Danas"
     }
   ]
 }
