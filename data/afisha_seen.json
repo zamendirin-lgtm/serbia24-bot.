@@ -110,5 +110,15 @@
     "venue": "Novi Sad Fair",
     "test_publish": true,
     "message_id": 25
+  },
+  "02ddaf000b1b9906061ff09ca05a5ba0ec807a84f417463cd79f0f2de68a9058": {
+    "url": "https://www.runbgd.com/whats-on/partizan-vs-valencia-euroleague-2026-11-17",
+    "event_start": "2026-11-17T00:00:00+01:00",
+    "published_at": "2026-11-16T15:08:24.385495+01:00",
+    "topic": "other",
+    "ai_editor": "groq",
+    "title": "Partizan vs Valencia (EuroLeague)",
+    "city": "Белград",
+    "venue": "Beogradska arena"
   }
 }
