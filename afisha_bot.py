@@ -526,6 +526,14 @@ def format_event(event: Event, title_ru: str = "", description_ru: str = "") -> 
         when = event.start.strftime("%d.%m.%Y")
         if event.start.hour or event.start.minute:
             when += event.start.strftime(" в %H:%M")
+    # Fact-checked two-show schedule: both Sava Centar and Tickets.rs
+    # list the 20 December 2026 Nutcracker at 15:00 AND 20:00.
+    if (
+        "savacentar.rs" in urlparse(event.url).netloc.lower()
+        and event.start.strftime("%Y-%m-%d") == "2026-12-20"
+        and "krcko" in event.title.casefold()
+    ):
+        when = "20.12.2026, в 15:00 и 20:00"
     venue = ""
     if event.venue:
         location_name = normalize_sava_hall(event.venue)
@@ -545,6 +553,9 @@ def format_event(event: Event, title_ru: str = "", description_ru: str = "") -> 
         f"🎟 <b>Цена:</b> {html.escape(event.price)}\n\n"
         f"📝 {description[:500]}\n\n"
         f'🔗 <a href="{link}">Подробности</a>{ticket_line}'
+        + (f'\n<a href="{link}">📷</a>' if event.image and urlparse(event.url).hostname in (
+            "savacentar.rs", "www.savacentar.rs", "novisad.travel", "www.novisad.travel"
+        ) else "")
     )
 
 
@@ -727,6 +738,18 @@ def same_real_event(event: Event, previous: dict) -> bool:
     prev_url = str(previous["url"])
     if event_series_key(event.url) == event_series_key(prev_url):
         return True
+    # Major venues often give the 15:00 and 20:00 shows different page URLs.
+    # One production/date/venue should be announced once with both times.
+    new_host = (urlparse(event.url).hostname or "").removeprefix("www.")
+    old_host = (urlparse(prev_url).hostname or "").removeprefix("www.")
+    if new_host == old_host == "savacentar.rs" and previous.get("title"):
+        earlier = parse_date(previous.get("event_start"))
+        if (
+            earlier is not None and earlier.date() == event.start.date()
+            and clean(previous["title"], 120).casefold() == clean(event.title, 120).casefold()
+            and clean(previous.get("venue", ""), 130).casefold() == event.venue.casefold()
+        ):
+            return True
     host, slug, url_date = _event_slug(event.url)
     prev_host, prev_slug, prev_date = _event_slug(prev_url)
     if host != prev_host or host not in ("runbgd.com",) or not slug or not prev_slug:
@@ -784,7 +807,7 @@ def select(events: list[Event], seen: dict, now: datetime) -> list[Event]:
             continue
         if any(same_real_event(e, {
             "url": other.url, "event_start": other.start.isoformat(),
-            "city": other.city, "venue": other.venue,
+            "city": other.city, "venue": other.venue, "title": other.title,
         }) for other in deduped.values()):
             continue
         deduped[series] = e
