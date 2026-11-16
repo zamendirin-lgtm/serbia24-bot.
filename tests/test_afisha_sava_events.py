@@ -60,6 +60,16 @@ class SavaCentarTests(unittest.TestCase):
         self.assertEqual(event.image, "")
 
 
+    def test_real_event_template_long_navigation_before_ballet_description(self):
+        long_page = HTML.replace(
+            "<main>",
+            "<main><div>" + "Pristup i organizacija. " * 85 + "</div>",
+        ).replace("<h2>20.12.2026. 20:00</h2>",
+                  '<div class="elementor-heading-title">20.12.2026. 20:00</div>')
+        event = parse_detail(long_page, SRC, NOW)
+        self.assertIsNotNone(event)
+        self.assertEqual(event.price, "от 2 500 дин.")
+
     def test_calendar_does_not_cut_off_big_december_shows(self):
         page = "".join(
             '<a href="/dogadjaji/predstava-' + str(i) + '/">Show</a>'
