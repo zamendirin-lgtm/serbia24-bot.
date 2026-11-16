@@ -1,0 +1,59 @@
+name: Reality — manual regular-news test (no special article)
+on:
+  issues:
+    types: [opened]
+permissions:
+  contents: write
+  issues: write
+concurrency:
+  group: reality-publisher
+  cancel-in-progress: false
+jobs:
+  regular_post_test:
+    if: github.event.issue.user.login == 'zamendirin-lgtm' && github.event.issue.title == '[reality] test a regular publication now'
+    runs-on: ubuntu-latest
+    timeout-minutes: 9
+    env:
+      REALITY_BOT_TOKEN: ${{ secrets.REALITY_BOT_TOKEN }}
+      REALITY_CHAT_ID: '@priroda_realnosti'
+      REALITY_DRY_RUN: 'false'
+      GH_TOKEN: ${{ github.token }}
+      ISSUE_NUMBER: ${{ github.event.issue.number }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install feed dependencies
+        run: python -m pip install -r reality/requirements.txt
+      - name: Check bot identity and publishing rights
+        run: python reality/verify.py
+      - name: Run standard bot with real publication limits
+        run: |
+          set -o pipefail
+          python reality/bot.py 2>&1 | tee reality-regular-run.log
+      - name: Persist publication state
+        run: |
+          git add reality/state.json
+          if ! git diff --cached --quiet; then
+            git config user.name "reality-publisher[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git commit -m "chore(reality): remember regular science item [skip ci]"
+            git pull --rebase origin main
+            git push origin HEAD:main
+          fi
+      - name: Record diagnostics on issue
+        if: always()
+        env:
+          RESULT: ${{ job.status }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          {
+            printf 'Regular Reality publishing check: **%s**. [Run log](%s).\n\n' "$RESULT" "$RUN_URL"
+            if [ -f reality-regular-run.log ]; then
+              printf '%s\n' '~~~'
+              grep -E '^(SKIP|STORY|NO_|NASA_|TRANSLATION|RSS_|VIDEO_|NO_VERIFIABLE)' reality-regular-run.log | head -30 | cut -c 1-250 || true
+              printf '%s\n' '~~~'
+            fi
+          } > report.md
+          gh issue comment "$ISSUE_NUMBER" --body-file report.md
