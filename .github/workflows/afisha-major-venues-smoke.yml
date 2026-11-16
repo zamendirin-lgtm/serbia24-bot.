@@ -23,3 +23,5 @@ jobs:
       - run: python -m unittest discover -s tests -p 'test_afisha*.py'
       - name: Check live official venue calendars (no Telegram publication)
         run: PYTHONPATH=. python scripts/afisha_major_venues_smoke.py
+
+# One-time verification: Arena 7 dated concerts, SNP gracefully skips when unavailable.
