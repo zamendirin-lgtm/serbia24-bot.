@@ -61,6 +61,48 @@ class ReaderQualityTests(unittest.TestCase):
                 ["Его перевод состоялся несмотря на возражения.",
                  "Организация инспекторов выразила обеспокоенность."])
 
+    def test_actual_groq_ten_out_of_ten_inspector_text_is_still_blocked(self):
+        source = (
+            "Komunalni inspektor Vladislav Bosić pozvan je na proveru kompetencija "
+            "za eventualni premeštaj u poresku upravu. Mreža inspektora Srbije "
+            "upozorava da se premeštaj može dogoditi ako provera bude uspešna."
+        )
+        title = ("Сеть инспекторов Сербии требует проверить законность перевода "
+                 "муниципального инспектора Босича в налоговую службу")
+        paragraphs = [
+            "Муниципальный инспектор Босич приглашён на проверку компетентности "
+            "для должности советника в городской налоговой администрации. "
+            "Это будет его второй перевод за восемь месяцев.",
+            "MINS заявила о возможном давлении на сотрудника.",
+        ]
+        with self.assertRaisesRegex(QualityRejected, "гарантированный"):
+            source_grounded_status_guard(source, title, paragraphs)
+
+    def test_inspector_headline_requires_possible_status(self):
+        source = (
+            "Inspektor Bosić pozvan je na proveru za mogući premeštaj "
+            "u poresku upravu."
+        )
+        with self.assertRaises(QualityRejected):
+            source_grounded_status_guard(source,
+                "Власти изучают законность перевода инспектора Босича",
+                ["Его вызвали на проверку навыков перед возможным переводом.",
+                 "MINS опасается давления на своего коллегу."])
+        source_grounded_status_guard(source,
+            "Власти изучают законность возможного перевода инспектора Босича",
+            ["Его вызвали на проверку навыков перед возможным переводом.",
+             "MINS опасается давления на своего коллегу."])
+
+    def test_conditional_second_transfer_is_not_misstated(self):
+        source = (
+            "Komunalni inspektor Bosić pozvan je na proveru za eventualni "
+            "premeštaj; ako je uspešna, može biti premešten."
+        )
+        source_grounded_status_guard(source,
+            "Инспектора из Крагуеваца могут перевести в другую службу",
+            ["Если перевод состоится, это будет его второй перевод за восемь месяцев.",
+             "Проверка знаний назначена на 19 ноября."])
+
     def test_proposed_inspector_transfer_stays_proposed(self):
         source = (
             "Komunalni inspektor Bosić pozvan je na proveru "
