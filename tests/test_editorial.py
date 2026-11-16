@@ -256,6 +256,66 @@ class EditorialTests(unittest.TestCase):
                 edit_news("Novi centar", SERBIAN, TITLE, PARA1+"\n\n"+PARA2)
             gemini.assert_not_called()
 
+    def test_review_rewrites_false_second_transfer_even_when_first_score_is_ten(self):
+        import json
+        source_title = "Inspektor Bosić pozvan na proveru za mogući premeštaj"
+        source = [
+            "Komunalni inspektor Bosić pozvan je na proveru kompetencija za "
+            "eventualni premeštaj u gradsku poresku upravu.",
+            "Mreža inspektora Srbije smatra da provera ne bi smela da bude "
+            "sredstvo pritiska prema radniku.",
+        ]
+        old = {
+            "approved": True,
+            "title": "Инспектора Босича перевели в налоговую службу",
+            "paragraphs": [
+                "Бывшего коммунального инспектора из Крагуеваца пригласили на "
+                "проверку его профессиональных навыков для работы в другой службе. "
+                "Это будет его второй перевод, говорят представители организации.",
+                "Сеть инспекторов Сербии опасается, что такие кадровые решения "
+                "могут использоваться для давления на сотрудников, ранее "
+                "сообщавших о препятствиях в выполнении служебных обязанностей.",
+            ],
+            "quality": {"scores": {
+                "clarity": 2, "completeness": 2, "russian": 2,
+                "headline": 2, "fidelity": 2}, "critical_issues": []},
+        }
+        fixed = {
+            "approved": True,
+            "title": "Инспектора Босича могут перевести в налоговую службу",
+            "paragraphs": [
+                "В Крагуеваце коммунального инспектора Босича пригласили "
+                "на проверку навыков для возможного перевода в городскую "
+                "налоговую службу. Решение о самом переводе ещё не принято.",
+                "Сеть инспекторов Сербии опасается, что подобные процедуры "
+                "могут быть способом давления на сотрудников, сообщавших "
+                "о помехах при выполнении служебных обязанностей.",
+            ],
+            "quality": {"scores": {
+                "clarity": 2, "completeness": 2, "russian": 2,
+                "headline": 1, "fidelity": 2}, "critical_issues": []},
+        }
+        class Response:
+            def __init__(self, data):
+                self.data = data
+            def raise_for_status(self): return None
+            def json(self):
+                return {"choices": [{"message": {
+                    "content": json.dumps(self.data, ensure_ascii=False)
+                }}]}
+        with patch("editorial.requests.post", side_effect=[
+            Response(old), Response(fixed)
+        ]) as post:
+            result = review_with_groq(
+                source_title, source,
+                EditedNews("Инспектор проходит проверку", tuple(fixed["paragraphs"]), "groq"),
+                api_key="test-secret"
+            )
+        self.assertEqual(result.title, fixed["title"])
+        self.assertEqual(result.mode, "groq+review")
+        self.assertEqual(post.call_count, 2)
+        self.assertIn("mandatory_correction", post.call_args_list[1].kwargs["json"]["messages"][1]["content"])
+
     def test_second_ai_reader_is_called_when_enabled(self):
         with patch.dict(os.environ, {
             "GROQ_API_KEY": "groq-test", "GEMINI_API_KEY": "",
