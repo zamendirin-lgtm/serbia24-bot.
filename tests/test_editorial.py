@@ -607,6 +607,35 @@ class EditorialTests(unittest.TestCase):
                                PARA1 + "\n\n" + PARA2, api_key="fake-secret")
         self.assertEqual(post.call_count, 2)
 
+    def test_first_groq_draft_repairs_overlong_paragraph_once(self):
+        import json
+        long_text = ("Городские власти сообщили о новом медицинском учреждении "
+                     "и рассказали о его работе для местных жителей. ") * 6
+        bad = {
+            "publish": True, "title": TITLE,
+            "paragraphs": [long_text, PARA2],
+        }
+        good = {
+            "publish": True, "title": TITLE,
+            "paragraphs": [PARA1, PARA2],
+        }
+        class Response:
+            def __init__(self, item): self.item=item
+            def raise_for_status(self): pass
+            def json(self):
+                return {"choices":[{"message":{
+                    "content": json.dumps(self.item,ensure_ascii=False)
+                }}]}
+        with patch("editorial.requests.post", side_effect=[
+            Response(bad),Response(good)
+        ]) as post:
+            edited = edit_with_groq("Novi centar",SERBIAN,TITLE,
+                                    PARA1+"\n\n"+PARA2,api_key="test-secret")
+        self.assertEqual(edited.mode,"groq")
+        self.assertEqual(post.call_count,2)
+        self.assertIn("слишком длинный",
+                      post.call_args_list[1].kwargs["json"]["messages"][0]["content"])
+
     def test_groq_prioritized_over_gemini(self):
         with patch.dict(os.environ, {"GROQ_API_KEY": "groq-test", "GEMINI_API_KEY": "gemini-test"}), \
              patch("editorial.edit_with_groq", return_value=EditedNews(TITLE, (PARA1, PARA2), "groq")) as groq, \
