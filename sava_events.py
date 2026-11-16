@@ -62,9 +62,13 @@ def parse_detail(markup: str, url: str, now: datetime):
     # The venue displays the verified date immediately after the h1.
     header = " ".join(
         node.get_text(" ", strip=True)
-        for node in soup.select("h1, h2, time[datetime]")[:7]
+        for node in soup.select("h1, h2, h3, h4, time[datetime]")[:22]
     )
     match = DATE.search(header)
+    if not match:
+        # Some WordPress event templates display the date in a div/heading
+        # widget rather than a literal h2. Read the event body's first date.
+        match = DATE.search(" ".join(soup.stripped_strings)[:2800])
     if not match:
         return None
     try:
@@ -76,8 +80,10 @@ def parse_detail(markup: str, url: str, now: datetime):
         return None
     # The real page must describe a cultural event, not venue hire or congress.
     body = soup.select_one("main") or soup
-    text = clean(body.get_text(" ", strip=True), 1300)
-    if not CULTURE.search(title + " " + text[:650]):
+    text = clean(body.get_text(" ", strip=True), 3600)
+    # Event pages may put accessibility notices, links and ticket instructions
+    # before the actual concert/ballet description. Scan the full description.
+    if not CULTURE.search(title + " " + text):
         return None
     # Avoid confusing footer/service notices with the event description.
     paragraphs = [
