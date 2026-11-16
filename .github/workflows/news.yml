@@ -99,3 +99,43 @@ jobs:
           GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
           EDITOR_MODEL: 'gemini-3.5-flash-lite'
         run: python scripts/afisha_backup.py
+
+
+  # Independent science-channel job on an already verified, reliably triggered
+  # Serbia24 workflow schedule. Does not interact with the news publishing job.
+  reality_science:
+    if: github.event_name == 'schedule'
+    runs-on: ubuntu-latest
+    timeout-minutes: 9
+    concurrency:
+      group: reality-publisher
+      cancel-in-progress: false
+    env:
+      REALITY_BOT_TOKEN: ${{ secrets.REALITY_BOT_TOKEN }}
+      REALITY_CHAT_ID: '@priroda_realnosti'
+      REALITY_DRY_RUN: 'false'
+    steps:
+      - name: Checkout for independent Reality bot
+        uses: actions/checkout@v4
+      - name: Python for science sources
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install science RSS dependencies
+        run: python -m pip install -r reality/requirements.txt
+      - name: Verify science channel token and permissions
+        run: python reality/verify.py
+      - name: Post one verified science item if permitted
+        run: |
+          python -m py_compile reality/bot.py
+          python reality/bot.py
+      - name: Save Reality posting history
+        run: |
+          git add reality/state.json
+          if ! git diff --cached --quiet; then
+            git config user.name "reality-publisher[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git commit -m "chore(reality): remember scheduled science item [skip ci]"
+            git pull --rebase origin main
+            git push origin HEAD:main
+          fi
