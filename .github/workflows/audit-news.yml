@@ -1,0 +1,38 @@
+name: Serbia24 published-news audit
+
+on:
+  push:
+    paths:
+      - '.github/workflows/audit-news.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: serbia24-channel-audit
+  cancel-in-progress: false
+
+jobs:
+  recover-public-posts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install parser
+        run: python -m pip install requests beautifulsoup4
+      - name: Retrieve only public Telegram message history
+        run: python scripts/audit_channel.py
+      - name: Save audit snapshot to repo
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add reports/serbia24_published_posts.json
+          if ! git diff --cached --quiet; then
+            git commit -m "docs: capture accessible public Serbia24 channel posts [skip ci]"
+            git pull --rebase origin main
+            git push origin HEAD:main
+          fi
