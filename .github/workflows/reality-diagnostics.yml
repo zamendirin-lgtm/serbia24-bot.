@@ -1,0 +1,41 @@
+name: Reality — publication diagnostics (no posting)
+on:
+  issues:
+    types: [opened]
+permissions:
+  contents: read
+  issues: write
+jobs:
+  diagnose:
+    if: github.event.issue.user.login == 'zamendirin-lgtm' && github.event.issue.title == '[reality] diagnose automatic publishing'
+    runs-on: ubuntu-latest
+    timeout-minutes: 7
+    env:
+      GH_TOKEN: ${{ github.token }}
+      ISSUE_NUMBER: ${{ github.event.issue.number }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install reader dependencies
+        run: python -m pip install -r reality/requirements.txt
+      - name: Diagnose feeds, media, and translation without publishing
+        run: python reality/diagnose.py 2>&1 | tee reality-diagnose.log
+      - name: Publish diagnostic summary back to issue
+        if: always()
+        env:
+          RESULT: ${{ job.status }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          if [ -f reality-diagnose.log ]; then
+            {
+              printf 'Diagnostic result: **%s**. [Run logs](%s).\n\n' "$RESULT" "$RUN_URL"
+              printf '%s\n' '~~~'
+              grep -E '^(CURRENT_UTC|LAST_SENT|POST_COUNT|FEED_HTTP|FEED_ENTRIES|FEED_EXCEPTION|FILTER_TOTALS|ELIGIBLE_SAMPLE_COUNT|CANDIDATE|TEST_COMMONS_TOPIC|COMMONS_OK|TRANSLATION_OK|NO_ELIGIBLE|NASA_)' reality-diagnose.log | head -45 | cut -c 1-210
+              printf '%s\n' '~~~'
+            } > report.md
+            gh issue comment "$ISSUE_NUMBER" --body-file report.md
+          else
+            gh issue comment "$ISSUE_NUMBER" --body "Diagnostic could not start; [run logs]($RUN_URL)."
+          fi
