@@ -146,9 +146,16 @@ def snp_cards(markup, now):
         except ValueError:
             continue
         price = "не указана"
-        m = re.search(r"\b([\d.]+)(?:,\d\d)?\s*(?:-|–\s*[\d., ]+\s*)?RSD", txt, re.I)
+        # Ticket pages expose ranges (600,00 - 1.000,00 RSD). Show the
+        # lowest category and explicitly call it an "от" price.
+        price_range = re.search(
+            r"(\d[\d.]*(?:,\d{2})?)\s*[-–]\s*(\d[\d.]*(?:,\d{2})?)\s*RSD",
+            txt, re.I,
+        )
+        single = re.search(r"(\d[\d.]*(?:,\d{2})?)\s*RSD", txt, re.I)
+        m = price_range or single
         if m:
-            amount = m.group(1).replace(".", "")
+            amount = m.group(1).split(",")[0].replace(".", "")
             if amount.isdigit():
                 price = "от " + amount + " дин. (по данным кассы)"
         kind = ("Ballet" if re.search("balet|žizela|жизела", title, re.I) else
