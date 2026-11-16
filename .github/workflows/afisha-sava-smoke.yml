@@ -23,3 +23,5 @@ jobs:
       - run: python -m unittest discover -s tests -p 'test_afisha*.py'
       - name: Live event source check without Telegram post
         run: PYTHONPATH=. python scripts/afisha_sava_smoke.py
+
+# Recheck complete December calendar after link-discovery fix (2026-11-16).
