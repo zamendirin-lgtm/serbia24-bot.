@@ -5,6 +5,7 @@ on:
 permissions:
   contents: read
   issues: write
+  actions: read
 jobs:
   diagnose:
     if: github.event.issue.user.login == 'zamendirin-lgtm' && github.event.issue.title == '[reality] diagnose automatic publishing'
@@ -22,6 +23,8 @@ jobs:
         run: python -m pip install -r reality/requirements.txt
       - name: Diagnose feeds, media, and translation without publishing
         run: python reality/diagnose.py 2>&1 | tee reality-diagnose.log
+      - name: Inspect scheduled workflow runs
+        run: python reality/actions_diagnose.py 2>&1 | tee reality-actions.log
       - name: Publish diagnostic summary back to issue
         if: always()
         env:
@@ -33,6 +36,9 @@ jobs:
               printf 'Diagnostic result: **%s**. [Run logs](%s).\n\n' "$RESULT" "$RUN_URL"
               printf '%s\n' '~~~'
               grep -E '^(CURRENT_UTC|LAST_SENT|POST_COUNT|FEED_HTTP|FEED_ENTRIES|FEED_EXCEPTION|FILTER_TOTALS|ELIGIBLE_SAMPLE_COUNT|CANDIDATE|TEST_COMMONS_TOPIC|COMMONS_OK|TRANSLATION_OK|NO_ELIGIBLE|NASA_)' reality-diagnose.log | head -45 | cut -c 1-210
+              if [ -f reality-actions.log ]; then
+                grep '^ACTIONS_' reality-actions.log | head -35 | cut -c 1-220
+              fi
               printf '%s\n' '~~~'
             } > report.md
             gh issue comment "$ISSUE_NUMBER" --body-file report.md
