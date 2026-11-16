@@ -419,7 +419,7 @@ def event_in_window(event: Event, now: datetime) -> bool:
             return False
     elif event.start.date() < local_today:
         return False
-    return event.start.date() <= local_today + timedelta(days=30)
+    return event.start.date() <= local_today + timedelta(days=75)
 
 
 def load_curated_events(now: datetime) -> list[Event]:
@@ -598,7 +598,7 @@ def event_topic(event: Event) -> str:
         ("family", ("deca", "decji", "dečji", "children", "kids", "family", "porodic", "детск", "семей")),
         ("festival", ("festival", "фестив", "manifestacij")),
         ("concert", ("koncert", "concert", "muzik", "music", "концерт", "музык")),
-        ("theatre", ("theatre", "theater", "pozoriš", "pozoris", "представлен", "театр")),
+        ("theatre", ("theatre", "theater", "pozoriš", "pozoris", "представлен", "театр", "balet", "ballet", "балет", "опера")),
         ("fair", ("sajam", "fair", "market", "ярмарк", "базар")),
         ("exhibition", ("izložb", "izlozb", "exhibit", "gallery", "izlozba", "выстав", "музе")),
         ("workshop", ("radionic", "workshop", "мастер-класс")),
@@ -654,6 +654,15 @@ def interest_score(event: Event, now: datetime) -> int:
         score += 12
     else:
         score -= 4
+    if event.ticket_url:
+        score += 7
+    if event.image:
+        score += 9
+    if "savacentar.rs" in urlparse(event.url).netloc.lower():
+        score += 12  # verified flagship venue programmes, not generic sports
+    if any(k in (event.title + " " + event.category).casefold()
+           for k in ("ballet", "balet", "балет", "opera", "опер", "мюзикл", "musical")):
+        score += 14  # family stage productions deserve longer lead times
     topic = event_topic(event)
     score += {
         "family": 14, "festival": 15, "concert": 14,
@@ -667,6 +676,8 @@ def interest_score(event: Event, now: datetime) -> int:
         score += 11
     elif 22 <= days <= 30:
         score += 5
+    elif 31 <= days <= 75:
+        score += 3
     elif days < 0 and event.end and event.end.date() >= now.date():
         # Long-running exhibitions can be interesting, but prioritize new events.
         score += 4 if days >= -7 else -10
@@ -801,10 +812,15 @@ def _official_poster(url: str) -> bool:
         return False
     return (
         parsed.scheme == "https"
-        and parsed.hostname in ("novisad.travel", "www.novisad.travel")
+        and parsed.hostname in (
+            "novisad.travel", "www.novisad.travel",
+            "savacentar.rs", "www.savacentar.rs",
+        )
         and not parsed.username
         and not parsed.password
-        and parsed.path.lower().endswith((".jpg", ".jpeg", ".png"))
+        and parsed.path.lower().endswith((".jpg", ".jpeg", ".png", ".webp")) and not any(
+            label in parsed.path.casefold() for label in ("logo", "placeholder", "default")
+        )
     )
 
 
@@ -939,11 +955,13 @@ def main() -> int:
         return 0
     from belgrade_events import collect_belgrade_events
     from subotica_events import collect_subotica_events
+    from sava_events import collect_sava_events
     events = (
         load_curated_events(now)
         + collect_official_events(session, now)
         + collect_belgrade_events(session, now)
         + collect_subotica_events(session, now)
+        + collect_sava_events(session, now)
     )
     shortlisted = select(events, seen, now)
     print(f"Event candidates: {len(events)}, ranked shortlist: {len(shortlisted)}, "
