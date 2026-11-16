@@ -554,7 +554,8 @@ def format_event(event: Event, title_ru: str = "", description_ru: str = "") -> 
         f"📝 {description[:500]}\n\n"
         f'🔗 <a href="{link}">Подробности</a>{ticket_line}'
         + (f'\n<a href="{link}">📷</a>' if event.image and urlparse(event.url).hostname in (
-            "savacentar.rs", "www.savacentar.rs", "novisad.travel", "www.novisad.travel"
+            "savacentar.rs", "www.savacentar.rs", "novisad.travel", "www.novisad.travel",
+            "arenabeograd.com", "www.arenabeograd.com"
         ) else "")
     )
 
@@ -671,6 +672,16 @@ def interest_score(event: Event, now: datetime) -> int:
         score += 9
     if "savacentar.rs" in urlparse(event.url).netloc.lower():
         score += 12  # verified flagship venue programmes, not generic sports
+    # Major halls have greater relevance for our cultural event readership.
+    # Sporting matches remain filtered out *before* ranking.
+    major = (
+        "beogradska arena", "белградская арена", "sava centar",
+        "сава центар", "mts dvorana", "мтс дворана", "dom omladine",
+        "дом омладине", "kolarac", "коларац", "srpsko narodno",
+        "сербский национальный театр", "spens", "спенс",
+    )
+    if any(term in (event.venue + " " + event.url).casefold() for term in major):
+        score += 16
     if any(k in (event.title + " " + event.category).casefold()
            for k in ("ballet", "balet", "балет", "opera", "опер", "мюзикл", "musical")):
         score += 14  # family stage productions deserve longer lead times
@@ -838,6 +849,7 @@ def _official_poster(url: str) -> bool:
         and parsed.hostname in (
             "novisad.travel", "www.novisad.travel",
             "savacentar.rs", "www.savacentar.rs",
+            "arenabeograd.com", "www.arenabeograd.com",
         )
         and not parsed.username
         and not parsed.password
@@ -979,12 +991,14 @@ def main() -> int:
     from belgrade_events import collect_belgrade_events
     from subotica_events import collect_subotica_events
     from sava_events import collect_sava_events
+    from major_venues import collect_major_venues
     events = (
         load_curated_events(now)
         + collect_official_events(session, now)
         + collect_belgrade_events(session, now)
         + collect_subotica_events(session, now)
         + collect_sava_events(session, now)
+        + collect_major_venues(session, now)
     )
     shortlisted = select(events, seen, now)
     print(f"Event candidates: {len(events)}, ranked shortlist: {len(shortlisted)}, "
