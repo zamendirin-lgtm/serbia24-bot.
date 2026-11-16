@@ -25,3 +25,5 @@ jobs:
         run: PYTHONPATH=. python scripts/afisha_sava_smoke.py
 
 # Recheck complete December calendar after link-discovery fix (2026-11-16).
+
+# Second live recheck: event date widgets and full description on 2026-11-16.
