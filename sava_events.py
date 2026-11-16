@@ -198,7 +198,16 @@ def collect_sava_events(session: requests.Session, now: datetime):
             if event and event.key not in seen:
                 seen.add(event.key)
                 found.append(event)
-        return found
+        # The same stage production may have two showtimes on one day,
+        # each with a separate source page. Publish a SINGLE announcement
+        # about the production, choosing its earliest performance time.
+        collapsed = {}
+        for event in found:
+            name = re.sub(r"\\s+", " ", event.title.casefold()).strip()
+            key = (name, event.start.date(), event.venue.casefold())
+            if key not in collapsed or event.start < collapsed[key].start:
+                collapsed[key] = event
+        return list(collapsed.values())
     except requests.RequestException:
         print("Sava Centar event calendar unavailable.")
         return []
