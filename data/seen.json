@@ -55,7 +55,8 @@
     "ccb6964fc86e03f6de364e34": 1794818672.823471,
     "99fa249a5bd4b0296b228ebc": 1794824830.780979,
     "cc4c926583e402bad53c84b2": 1794838569.034125,
-    "e8df2e698d4721825ac1e874": 1794845979.858723
+    "e8df2e698d4721825ac1e874": 1794845979.858723,
+    "68e8c2e20a04cf8484f4706c": 1794853775.560795
   },
   "photos": {
     "50f559ee5d138a92c244ad4c": 1794474084.088928,
@@ -98,7 +99,8 @@
     "5e0b5e2381bad1c4fd35ccfb": 1794765289.998571,
     "de3338caed56ba79cc9cef9a": 1794818672.823471,
     "f70f5bb9c6b17846b6ab44ae": 1794824830.780979,
-    "64b91f20be4229cd0112405f": 1794838569.034125
+    "64b91f20be4229cd0112405f": 1794838569.034125,
+    "acd464c39bd11722dd1216d7": 1794853775.560795
   },
   "phashes": {
     "2ceefee6566d6666": 1794474084.088928,
@@ -141,7 +143,8 @@
     "9bed693b2bcc8c1e": 1794765289.998571,
     "0104091b9d390307": 1794818672.823471,
     "b28e9e4d4d95e260": 1794824830.780979,
-    "c6e4e6e6c747c795": 1794838569.034125
+    "c6e4e6e6c747c795": 1794838569.034125,
+    "1b190c5434343474": 1794853775.560795
   },
   "posted": [
     {
@@ -475,6 +478,12 @@
       "title_norm": "mreza inspektora srbije reagovala zbog prebacivanja u poresku upravu komunalnog inspektora koji je prijavljivao pritiske",
       "summary_norm": "organizacija mreza inspektora srbije mins izrazila je zabrinutost povodom postupanja gradske uprave grada kragujevca prema vladisavu bosicu doskora komunalnom inspektoru koji je prijavljivao pritiske i ometanje u obavljanju inspekcijskih poslova saopstila je mins",
       "source": "Danas"
+    },
+    {
+      "ts": 1794853775.560795,
+      "title_norm": "vucicevic parlament bio protocni bojler za zakone iz vlade ocekujem da ce se dosta toga promeniti",
+      "summary_norm": "profesor fakulteta politickih nauka dusan vucicevic za n1 je rekao da je parlament bio neka vrsta protocnog bojlera za zakone koje je predlagala vlad",
+      "source": "N1"
     }
   ]
 }
