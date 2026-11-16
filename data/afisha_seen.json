@@ -120,5 +120,15 @@
     "title": "Partizan vs Valencia (EuroLeague)",
     "city": "Белград",
     "venue": "Beogradska arena"
+  },
+  "6a4cdbfb7a38b7a0fb239de2853e86c6438331f35c434472bd10be40e2383082": {
+    "url": "https://www.runbgd.com/whats-on/maccabi-tel-aviv-vs-dubai-euroleague-2026-11-19",
+    "event_start": "2026-11-19T00:00:00+01:00",
+    "published_at": "2026-11-16T21:02:02.818026+01:00",
+    "topic": "other",
+    "ai_editor": "groq",
+    "title": "Maccabi Tel Aviv vs Dubai (EuroLeague)",
+    "city": "Белград",
+    "venue": "Hala Aleksandar Nikolić (Pionir)"
   }
 }
