@@ -37,6 +37,14 @@ def get_posts(html_doc: str) -> list[dict]:
         if text_node is None:
             continue
         text = text_node.get_text("\n", strip=True)
+        source_url = ""
+        for a in text_node.select("a[href]"):
+            href = a.get("href", "")
+            label = a.get_text(" ", strip=True)
+            if ("Источник" in label and href.startswith("http")
+                    and "t.me/" not in href):
+                source_url = href
+                break
         time_node = message.select_one("time[datetime]")
         published = time_node.get("datetime", "") if time_node else ""
         found.append({
@@ -44,6 +52,7 @@ def get_posts(html_doc: str) -> list[dict]:
             "url": f"https://t.me/{CHANNEL}/{post_id}",
             "published": published,
             "text": text[:3500],
+            "source_url": source_url,
         })
     return found
 
