@@ -1509,6 +1509,14 @@ def run() -> None:
                 "title_norm": normalized_title(article.title),
                 "summary_norm": normalized_title(article.summary[:500]),
                 "source": article.source,
+                # Public, already-published text retained for future quality
+                # review; do not store Telegram tokens or private data.
+                "published_title_ru": title_ru,
+                "published_text_ru": summary_ru,
+                "article_url": article.url,
+                "caption_text": BeautifulSoup(
+                    caption if not dry_run else message, "html.parser"
+                ).get_text("\n", strip=True),
             })
             if not dry_run:
                 save_state(state)
