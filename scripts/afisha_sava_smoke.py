@@ -23,10 +23,16 @@ def main() -> int:
         print("SAVA_SMOKE_NUTCRACKER: FOUND", [(e.start.isoformat(), bool(e.image)) for e in nutcracker])
     else:
         print("SAVA_SMOKE_NUTCRACKER: MISSING")
-    if not events or not nutcracker:
-        print("SAVA_SMOKE_FAILED: official source missing the important holiday show.")
+    if not events or len(nutcracker) != 1:
+        print("SAVA_SMOKE_FAILED: expected ONE announcement for both Nutcracker performances.")
         return 1
-    print("SAVA_SMOKE_PASS")
+    from afisha_bot import format_event
+    rendered = format_event(nutcracker[0], "Балет «Щелкунчик»",
+                            "Классический семейный балет Чайковского.")
+    if not nutcracker[0].image or "15:00 и 20:00" not in rendered:
+        print("SAVA_SMOKE_FAILED: verified poster or combined showtimes missing.")
+        return 1
+    print("SAVA_SMOKE_PASS: one Nutcracker story, both showtimes, official event image")
     return 0
 
 if __name__ == "__main__":
