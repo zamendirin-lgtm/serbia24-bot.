@@ -59,6 +59,15 @@ class SavaCentarTests(unittest.TestCase):
         self.assertEqual(event.price, "не указана")
         self.assertEqual(event.image, "")
 
+
+    def test_calendar_does_not_cut_off_big_december_shows(self):
+        page = "".join(
+            '<a href="/dogadjaji/predstava-' + str(i) + '/">Show</a>'
+            for i in range(60)
+        )
+        links = event_links(page)
+        self.assertEqual(len(links), 60)
+
     def test_missing_or_out_of_range_dates(self):
         self.assertIsNone(parse_detail(HTML.replace("20.12.2026.", "20.12.2025."), SRC, NOW))
         self.assertIsNone(parse_detail(HTML.replace("20.12.2026.", "invalid"), SRC, NOW))

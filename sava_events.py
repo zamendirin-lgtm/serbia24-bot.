@@ -22,7 +22,7 @@ CULTURE = re.compile(
     r"muzik|music|festival|show|šou|spektakl|ples",
     re.IGNORECASE,
 )
-MAX_DETAILS = 36
+MAX_DETAILS = 90
 
 
 def source_url(value: str) -> str:
@@ -164,17 +164,31 @@ def collect_sava_events(session: requests.Session, now: datetime):
         if len(calendar.content) > 2_000_000:
             return []
         links = event_links(calendar.text)
-        print(f"Sava Centar upcoming event links discovered: {len(links)}")
+        # The calendar contains many items before the December cultural shows.
+        # Add this user-verified 2026 holiday production as a priority link,
+        # then check the official live event page before showing any details.
+        featured = "https://savacentar.rs/dogadjaji/krcko-orascic/"
+        if now.year == 2026 and now.month in (10, 11, 12) and featured not in links:
+            links.insert(0, featured)
+        elif featured in links:
+            links.insert(0, links.pop(links.index(featured)))
+        print(f"Sava Centar official event links checked: {len(links)}")
         found, seen = [], set()
         for link in links:
             if not robot.can_fetch(UA, link):
+                if link == featured:
+                    print("Sava Centar Nutcracker page disallowed by robots.txt.")
                 continue
             try:
                 page = session.get(link, timeout=15)
                 page.raise_for_status()
                 event = parse_detail(page.text, link, now)
             except requests.RequestException:
+                if link == featured:
+                    print("Sava Centar Nutcracker page temporarily unavailable.")
                 continue
+            if link == featured:
+                print("Sava Centar Nutcracker official page parsed:", bool(event))
             if event and event.key not in seen:
                 seen.add(event.key)
                 found.append(event)
