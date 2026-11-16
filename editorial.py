@@ -577,68 +577,96 @@ def review_with_groq(
     api_key: str,
     model: str = "openai/gpt-oss-120b",
 ) -> EditedNews:
-    """Independent second editorial pass; fails closed when not readable."""
+    """Independent second editorial pass + strict scored 8/10 decision.
+
+    Give the reviewer one correction attempt for missing context, unidiomatic
+    prose or inaccurate action status. Never publish a failed second attempt.
+    """
     if model not in ("openai/gpt-oss-120b", "openai/gpt-oss-20b"):
         raise EditorialError("Неизвестная модель Groq для редакторской проверки")
     factual = " ".join(
         [article_title, *factual_paragraphs, first_draft.title, first_draft.text]
     )
-    data = {
-        "model": model,
-        "messages": [
-            {"role": "system", "content": REVIEWER_RULES},
-            {"role": "user", "content": json.dumps({
-                "serbian_original_title": article_title,
-                "serbian_verified_facts": factual_paragraphs,
-                "russian_headline_to_review": first_draft.title,
-                "russian_paragraphs_to_review": list(first_draft.paragraphs),
-            }, ensure_ascii=False)},
-        ],
-        "temperature": 0.15,
-        "max_completion_tokens": 1500,
-        "response_format": {"type": "json_object"},
-        "reasoning_effort": "low",
-        "include_reasoning": False,
-        "stream": False,
+    original_request = {
+        "serbian_original_title": article_title,
+        "serbian_verified_facts": factual_paragraphs,
+        "russian_headline_to_review": first_draft.title,
+        "russian_paragraphs_to_review": list(first_draft.paragraphs),
     }
-    try:
-        response = requests.post(
-            "https://api.groq.com/openai/v1/chat/completions",
-            headers={"Authorization": f"Bearer {api_key}",
-                     "Content-Type": "application/json"},
-            json=data, timeout=32,
-        )
-        response.raise_for_status()
-        response_data = response.json()
-        checked = json.loads(response_data["choices"][0]["message"]["content"])
+    reason = ""
+    for attempt in range(2):
+        user_request = dict(original_request)
+        if reason:
+            user_request["mandatory_correction"] = (
+                "Предыдущая версия не прошла проверку: " + reason + ". "
+                "Исправь конкретную проблему, не добавляя неподтверждённые "
+                "события, имена и сроки. Снова оцени текст честно по пяти "
+                "критериям, верни полный JSON с quality."
+            )
+        payload = {
+            "model": model,
+            "messages": [
+                {"role": "system", "content": REVIEWER_RULES},
+                {"role": "user", "content": json.dumps(user_request, ensure_ascii=False)},
+            ],
+            "temperature": 0.15,
+            "max_completion_tokens": 1500,
+            "response_format": {"type": "json_object"},
+            "reasoning_effort": "low",
+            "include_reasoning": False,
+            "stream": False,
+        }
+        try:
+            response = requests.post(
+                "https://api.groq.com/openai/v1/chat/completions",
+                headers={"Authorization": f"Bearer {api_key}",
+                         "Content-Type": "application/json"},
+                json=payload, timeout=32,
+            )
+            response.raise_for_status()
+            response_data = response.json()
+            checked = json.loads(response_data["choices"][0]["message"]["content"])
+        except (requests.RequestException, KeyError, IndexError, TypeError,
+                ValueError) as exc:
+            LOG.warning("Дополнительная ИИ-вычитка недоступна: %s", type(exc).__name__)
+            raise EditorialError("Дополнительная ИИ-вычитка не завершилась") from None
+
         if not isinstance(checked, dict) or checked.get("approved") is not True:
             raise EditorialError("Второй ИИ-редактор отклонил непонятную новость")
-        final = _basic_checks(
-            checked.get("title", ""), checked.get("paragraphs", []), factual
-        )
-        source_grounded_status_guard(
-            article_title + " " + " ".join(factual_paragraphs),
-            final.title, final.paragraphs,
-        )
+
         try:
-            grade = validate_grade(
-                checked.get("quality"), final.title, final.paragraphs, minimum=8
+            final = _basic_checks(
+                checked.get("title", ""), checked.get("paragraphs", []), factual
             )
-        except QualityRejected as exc:
-            raise EditorialError(str(exc)) from None
+            source_grounded_status_guard(
+                article_title + " " + " ".join(factual_paragraphs),
+                final.title, final.paragraphs,
+            )
+            try:
+                grade = validate_grade(
+                    checked.get("quality"), final.title, final.paragraphs, minimum=8
+                )
+            except QualityRejected as exc:
+                raise EditorialError(str(exc)) from None
+        except (EditorialError, WrongLanguageError, MissingContextError,
+                MissingConditionError, UnexplainedTermError, QualityRejected) as exc:
+            reason = str(exc)[:250]
+            if attempt == 0:
+                LOG.warning("Редакторская версия не прошла 8/10: %s. Запрашиваем исправление.", reason)
+                continue
+            raise EditorialError(
+                "После повторной ИИ-вычитки качество ниже 8/10 или не подтверждены факты: "
+                + reason
+            ) from None
+
         LOG.info(
             "Редакторская оценка: %s/10 (ясность=%s, полнота=%s, русский=%s, заголовок=%s, факты=%s)",
             grade.total, grade.scores["clarity"], grade.scores["completeness"],
             grade.scores["russian"], grade.scores["headline"], grade.scores["fidelity"],
         )
         return EditedNews(final.title, final.paragraphs, "groq+review")
-    except (EditorialError, WrongLanguageError, MissingContextError,
-            MissingConditionError, UnexplainedTermError):
-        raise
-    except (requests.RequestException, KeyError, IndexError, TypeError,
-            ValueError) as exc:
-        LOG.warning("Дополнительная ИИ-вычитка недоступна: %s", type(exc).__name__)
-        raise EditorialError("Дополнительная ИИ-вычитка не завершилась") from None
+
+    raise EditorialError("Невозможно подготовить понятную и точную новость")
 
 
 def edit_news(source_title: str, source_paragraphs: list[str],
