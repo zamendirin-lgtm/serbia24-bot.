@@ -140,14 +140,24 @@ def translate(raw):
 
 
 def story_topics(title):
+    """Prefer concrete subjects over generic modifiers like 'ancient'.
+
+    For example, 'ancient virus changes the brain' is a brain story,
+    not a photograph of archaeological ruins.
+    """
     t = title.lower()
     prefixes = {"archaeolog", "fung", "bacter"}
+    matches = []
     for word, topic in IMAGE_TOPICS.items():
         pattern = (r"\b" + re.escape(word) + r"[a-z]*\b" if word in prefixes
                    else r"\b" + re.escape(word) + r"(?:s|es)?\b")
         if re.search(pattern, t):
-            return topic
-    return None
+            matches.append((word, topic))
+    if not matches:
+        return None
+    generic = {"ancient", "animal", "computer", "cell"}
+    specific = [item for item in matches if item[0] not in generic]
+    return (specific or matches)[0][1]
 
 
 def story_candidates(state, now):
