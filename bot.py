@@ -41,6 +41,11 @@ FEEDS = {
     "B92": "https://www.b92.net/rss/b92/info",
 }
 
+# Only for the current process. Feed-to-editor full-story context is kept
+# in memory for each candidate, never written as an external article copy.
+SOURCE_CONTEXT_CACHE: dict[str, list[str]] = {}
+
+
 PUBLISH_START_HOUR = 8
 PUBLISH_END_HOUR = 22  # no posts at or after 22:00 Belgrade local time
 MIN_PUBLICATION_INTERVAL_MINUTES = 90  # 1.5 hours between actual posts
@@ -973,6 +978,13 @@ def fetch_editorial_paragraphs(article: Article) -> list[str]:
         # Avoid huge pages; text article extraction handles first few MB.
         # Let the extractor detect HTML charset from the original bytes.
         paragraphs = extract_article_paragraphs(response.content[:2_000_000])
+        # The main post has 2-3 chosen paragraphs, but an editor cannot
+        # explain conditions and antecedents if the rest of the article is
+        # withheld. Preserve extra *source* text for fact-grounded review.
+        SOURCE_CONTEXT_CACHE[canonical_url(article.url)] = [
+            p for p in paragraphs[:24]
+            if 45 <= len(p) <= 1200
+        ][:14]
         result = select_news_paragraphs(paragraphs, article.title)
         if result:
             return result
@@ -1056,7 +1068,24 @@ def translate_article(article: Article, translator: FreeTranslator) -> tuple[str
     if len(translated) < 2 or sum(map(len, translated)) < 200:
         raise ValueError("Недостаточно содержания после перевода")
     draft = "\n\n".join(translated)
-    edited = edit_news(article.title, paragraphs_sr, title_ru, draft)
+    extra_context = SOURCE_CONTEXT_CACHE.pop(canonical_url(article.url), [])
+    # Keep all explicitly selected paragraphs and add supporting source
+    # paragraphs up to a bounded budget, e.g. the condition for an exception
+    # mentioned only near the middle of a long policy article.
+    editor_source = list(paragraphs_sr)
+    seen_facts = set(editor_source)
+    chars_budget = 5000 - sum(map(len, editor_source))
+    for block in extra_context:
+        if block in seen_facts or chars_budget < len(block):
+            continue
+        editor_source.append(block)
+        seen_facts.add(block)
+        chars_budget -= len(block)
+    edited = edit_news(article.title, editor_source, title_ru, draft)
+    LOG.info(
+        "ИИ получил %s смысловых блоков первоисточника (отобрано %s для чернового перевода)",
+        len(editor_source), len(paragraphs_sr),
+    )
     LOG.info(
         "Редакторский выпуск: %s абзаца, режим=%s, источник=%s",
         len(edited.paragraphs), edited.mode, article.source,
