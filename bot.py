@@ -310,15 +310,25 @@ NATIONAL_MILESTONES = (
     "izabran", "formiran", "nova vecina", "novu vecinu",
     "novu vlast", "nova vlast", "pocela sednica",
 )
+SECONDARY_PARLIAMENT_COVERAGE = (
+    "kafic", "gledanje prenosa", "prati se sednica", "interesovanje",
+    "docek", "okupljeni", "pristalice", "slavlje", "emocije",
+)
+
+
 MAJOR_PUBLIC_EMERGENCIES = (
     "poginuo pilot", "pad aviona", "pao mig", "avionsk nesrec",
-    "poginul", "tesk nesrec", "veliki pozar", "vanredna situacij",
+    "poginuli u nesreci", "tesk nesrec", "veliki pozar", "vanredna situacij",
 )
 
 
 def major_national_story(article: Article) -> bool:
     """Concrete Serbian parliamentary/government milestones, not opinions."""
     title = normalized_title(article.title)
+    # People watching a parliamentary broadcast in cafés, or a commentary
+    # about public interest, is NOT an institutional decision or milestone.
+    if contains_anchor(title, SECONDARY_PARLIAMENT_COVERAGE):
+        return False
     if contains_anchor(title, NATIONAL_INSTITUTIONS) and contains_anchor(
         title, NATIONAL_MILESTONES
     ):
