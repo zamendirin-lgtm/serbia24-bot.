@@ -432,10 +432,10 @@ def major_incident_story(article: Article) -> bool:
 def material_economic_proposal(article: Article) -> bool:
     """New tax/housing/wage programme proposals are news, NOT enacted law."""
     title = normalized_title(article.title)
-    program = contains_anchor(title, (
-        "ekonomsk program", "poresk program", "predstavila program",
-        "predstavili program", "ekonomsk mer", "poresk reform",
-    ))
+    program = (
+        contains_anchor(title, ("ekonomsk", "poresk", "privred"))
+        and contains_anchor(title, ("program", "predlog", "mer", "reform"))
+    )
     targeted = contains_anchor(title, (
         "studentsk list", "porez", "nekretnin", "stanov", "privred",
         "zarad", "plata", "penzij",
