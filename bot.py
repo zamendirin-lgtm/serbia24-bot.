@@ -298,6 +298,70 @@ PUBLIC_IMPORTANCE = (
     "zatvaranj", "otvaranj", "poplav", "pozar", "saobracajn nesrec",
     "radov", "nestasic", "hitn", "bezbednost", "kriz",
 )
+# Important changes to the country's institutions must never rank below
+# ordinary lifestyle news merely because the headlines have no prices.
+NATIONAL_INSTITUTIONS = (
+    "skupstin", "parlament", "poslanic", "poslanik",
+    "vlada", "vladu", "vlast", "studentska lista",
+)
+NATIONAL_MILESTONES = (
+    "konstitutivn", "zakletv", "polozil", "polozen",
+    "mandat", "potvrdjen", "potvrden", "potvrdjena",
+    "izabran", "formiran", "nova vecina", "novu vecinu",
+    "novu vlast", "nova vlast", "pocela sednica",
+)
+MAJOR_PUBLIC_EMERGENCIES = (
+    "poginuo pilot", "pad aviona", "pao mig", "avionsk nesrec",
+    "poginul", "tesk nesrec", "veliki pozar", "vanredna situacij",
+)
+
+
+def major_national_story(article: Article) -> bool:
+    """Concrete Serbian parliamentary/government milestones, not opinions."""
+    title = normalized_title(article.title)
+    if contains_anchor(title, NATIONAL_INSTITUTIONS) and contains_anchor(
+        title, NATIONAL_MILESTONES
+    ):
+        return True
+    return any(
+        phrase in title for phrase in (
+            "srbija dobija novu vlast",
+            "formirana nova vlada",
+            "izabrana nova vlada",
+            "potvrdjena nova vecina u skupstini",
+            "potvrdena nova vecina u skupstini",
+        )
+    )
+
+
+def public_safety_breaking_story(article: Article) -> bool:
+    """Important loss-of-life/safety events should not score zero."""
+    title = normalized_title(article.title)
+    return contains_anchor(title, MAJOR_PUBLIC_EMERGENCIES)
+
+
+def parliamentary_milestone_stage(title: str) -> str:
+    """Different verified milestones are distinct news, not copy-paste posts."""
+    t = normalized_title(title)
+    if not contains_anchor(t, ("skupstin", "parlament", "poslanic", "poslanik")):
+        return ""
+    if contains_anchor(t, ("izabran predsednik skupstine", "predsednik skupstine izabran")):
+        return "leadership"
+    if contains_anchor(t, ("zakletv", "polozil", "polozen")):
+        return "oath"
+    if contains_anchor(t, ("potvrdjen", "potvrden", "potvrdjena", "mandat", "nova vecina", "novu vecinu")):
+        return "mandates"
+    if contains_anchor(t, ("konstitutivn", "pocela", "pocinje", "sednica", "prvo zasedanj")):
+        return "opening"
+    return ""
+
+
+def different_parliamentary_milestones(new_title: str, old_title: str) -> bool:
+    newer = parliamentary_milestone_stage(new_title)
+    older = parliamentary_milestone_stage(old_title)
+    return bool(newer and older and newer != older)
+
+
 LOW_VALUE_TOPICS = (
     "utakmic", "mec", "fudbal", "odboj", "vaterpol", "kosark",
     "liga nacij", "rezultat", "gol", "trener", "transfer",
@@ -337,6 +401,10 @@ def news_interest_score(article: Article, now: datetime) -> int:
     summary = normalized_title(article.summary[:650])
     price_story = is_price_story(article)
     score = 0
+    if major_national_story(article):
+        score += 18
+    elif public_safety_breaking_story(article):
+        score += 15
     if price_story:
         score += 10
         if price_figure(article.title + " " + article.summary):
@@ -500,7 +568,10 @@ def is_duplicate(article: Article, state: dict, threshold: float = 0.86) -> bool
         return True
     title = normalized_title(article.title)
     for record in state.get("posted", []):
-        if same_event_title(title, record.get("title_norm", ""), threshold):
+        previous_title = record.get("title_norm", "")
+        if different_parliamentary_milestones(title, previous_title):
+            continue
+        if same_event_title(title, previous_title, threshold):
             return True
         if same_event_summary(article, record, title):
             return True
