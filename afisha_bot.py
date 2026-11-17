@@ -35,7 +35,9 @@ MAX_LINKS = 32
 MAX_POSTS = 1  # only one good event per run
 PRICE_UNKNOWN = "не указана"
 MAX_DAILY_POSTS = 5
-SELECTION_POOL = 12
+SELECTION_POOL = 24
+MARQUEE_LOOKAHEAD_DAYS = 300
+MONTHLY_REMINDER_DAYS = 30
 MIN_INTEREST_SCORE = 52
 FIRST_POST_ONLY_DATE = date(2026, 11, 13)
 CITY_NAMES = {
@@ -410,16 +412,56 @@ def collect_official_events(session: requests.Session, now: datetime) -> list[Ev
     return found
 
 
+def is_marquee_event(event: Event) -> bool:
+    """Require strong, attributable evidence before allowing early announcements.
+
+    Recognised large festivals may be promoted months ahead. Other culture
+    events qualify only at major venues with a real event page, substantive
+    description and a poster or verified ticket link. An arbitrary 'festival'
+    listing should not trigger monthly reminders.
+    """
+    title = clean(event.title, 150).casefold()
+    venue = clean(event.venue, 140).casefold()
+    source = (urlparse(event.url).hostname or "").removeprefix("www.")
+    festival_name = re.search(
+        r"\b(?:exit(?:\s+festival)?|nisville|nišville|lovefest|beer\s*fest|"
+        r"arsenal\s*fest|guča|guca|bemus|filmski\s+festival\s+fest)\b",
+        title, re.IGNORECASE,
+    ) is not None
+    if festival_name and (source == "exitfest.org" or (
+        len(clean(event.description, 500)) >= 65 and
+        bool(event.city) and bool(event.venue)
+    )):
+        return True
+    major_hosts = (
+        "savacentar.rs", "arenabeograd.com", "prodaja.snp.org.rs",
+    )
+    major_venues = (
+        "сaва центар", "сава центар", "sava centar", "plava dvorana",
+        "beogradska arena", "белградская арена",
+        "mts dvorana", "dom omladine", "kolarac", "коларац",
+        "srpsko narodno", "сербский национальный театр",
+        "spens", "спенс",
+    )
+    cultural = event_topic(event) in ("festival", "concert", "theatre", "family")
+    return (
+        cultural and len(clean(event.description, 600)) >= 75
+        and (bool(event.image) or bool(event.ticket_url))
+        and (source in major_hosts or any(v in venue for v in major_venues))
+    )
+
+
 def event_in_window(event: Event, now: datetime) -> bool:
-    local_today = now.date()
+    local_today = now.astimezone(TZ).date()
     if event.end and event.end < event.start:
         return False
     if event.end:
-        if event.end.date() < local_today:
+        if event.end.astimezone(TZ).date() < local_today:
             return False
-    elif event.start.date() < local_today:
+    elif event.start.astimezone(TZ).date() < local_today:
         return False
-    return event.start.date() <= local_today + timedelta(days=75)
+    limit = MARQUEE_LOOKAHEAD_DAYS if is_marquee_event(event) else 75
+    return event.start.astimezone(TZ).date() <= local_today + timedelta(days=limit)
 
 
 def load_curated_events(now: datetime) -> list[Event]:
@@ -515,7 +557,7 @@ def normalize_sava_description(description: str) -> str:
     return value
 
 
-def format_event(event: Event, title_ru: str = "", description_ru: str = "") -> str:
+def format_event(event: Event, title_ru: str = "", description_ru: str = "", *, reminder: bool = False) -> str:
     title = html.escape(title_ru or event.title)
     description = html.escape(normalize_sava_description(description_ru)) if description_ru else (
         "Подробная программа и условия — на странице организатора."
@@ -547,7 +589,8 @@ def format_event(event: Event, title_ru: str = "", description_ru: str = "") -> 
         if ticket else ""
     )
     return (
-        f"🎭 <b>{title}</b>\n\n"
+        (f"🔔 <b>Напоминаем о предстоящем событии</b>\n\n" if reminder else "")
+        + f"🎭 <b>{title}</b>\n\n"
         f"📅 <b>Дата:</b> {when}\n"
         f"📍 <b>Город:</b> {html.escape(event.city)}{venue}\n"
         f"🎟 <b>Цена:</b> {html.escape(event.price)}\n\n"
@@ -792,48 +835,91 @@ def same_real_event(event: Event, previous: dict) -> bool:
     return SequenceMatcher(None, slug, prev_slug).ratio() >= 0.90
 
 
+def same_edition(event: Event, previous: dict) -> bool:
+    """Same real dated event, even if published under another source URL.
+
+    A different year or different date is a new occurrence, not a duplicate.
+    Old bot records may lack title/venue, but always contain a source URL.
+    """
+    if not isinstance(previous, dict) or previous.get("corrected_test"):
+        return False
+    old_start = parse_date(previous.get("event_start"))
+    if not old_start or old_start.astimezone(TZ).date() != event.start.astimezone(TZ).date():
+        return False
+    if same_real_event(event, previous):
+        return True
+    if (previous.get("title") and previous.get("venue")
+        and clean(str(previous["title"]), 130).casefold() == clean(event.title, 130).casefold()
+        and clean(str(previous["venue"]), 130).casefold() == clean(event.venue, 130).casefold()
+        and clean(str(previous.get("city", "")), 90).casefold() == clean(event.city, 90).casefold()):
+        return True
+    return False
+
+
+def edition_history(event: Event, seen: dict) -> list[dict]:
+    return [row for row in seen.values() if same_edition(event, row)]
+
+
+def monthly_reminder_due(event: Event, seen: dict, now: datetime) -> bool:
+    """Monthly reminders for genuinely major events, never for routine gigs."""
+    history = edition_history(event, seen)
+    if not history or not is_marquee_event(event):
+        return False
+    if event.start.astimezone(TZ).date() <= now.astimezone(TZ).date():
+        return False
+    dates = [parse_date(row.get("published_at")) for row in history]
+    # If publication dates are missing, fail closed rather than spam.
+    if not dates or any(d is None for d in dates):
+        return False
+    return (now - max(dates)).total_seconds() >= MONTHLY_REMINDER_DAYS * 86400
+
+
+def eligible_for_post(event: Event, seen: dict, now: datetime) -> bool:
+    if not event_in_window(event, now) or is_routine_sports_fixture(event):
+        return False
+    history = edition_history(event, seen)
+    return not history or monthly_reminder_due(event, seen, now)
+
+
 def select(events: list[Event], seen: dict, now: datetime) -> list[Event]:
-    """Rank by useful details, novelty, type and near-term date, never random order."""
+    """Prioritize nearby new events; keep measured major-event reminders."""
     daily = posted_today(seen, now)
     if len(daily) >= MAX_DAILY_POSTS:
         return []
     posted_topics = [r.get("topic", "") for r in daily]
-    past_series = {
-        event_series_key(row.get("url", ""))
-        for row in seen.values() if isinstance(row, dict) and row.get("url")
-    }
     deduped = {}
-    past_records = [row for row in seen.values() if isinstance(row, dict)]
-    for e in events:
-        if e.key in seen or not event_in_window(e, now):
+    for event in events:
+        if not eligible_for_post(event, seen, now):
             continue
-        if is_routine_sports_fixture(e):
+        key = (event_series_key(event.url), event.start.astimezone(TZ).date())
+        if key in deduped:
             continue
-        series = event_series_key(e.url)
-        if series in past_series or series in deduped:
-            continue
-        # The source sometimes publishes the same performance under a revised
-        # transliteration/slug. Same event must be announced just once.
-        if any(same_real_event(e, row) for row in past_records):
-            continue
-        if any(same_real_event(e, {
+        if any(same_edition(event, {
             "url": other.url, "event_start": other.start.isoformat(),
-            "city": other.city, "venue": other.venue, "title": other.title,
+            "title": other.title, "city": other.city, "venue": other.venue,
         }) for other in deduped.values()):
             continue
-        deduped[series] = e
+        deduped[key] = event
     scored = []
-    for e in deduped.values():
-        topic = event_topic(e)
+    for event in deduped.values():
+        topic = event_topic(event)
         penalty = posted_topics.count(topic) * 9 if topic != "other" else 0
-        score = interest_score(e, now) - penalty
+        score = interest_score(event, now) - penalty
+        days = (event.start.astimezone(TZ).date() - now.astimezone(TZ).date()).days
+        # Never crowd out compelling next-week plans with distant festival ads.
+        if days > 75:
+            score -= 16
+        if monthly_reminder_due(event, seen, now):
+            score -= 15
         if score >= MIN_INTEREST_SCORE:
-            scored.append((score, e))
-    scored.sort(key=lambda pair: (
-        -pair[0], max((pair[1].start.date()-now.date()).days, 0),
-        pair[1].title,
+            scored.append((score, event))
+    scored.sort(key=lambda item: (
+        -item[0],
+        max((item[1].start.astimezone(TZ).date() - now.astimezone(TZ).date()).days, 0),
+        item[1].title,
     ))
-    return [e for _, e in scored[:SELECTION_POOL]]
+    return [event for _, event in scored[:SELECTION_POOL]]
+
 
 
 def _official_poster(url: str) -> bool:
@@ -1004,12 +1090,13 @@ def main() -> int:
     print(f"Event candidates: {len(events)}, ranked shortlist: {len(shortlisted)}, "
           f"today already: {daily_count}/{MAX_DAILY_POSTS}.")
     published = False
-    for event in shortlisted[:5]:
+    for event in shortlisted[:10]:
         # Require AI editorial approval and an adequate interest score.
         approved = edit_event(event)
         if approved is None:
             continue
-        post = format_event(event, approved.title_ru, approved.summary_ru)
+        reminder = monthly_reminder_due(event, seen, now)
+        post = format_event(event, approved.title_ru, approved.summary_ru, reminder=reminder)
         if not publication_allowed(datetime.now(TZ), initial=initial, seen=seen):
             print("Publication blocked: quiet hours started before message could be sent.")
             return 0
@@ -1036,7 +1123,13 @@ def main() -> int:
                     print("Licensed image credit would exceed Telegram caption size; keeping full text.")
         if publish(session, token, chat, post, event.url, chosen_image,
                    licensed_commons=licensed_commons):
-            seen[event.key] = {
+            # Preserve the original event key on first publication, but keep
+            # separate history records for monthly reminders of the same edition.
+            history_key = (
+                hashlib.sha256((event.key + "|" + now.isoformat()).encode("utf8")).hexdigest()
+                if reminder else event.key
+            )
+            seen[history_key] = {
                 "url": event.url,
                 "event_start": event.start.isoformat(),
                 "published_at": now.isoformat(),
@@ -1045,6 +1138,7 @@ def main() -> int:
                 "title": event.title,
                 "city": event.city,
                 "venue": event.venue,
+                "reminder": reminder,
             }
             STATE.parent.mkdir(parents=True, exist_ok=True)
             STATE.write_text(json.dumps(seen, ensure_ascii=False, indent=2) + "\n",
