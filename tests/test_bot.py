@@ -19,6 +19,9 @@ from bot import (
     image_dhash, photo_url_key, is_repeated_photo,
     news_interest_score, rank_news, price_figure, is_price_story, MIN_INTEREST_SCORE,
     major_national_story, public_safety_breaking_story,
+    major_incident_story, material_economic_proposal,
+    significant_medical_opening, major_cultural_announcement,
+    major_infrastructure_milestone, benchmark_news_category,
     parliamentary_milestone_stage, different_parliamentary_milestones,
 )
 
@@ -173,6 +176,94 @@ class NewsBotTests(unittest.TestCase):
         self.assertGreaterEqual(
             news_interest_score(a, datetime.fromtimestamp(ts, timezone.utc)), 10
         )
+
+    def test_reader_examples_six_categories_are_relevant_and_high_priority(self):
+        now = datetime(2026, 11, 17, 15, 0, tzinfo=timezone.utc)
+        cases = [
+            ("serious_incident",
+             "Više od 15 dece povređeno na pokretnim stepenicama u tržnom centru Galerija u Beogradu",
+             "Hitna pomoć stigla u Beograd.", 18),
+            ("serious_incident",
+             "Srušio se vojni avion kod Stare Pazove",
+             "Policija i hitna pomoć na mestu nesreće kod Stare Pazove.", 18),
+            ("economic_proposal",
+             "Studentska lista predstavila ekonomski program: porez na nekretnine",
+             "Predlog novih poreskih mera u Srbiji.", 12),
+            ("healthcare_opening",
+             "Prvi specijalizovani centar za buloznu epidermolizu otvoren u Beogradu",
+             "Klinika u Beogradu primaće pacijente.", 12),
+            ("major_festival",
+             "EXIT objavio datume povratka u Novi Sad: festival od 1. do 4. jula 2027",
+             "U Novom Sadu će biti organizovan festival.", 10),
+            ("major_infrastructure",
+             "EXPO 2027: Paviljoni se predaju učesnicima od 1. decembra",
+             "Gradilište u Surčinu kraj Beograda.", 12),
+        ]
+        for i, (expected_category, title, summary, minimum) in enumerate(cases):
+            with self.subTest(title=title):
+                item = Article("RTS", title,
+                               f"https://rts.rs/test/readers-example-{i}",
+                               summary, now.timestamp() - 300)
+                self.assertTrue(relevant(item))
+                self.assertEqual(benchmark_news_category(item), expected_category)
+                self.assertGreaterEqual(news_interest_score(item, now), minimum)
+
+    def test_first_center_not_mistaken_for_any_clinic_mention(self):
+        now = datetime(2026, 11, 17, 15, 0, tzinfo=timezone.utc)
+        first = Article(
+            "RTS", "U Beogradu otvoren prvi specijalizovani centar za retke bolesti",
+            "https://rts.rs/first", "", now.timestamp()
+        )
+        routine = Article(
+            "RTS", "Doktor je govorio o pregledu u bolnici u Beogradu",
+            "https://rts.rs/routine", "", now.timestamp()
+        )
+        self.assertTrue(significant_medical_opening(first))
+        self.assertFalse(significant_medical_opening(routine))
+        self.assertGreater(news_interest_score(first, now), news_interest_score(routine, now))
+
+    def test_minor_concert_stays_below_major_exit_announcement(self):
+        now = datetime(2026, 11, 17, 15, 0, tzinfo=timezone.utc)
+        exit_story = Article(
+            "021", "EXIT se vraća u Novi Sad 2027: najavljeni datumi festivala",
+            "https://021.rs/exit", "Festival u Novom Sadu.", now.timestamp()
+        )
+        small = Article(
+            "Danas", "Lokalni koncert u Beogradu u kafiću večeras",
+            "https://danas.rs/koncert", "", now.timestamp()
+        )
+        self.assertTrue(major_cultural_announcement(exit_story))
+        self.assertFalse(major_cultural_announcement(small))
+        self.assertGreater(news_interest_score(exit_story, now),
+                           news_interest_score(small, now))
+
+    def test_economic_proposal_is_not_automatically_an_enacted_law(self):
+        now = datetime(2026, 11, 17, 15, 0, tzinfo=timezone.utc)
+        article = Article(
+            "N1", "Studentska lista predlaže ekonomski program: porez na nekretnine",
+            "https://n1info.rs/program", "Predlog za građane Srbije.", now.timestamp(),
+        )
+        self.assertFalse(major_national_story(article))
+        self.assertTrue(material_economic_proposal(article))
+
+    def test_foreign_expo_without_serbia_link_stays_excluded(self):
+        now = datetime(2026, 11, 17, 15, 0, tzinfo=timezone.utc)
+        article = Article(
+            "Danas", "EXPO 2027 u Japanu: pripreme za svetski sajam",
+            "https://danas.rs/foreign-expo", "Sajam u Japanu.", now.timestamp(),
+        )
+        self.assertFalse(relevant(article))
+
+    def test_incidents_without_factual_support_not_manufactured(self):
+        now = datetime(2026, 11, 17, 15, 0, tzinfo=timezone.utc)
+        news = Article(
+            "N1", "Pad vojnog aviona kod Stare Pazove: istraga u toku",
+            "https://n1info.rs/plane", "Još nema potvrde o žrtvama.", now.timestamp(),
+        )
+        self.assertTrue(major_incident_story(news))
+        # Scores indicate priority, not evidence about injuries, aircraft type,
+        # deaths, victims or official causes.
+        self.assertNotIn("poginu", normalized_title(news.title))
 
     def test_reader_interest_prioritizes_real_prices_over_sports(self):
         ts = datetime.now(timezone.utc).timestamp()
