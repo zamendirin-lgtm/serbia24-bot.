@@ -66,6 +66,39 @@ class NewsBotTests(unittest.TestCase):
                     15,
                 )
 
+    def test_parliament_cafes_not_mistaken_for_historic_decision(self):
+        now = datetime.now(timezone.utc)
+        article = Article(
+            "N1",
+            '"Da podelimo ovu radost": Novosadski kafići puni od ranog jutra, prati se konstitutivna sednica Skupštine',
+            "https://n1info.rs/vesti/kafici",
+            "Ljudi gledaju prenos Skupštine iz kafica.",
+            now.timestamp()
+        )
+        self.assertFalse(major_national_story(article))
+        self.assertLess(news_interest_score(article, now), 15)
+
+    def test_article_about_interest_in_parliament_is_not_official_event(self):
+        now = datetime.now(timezone.utc)
+        article = Article(
+            "N1",
+            "AP: Veliko interesovanje za konstitutivnu sednicu Skupštine Srbije",
+            "https://n1info.rs/vesti/reakcija",
+            "Građani prate početak rada parlamenta.",
+            now.timestamp()
+        )
+        self.assertFalse(major_national_story(article))
+
+    def test_obituary_hero_profile_not_mistaken_for_new_crash(self):
+        now = datetime.now(timezone.utc)
+        article = Article(
+            "B92",
+            "Poginuli major Goran Bulajić bio je heroj Srbije kada je Obrenovac bio pod vodom",
+            "https://b92.net/vesti/pilot-heroj", "",
+            now.timestamp()
+        )
+        self.assertFalse(public_safety_breaking_story(article))
+
     def test_major_news_rank_above_minor_price_notice_and_seminar(self):
         ts = datetime.now(timezone.utc).timestamp()
         political = Article(
