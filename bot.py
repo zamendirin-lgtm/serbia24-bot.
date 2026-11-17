@@ -39,6 +39,8 @@ FEEDS = {
     "N1": "https://n1info.rs/feed/",
     "Danas": "https://www.danas.rs/feed/",
     "B92": "https://www.b92.net/rss/b92/info",
+    "Nova.rs": "https://nova.rs/feed/",
+    "Euronews Srbija": "https://www.euronews.rs/rss/srbija",
 }
 
 # Only for the current process. Feed-to-editor full-story context is kept
