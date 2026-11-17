@@ -89,7 +89,7 @@ class NewsBotTests(unittest.TestCase):
         old = "BLOG: Danas konstitutivna sednica Skupštine Srbije"
         stage = "Poslanici Skupštine Srbije položili zakletvu"
         self.assertEqual(parliamentary_milestone_stage(old), "opening")
-        self.assertEqual(parliamentary_milestone_stage(stage), "oath")
+        self.assertEqual(parliamentary_milestone_stage(stage), "constituted")
         self.assertTrue(different_parliamentary_milestones(stage, old))
         a = Article("N1", stage, "https://n1info.rs/skupstina-zakletva",
                     "Potvrđeni mandati 250 narodnih poslanika.",now)
@@ -99,6 +99,22 @@ class NewsBotTests(unittest.TestCase):
             "source": "RTS", "ts": now - 2*3600
         }]}
         self.assertFalse(is_duplicate(a, state))
+
+    def test_confirmed_majority_after_oath_same_day_is_duplicate(self):
+        now = datetime.now(timezone.utc).timestamp()
+        established = "Poslanici Skupštine Srbije položili zakletvu"
+        later = Article(
+            "RTS", "Potvrđena nova većina u Skupštini Srbije",
+            "https://rts.rs/politika/nova-vecina", "", now + 3600
+        )
+        state = {"seen": {}, "posted": [{
+            "title_norm": normalized_title(established),
+            "source": "Tanjug", "ts": now,
+        }]}
+        self.assertEqual(
+            parliamentary_milestone_stage(later.title), "constituted"
+        )
+        self.assertTrue(is_duplicate(later, state))
 
     def test_repeated_coverage_of_same_oath_is_still_duplicate(self):
         now = datetime.now(timezone.utc).timestamp()
