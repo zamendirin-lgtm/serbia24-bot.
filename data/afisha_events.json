@@ -1,1 +1,30 @@
-[]
+[
+  {
+    "approved": true,
+    "url": "https://belgradelife.com/en/events/booze-glory",
+    "title": "Booze & Glory — концерт в Белграде",
+    "city": "Белград",
+    "venue": "Nova Zappa Barka",
+    "start": "2026-11-22T19:00:00+01:00",
+    "description": "Лондонская street-punk группа Booze & Glory впервые выступит в Белграде. Концерт пройдёт 22 ноября на Zappa Barka возле Калемегдана. Начало в 19:00. Билеты продаёт Gigstix; стоимость обычного билета 3 700 динаров, VIP на балконе — 5 500.",
+    "category": "Concert",
+    "price": "обычный — 3 700 дин., VIP — 5 500 дин. (Gigstix)",
+    "ticket_url": "https://new.gigstix.com/event/booze-and-glory-beograd-22-novembar-2026/",
+    "image": "",
+    "image_permission": false
+  },
+  {
+    "approved": true,
+    "url": "https://www.exitfest.org/exit-2027",
+    "title": "EXIT 2027 — возвращение фестиваля в Нови-Сад",
+    "city": "Нови-Сад",
+    "venue": "Петроварадинская крепость",
+    "start": "2027-07-01T00:00:00+02:00",
+    "end": "2027-07-04T23:59:00+02:00",
+    "description": "Фестиваль EXIT возвращается в Нови-Сад 1–4 июля 2027 года со специальной программой. Организаторы объявили возвращение сцен Dance Arena и No Sleep. Первый день предназначен для студентов Сербии с бесплатным входом; продажа билетов на последующие дни ожидается позже. Полноформатный фестиваль заявлен на 2028 год.",
+    "category": "Festival",
+    "price": "не указана",
+    "image": "",
+    "image_permission": false
+  }
+]
