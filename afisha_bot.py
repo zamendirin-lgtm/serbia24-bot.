@@ -846,7 +846,21 @@ def same_edition(event: Event, previous: dict) -> bool:
     if not isinstance(previous, dict) or previous.get("corrected_test"):
         return False
     old_start = parse_date(previous.get("event_start"))
-    if not old_start or old_start.astimezone(TZ).date() != event.start.astimezone(TZ).date():
+    source_series = event_series_key(str(previous.get("url", "")))
+    current_series = event_series_key(event.url)
+    # Older history records sometimes contain URL only. Fail closed when
+    # the same source series was already published, instead of reposting.
+    if not old_start:
+        return bool(previous.get("url") and source_series == current_series)
+    # Multiple dated records from a single exhibition aren't new events.
+    # An exhibition in a DIFFERENT year is a new annual edition.
+    if (
+        source_series == current_series
+        and (event_topic(event) == "exhibition" or previous.get("topic") == "exhibition")
+        and old_start.year == event.start.year
+    ):
+        return True
+    if old_start.astimezone(TZ).date() != event.start.astimezone(TZ).date():
         return False
     if same_real_event(event, previous):
         return True
@@ -880,6 +894,10 @@ def eligible_for_post(event: Event, seen: dict, now: datetime) -> bool:
     if not event_in_window(event, now) or is_routine_sports_fixture(event):
         return False
     history = edition_history(event, seen)
+    # Legacy state can have an event hash without complete row metadata.
+    # Treat it as posted, rather than bypassing duplicate protection.
+    if event.key in seen and not history:
+        return False
     return not history or monthly_reminder_due(event, seen, now)
 
 
@@ -893,7 +911,9 @@ def select(events: list[Event], seen: dict, now: datetime) -> list[Event]:
     for event in events:
         if not eligible_for_post(event, seen, now):
             continue
-        key = (event_series_key(event.url), event.start.astimezone(TZ).date())
+        series = event_series_key(event.url)
+        key = (series, "exhibition" if event_topic(event) == "exhibition"
+               else event.start.astimezone(TZ).date())
         if key in deduped:
             continue
         if any(same_edition(event, {
