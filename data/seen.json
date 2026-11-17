@@ -57,7 +57,8 @@
     "cc4c926583e402bad53c84b2": 1794838569.034125,
     "e8df2e698d4721825ac1e874": 1794845979.858723,
     "68e8c2e20a04cf8484f4706c": 1794853775.560795,
-    "8bf7cdee077d1c1f73053be5": 1794860858.819275
+    "8bf7cdee077d1c1f73053be5": 1794860858.819275,
+    "4939434f6d81637e38ef6b4f": 1794899890.50067
   },
   "photos": {
     "50f559ee5d138a92c244ad4c": 1794474084.088928,
@@ -102,7 +103,8 @@
     "f70f5bb9c6b17846b6ab44ae": 1794824830.780979,
     "64b91f20be4229cd0112405f": 1794838569.034125,
     "acd464c39bd11722dd1216d7": 1794853775.560795,
-    "004fb8eefd4495555086c819": 1794860858.819275
+    "004fb8eefd4495555086c819": 1794860858.819275,
+    "216ff69545497a9c870aeb02": 1794899890.50067
   },
   "phashes": {
     "2ceefee6566d6666": 1794474084.088928,
@@ -147,7 +149,8 @@
     "b28e9e4d4d95e260": 1794824830.780979,
     "c6e4e6e6c747c795": 1794838569.034125,
     "1b190c5434343474": 1794853775.560795,
-    "9e3d1d1919581c1e": 1794860858.819275
+    "9e3d1d1919581c1e": 1794860858.819275,
+    "07c04e1733336d4d": 1794899890.50067
   },
   "posted": [
     {
@@ -493,6 +496,16 @@
       "title_norm": "portal nova grad beograd blokirao rachun alta banke na dan oduzimanja dozvole za rad",
       "summary_norm": "sekretarijat za finansije grada beograda aktivirao je menitsu i blokirao rachun alta banke na dan kada joj je narodna banka srbije oduzela dozvolu za rad objavio je portal nova pozivajutshi se na odgovor nbs banka je narednog dana bila u blokadi od milijardu dinara ali nije poznato koliki iznos grad beograd potrazhuje",
       "source": "RTS"
+    },
+    {
+      "ts": 1794899890.50067,
+      "title_norm": "hitna pomoc noc u beogradu bez saobracajnih nezgoda",
+      "summary_norm": "noc u beogradu protekla je bez saobracajnih nezgoda receno je beti u hitnoj pomoci",
+      "source": "N1",
+      "published_title_ru": "Ночь в Белграде прошла без дорожно‑транспортных происшествий, сообщает служба экстренной помощи",
+      "published_text_ru": "Бетти из службы экстренной помощи заявила, что за прошедшую ночь в Белграде не зафиксировано ни одного дорожно‑транспортного происшествия.\n\nДежурные бригады вмешивались в 136 случаев, из них 29 раз — в общественных местах. Наибольшее количество вызовов поступило от хронически больных пациентов.",
+      "article_url": "https://n1info.rs/vesti/hitna-pomoc-noc-u-beogradu-bez-saobracajnih-nesreca-pacijenti",
+      "caption_text": "🚗\nНочь в Белграде прошла без дорожно‑транспортных происшествий, сообщает служба экстренной помощи\nБетти из службы экстренной помощи заявила, что за прошедшую ночь в Белграде не зафиксировано ни одного дорожно‑транспортного происшествия.\n\nДежурные бригады вмешивались в 136 случаев, из них 29 раз — в общественных местах. Наибольшее количество вызовов поступило от хронически больных пациентов.\n\n🔗\nИсточник: N1"
     }
   ]
 }
