@@ -130,6 +130,7 @@ SERBIA_LOCATIONS = (
     "jagod", "vranj", "sremsk", "smederev", "prokupl", "bor",
     "kikind", "pirot", "ruma", "indjij", "back", "zlatibor",
     "mladenov", "cukaric", "palilul", "kosjer",
+    "surcin", "pazov",
 )
 SERBIA_ACTORS = (
     "vucic", "brnabic", "dacic", "vulin", "ruzic", "mup srbije",
@@ -154,6 +155,10 @@ LOCAL_TOPIC_MARKERS = (
     "plata", "penzij", "policij", "hapsen", "protest", "zakon",
     "izbor", "skol", "vrtic", "saobrac", "put", "stan", "zdrav",
     "radnik", "vlada", "ministar", "grad", "sport", "fabrika",
+    "povred", "nesrec", "escalator", "eskalator", "pokretn",
+    "bolnic", "klin", "epidermoliz", "lecenj", "retk bolest",
+    "expo", "gradil", "izgrad", "infrastruk", "projekat",
+    "festival", "festiv", "program",
 )
 
 
@@ -265,6 +270,16 @@ def relevant(article: Article) -> bool:
         return contains_anchor(title, SERBIA_LOCATIONS + SERBIA_ACTORS)
 
     if has_serbia_anchor(title, article.title):
+        return True
+
+    # These names refer to Serbian venues/major local projects when the
+    # accompanying feed description explicitly confirms a Serbian location.
+    # Don't use generic "EXPO" or "Galerija" alone as evidence of geography.
+    if (
+        contains_anchor(title, ("expo 2027", "exit festival", "festival exit",
+                                "tc galerija", "trzni centar galerija"))
+        and has_serbia_anchor(summary, article.summary[:450])
+    ):
         return True
 
     # Worldwide headlines can quote Serbian media in a generic summary.
@@ -381,6 +396,119 @@ LOW_VALUE_TOPICS = (
     "radionic", "seminar", "koncert", "izlozb", "premijer film",
     "horoskop", "rijaliti",
 )
+# Reference categories drawn from the editor's actual example posts.
+# These are TOPIC relevance indicators, not proof that any headline is true.
+SERIOUS_ACCIDENT_STEMS = (
+    "sud ar", "sudar", "nesrec", "povred", "stradal", "poginu",
+    "prevrnu", "srusio", "srusila", "pad", "pao", "pala", "zapal",
+)
+AVIATION_STEMS = ("avion", "mig 29", "vojni avion", "vazduhoplov", "letelic")
+ESCALATOR_STEMS = ("eskalator", "pokretn stepenic", "pokretnim stepenic")
+HISTORICAL_OR_COMMENTARY_STEMS = (
+    "godisnjic", "pre godinu", "pre pet godin", "secanje",
+    "istorij", "podsetimo", "nekad", "pre deset godin",
+)
+
+
+def major_incident_story(article: Article) -> bool:
+    """Accidents with broader public-safety significance, not old profiles."""
+    title = normalized_title(article.title)
+    if contains_anchor(title, HISTORICAL_OR_COMMENTARY_STEMS):
+        return False
+    if contains_anchor(title, AVIATION_STEMS) and contains_anchor(
+        title, SERIOUS_ACCIDENT_STEMS
+    ):
+        return True
+    if contains_anchor(title, ESCALATOR_STEMS) and contains_anchor(
+        title, ("deca", "dete", "povred", "trzni centar", "tc galerija")
+    ):
+        return True
+    if contains_anchor(title, ("vise dece", "petnaestoro dece", "povredjeno vise",
+                               "vise povredjenih", "masovna nesrec")):
+        return True
+    return False
+
+
+def material_economic_proposal(article: Article) -> bool:
+    """New tax/housing/wage programme proposals are news, NOT enacted law."""
+    title = normalized_title(article.title)
+    program = contains_anchor(title, (
+        "ekonomsk program", "poresk program", "predstavila program",
+        "predstavili program", "ekonomsk mer", "poresk reform",
+    ))
+    targeted = contains_anchor(title, (
+        "studentsk list", "porez", "nekretnin", "stanov", "privred",
+        "zarad", "plata", "penzij",
+    ))
+    return program and targeted
+
+
+def significant_medical_opening(article: Article) -> bool:
+    """New medical service or a first specialist center in Serbia."""
+    title = normalized_title(article.title)
+    care = contains_anchor(title, (
+        "centar", "klinik", "bolnic", "ordinacij", "lecenj",
+        "epidermoliz", "retk bolest",
+    ))
+    milestone = contains_anchor(title, (
+        "prvi", "prva", "otvoren", "otvorio", "pocinja rad",
+        "specijalizovan", "nov centar",
+    ))
+    return care and milestone and contains_anchor(title, (
+        "epidermoliz", "retk bolest", "specijalizovan", "bolnic",
+        "klinika", "centar",
+    ))
+
+
+def major_cultural_announcement(article: Article) -> bool:
+    """Major nationwide festivals with concrete dates; no routine gigs."""
+    title = normalized_title(article.title)
+    summary = normalized_title(article.summary[:550])
+    named = contains_anchor(title, (
+        "exit festival", "festival exit", "festival exit", "exit", "guca",
+        "beer fest", "nisville",
+    ))
+    meaningful = contains_anchor(title + " " + summary, (
+        "datum", "datumi", "jul", "avgust", "povrat", "vraca",
+        "besplat", "ulaz", "2027", "program", "najav",
+    ))
+    return named and meaningful and (
+        has_serbia_anchor(title, article.title)
+        or has_serbia_anchor(summary, article.summary[:550])
+    )
+
+
+def major_infrastructure_milestone(article: Article) -> bool:
+    """EXPO/building handovers, deadlines and substantial civic projects."""
+    title = normalized_title(article.title)
+    expo = "expo 2027" in title or "ekspo 2027" in title
+    project = expo or contains_anchor(title, (
+        "autoput", "most", "bolnic", "pruga", "zeleznic",
+        "sajamsk kompleks", "sajamski kompleks", "aerodrom",
+    ))
+    action = contains_anchor(title, (
+        "izgrad", "gradnj", "radov", "rok", "predaj", "otvar",
+        "zavrs", "kasni", "kasnjen", "pocinj", "spremn",
+        "planira", "najav",
+    ))
+    return project and action
+
+
+def benchmark_news_category(article: Article) -> str:
+    """Human-readable reason for prioritizing a story."""
+    if major_incident_story(article):
+        return "serious_incident"
+    if major_infrastructure_milestone(article):
+        return "major_infrastructure"
+    if material_economic_proposal(article):
+        return "economic_proposal"
+    if significant_medical_opening(article):
+        return "healthcare_opening"
+    if major_cultural_announcement(article):
+        return "major_festival"
+    return ""
+
+
 # Amounts need units. A year or an arrest count is not a consumer price.
 PRICE_AMOUNT_PATTERN = re.compile(
     r"(?<!\w)(?:\d[\d., ]{0,14}\s*(?:dinara|din|rsd|eur|evra|€|"
@@ -416,8 +544,18 @@ def news_interest_score(article: Article, now: datetime) -> int:
     score = 0
     if major_national_story(article):
         score += 18
+    elif major_incident_story(article):
+        score += 20
     elif public_safety_breaking_story(article):
         score += 15
+    category = benchmark_news_category(article)
+    score += {
+        "serious_incident": 0,  # already granted +20 above
+        "major_infrastructure": 15,
+        "economic_proposal": 15,
+        "healthcare_opening": 14,
+        "major_festival": 13,
+    }.get(category, 0)
     if price_story:
         score += 10
         if price_figure(article.title + " " + article.summary):
@@ -428,7 +566,12 @@ def news_interest_score(article: Article, now: datetime) -> int:
         score += 2
     if contains_anchor(title, PUBLIC_IMPORTANCE):
         score += 5
-    if contains_anchor(title, LOW_VALUE_TOPICS) and not price_story:
+    if (
+        contains_anchor(title, LOW_VALUE_TOPICS)
+        and not price_story
+        and not category
+        and not major_national_story(article)
+    ):
         score -= 8
     if any(x in title for x in ("izjavio", "izjava", "intervju", "porucio", "rekao")):
         score -= 2
