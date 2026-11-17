@@ -130,5 +130,15 @@
     "title": "Maccabi Tel Aviv vs Dubai (EuroLeague)",
     "city": "Белград",
     "venue": "Hala Aleksandar Nikolić (Pionir)"
+  },
+  "78cd86c9226b8c8d52e991028af0123bacbb66ce8cac47c18a49bfa1033655bd": {
+    "url": "https://savacentar.rs/dogadjaji/luca-minnelli/",
+    "event_start": "2026-11-18T00:00:00+01:00",
+    "published_at": "2026-11-17T08:18:28.094539+01:00",
+    "topic": "concert",
+    "ai_editor": "groq",
+    "title": "Luca Minnelli",
+    "city": "Белград",
+    "venue": "Сава Центар, Синий зал (Plava dvorana)"
   }
 }
