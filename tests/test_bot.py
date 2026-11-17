@@ -18,6 +18,8 @@ from bot import (
     translate_article, complete_sentences_for_budget,
     image_dhash, photo_url_key, is_repeated_photo,
     news_interest_score, rank_news, price_figure, is_price_story, MIN_INTEREST_SCORE,
+    major_national_story, public_safety_breaking_story,
+    parliamentary_milestone_stage, different_parliamentary_milestones,
 )
 
 
@@ -29,6 +31,98 @@ class NewsBotTests(unittest.TestCase):
         self.assertEqual(
             canonical_url("https://rts.rs/news/?utm_source=x&id=2#section"),
             "https://rts.rs/news?id=2",
+        )
+
+    def test_parliament_majority_confirmation_must_not_score_zero(self):
+        ts = datetime.now(timezone.utc).timestamp()
+        a = Article(
+            "N1", "Potvrđena nova većina u Skupštini Srbije",
+            "https://n1info.rs/vesti/vecina-2026",
+            "Na sednici potvrđeni mandati, Studentska lista ima 140 mesta.",
+            ts - 300,
+        )
+        self.assertTrue(relevant(a))
+        self.assertTrue(major_national_story(a))
+        self.assertGreaterEqual(
+            news_interest_score(a, datetime.fromtimestamp(ts, timezone.utc)), 15
+        )
+
+    def test_inaugural_session_and_new_government_are_important(self):
+        ts = datetime.now(timezone.utc).timestamp()
+        names = [
+            "Danas konstitutivna sednica Skupštine Srbije",
+            "Poslanici Skupštine Srbije položili zakletvu",
+            "Srbija dobija novu vlast",
+            "Izabrana nova vlada Srbije",
+        ]
+        for index, title in enumerate(names):
+            with self.subTest(title=title):
+                a = Article("RTS", title,
+                            f"https://rts.rs/vesti/politika/major-{index}",
+                            "", ts)
+                self.assertTrue(major_national_story(a))
+                self.assertGreaterEqual(
+                    news_interest_score(a, datetime.fromtimestamp(ts, timezone.utc)),
+                    15,
+                )
+
+    def test_major_news_rank_above_minor_price_notice_and_seminar(self):
+        ts = datetime.now(timezone.utc).timestamp()
+        political = Article(
+            "RTS", "Potvrđena nova većina u Skupštini Srbije",
+            "https://rts.rs/politika/vecina", "", ts - 800,
+        )
+        tiny = Article(
+            "Danas", "Cena parkinga u Srbiji povećana za 1 dinar",
+            "https://danas.rs/parking", "", ts - 50,
+        )
+        seminar = Article(
+            "Danas", "Radionica o koncentraciji u Kragujevcu",
+            "https://danas.rs/radionica", "", ts - 30,
+        )
+        ordered = rank_news([seminar,tiny,political],
+                            datetime.fromtimestamp(ts, timezone.utc))
+        self.assertEqual(ordered[0], political)
+
+    def test_new_parliament_oath_not_same_as_morning_session_announcement(self):
+        now = datetime.now(timezone.utc).timestamp()
+        old = "BLOG: Danas konstitutivna sednica Skupštine Srbije"
+        stage = "Poslanici Skupštine Srbije položili zakletvu"
+        self.assertEqual(parliamentary_milestone_stage(old), "opening")
+        self.assertEqual(parliamentary_milestone_stage(stage), "oath")
+        self.assertTrue(different_parliamentary_milestones(stage, old))
+        a = Article("N1", stage, "https://n1info.rs/skupstina-zakletva",
+                    "Potvrđeni mandati 250 narodnih poslanika.",now)
+        state = {"seen": {}, "posted": [{
+            "title_norm": normalized_title(old),
+            "summary_norm": normalized_title("Danas počela konstitutivna sednica."),
+            "source": "RTS", "ts": now - 2*3600
+        }]}
+        self.assertFalse(is_duplicate(a, state))
+
+    def test_repeated_coverage_of_same_oath_is_still_duplicate(self):
+        now = datetime.now(timezone.utc).timestamp()
+        old = "Poslanici Skupštine Srbije položili zakletvu"
+        a = Article(
+            "N1", "Skupština Srbije: poslanici položili zakletvu",
+            "https://n1info.rs/vesti/zakletva", "", now
+        )
+        state = {"seen": {}, "posted": [{
+            "title_norm": normalized_title(old),
+            "source": "RTS", "ts": now - 60
+        }]}
+        self.assertFalse(different_parliamentary_milestones(a.title, old))
+        self.assertTrue(is_duplicate(a, state))
+
+    def test_fatal_pilot_plane_crash_is_a_major_domestic_story(self):
+        ts = datetime.now(timezone.utc).timestamp()
+        a = Article(
+            "N1", "Poginuo pilot Vojske Srbije u padu aviona Mig-29",
+            "https://n1info.rs/vesti/avion", "", ts
+        )
+        self.assertTrue(public_safety_breaking_story(a))
+        self.assertGreaterEqual(
+            news_interest_score(a, datetime.fromtimestamp(ts, timezone.utc)), 10
         )
 
     def test_reader_interest_prioritizes_real_prices_over_sports(self):
