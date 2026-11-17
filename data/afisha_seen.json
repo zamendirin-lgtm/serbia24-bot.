@@ -140,5 +140,15 @@
     "title": "Luca Minnelli",
     "city": "Белград",
     "venue": "Сава Центар, Синий зал (Plava dvorana)"
+  },
+  "9af3014e7c796f6f17b501447e6ab4298aba31412702752bda40593a521b8c81": {
+    "url": "https://savacentar.rs/dogadjaji/krcko-orascic-2/",
+    "event_start": "2026-12-20T15:00:00+01:00",
+    "published_at": "2026-11-17T11:14:42.191809+01:00",
+    "topic": "theatre",
+    "ai_editor": "groq",
+    "title": "Krcko Oraščić",
+    "city": "Белград",
+    "venue": "Сава Центар, Синий зал (Plava dvorana)"
   }
 }
