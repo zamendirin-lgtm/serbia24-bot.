@@ -1,0 +1,39 @@
+name: Serbia24 verified parliament oath news
+
+on:
+  push:
+    paths:
+      - '.github/workflows/parliament-special.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: serbia24-news
+  cancel-in-progress: false
+
+jobs:
+  parliament-oath:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout latest publication history
+        uses: actions/checkout@v4
+        with:
+          ref: main
+      - name: Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install dependencies
+        run: python -m pip install -r requirements.txt
+      - name: Verify code tests
+        run: python -m unittest discover -s tests -q
+      - name: Publish official parliamentary oath milestone once, if limits permit
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHANNEL: '@serbia24live'
+        run: python -m scripts.publish_parliament_20261117
+      - name: Persist published Telegram history
+        run: python scripts/persist_history.py
