@@ -347,10 +347,13 @@ def parliamentary_milestone_stage(title: str) -> str:
         return ""
     if contains_anchor(t, ("izabran predsednik skupstine", "predsednik skupstine izabran")):
         return "leadership"
-    if contains_anchor(t, ("zakletv", "polozil", "polozen")):
-        return "oath"
-    if contains_anchor(t, ("potvrdjen", "potvrden", "potvrdjena", "mandat", "nova vecina", "novu vecinu")):
-        return "mandates"
+    # Confirmation of mandates and MPs taking the oath are one milestone:
+    # parliament is now constituted. Do not send two near-identical updates.
+    if contains_anchor(t, (
+        "zakletv", "polozil", "polozen", "potvrdjen", "potvrden",
+        "potvrdjena", "mandat", "nova vecina", "novu vecinu",
+    )):
+        return "constituted"
     if contains_anchor(t, ("konstitutivn", "pocela", "pocinje", "sednica", "prvo zasedanj")):
         return "opening"
     return ""
@@ -569,6 +572,17 @@ def is_duplicate(article: Article, state: dict, threshold: float = 0.86) -> bool
     title = normalized_title(article.title)
     for record in state.get("posted", []):
         previous_title = record.get("title_norm", "")
+        new_stage = parliamentary_milestone_stage(title)
+        old_stage = parliamentary_milestone_stage(previous_title)
+        if new_stage == old_stage == "constituted":
+            try:
+                previously_posted = float(record.get("ts", 0))
+            except (ValueError, TypeError):
+                previously_posted = 0
+            # A second headline about "mandates confirmed" is part of the
+            # very same inauguration as "MPs sworn in", not a new stage.
+            if abs(article.published_ts - previously_posted) < 24 * 3600:
+                return True
         if different_parliamentary_milestones(title, previous_title):
             continue
         if same_event_title(title, previous_title, threshold):
