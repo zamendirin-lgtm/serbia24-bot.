@@ -150,5 +150,15 @@
     "title": "Krcko Oraščić",
     "city": "Белград",
     "venue": "Сава Центар, Синий зал (Plava dvorana)"
+  },
+  "bb5c940f8d902cb3f02d5796002323a846e5b45405ea663926a6e2d563646022": {
+    "url": "https://savacentar.rs/dogadjaji/sledeci-put-kada-dotaknes-dno-7/",
+    "event_start": "2026-11-23T00:00:00+01:00",
+    "published_at": "2026-11-17T13:35:48.479435+01:00",
+    "topic": "other",
+    "ai_editor": "groq",
+    "title": "Sledeći put kada dotakneš dno",
+    "city": "Белград",
+    "venue": "Сава Центар, Синий зал (Plava dvorana)"
   }
 }
