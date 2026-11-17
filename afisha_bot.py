@@ -734,6 +734,8 @@ def interest_score(event: Event, now: datetime) -> int:
         "theatre": 11, "fair": 13, "exhibition": 10,
         "workshop": 9, "other": 3,
     }[topic]
+    if is_marquee_event(event):
+        score += 14  # allow distant headline events to clear quality threshold
     days = (event.start.date() - now.date()).days
     if 0 <= days <= 7:
         score += 16
