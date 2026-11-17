@@ -171,5 +171,16 @@
     "city": "Белград",
     "venue": "Сава Центар, Синий зал (Plava dvorana)",
     "reminder": false
+  },
+  "bdb8f9fafee9b252d843a58531a3e1c28b2d44d19e4d7633902da753079a0a14": {
+    "url": "https://savacentar.rs/dogadjaji/emeli-sande/",
+    "event_start": "2026-12-05T00:00:00+01:00",
+    "published_at": "2026-11-17T19:07:17.605214+01:00",
+    "topic": "concert",
+    "ai_editor": "groq",
+    "title": "Emeli Sandé",
+    "city": "Белград",
+    "venue": "Сава Центар, Синий зал (Plava dvorana)",
+    "reminder": false
   }
 }
