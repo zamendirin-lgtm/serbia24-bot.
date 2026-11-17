@@ -160,5 +160,16 @@
     "title": "Sledeći put kada dotakneš dno",
     "city": "Белград",
     "venue": "Сава Центар, Синий зал (Plava dvorana)"
+  },
+  "643ea294afcb1bc7bf1ca49dabb3532f0ee599b144d1ce4caa54ed2eb16b104d": {
+    "url": "https://savacentar.rs/dogadjaji/bajaga-i-instruktori-4/",
+    "event_start": "2026-11-29T00:00:00+01:00",
+    "published_at": "2026-11-17T15:59:53.079028+01:00",
+    "topic": "concert",
+    "ai_editor": "groq",
+    "title": "Bajaga i instruktori",
+    "city": "Белград",
+    "venue": "Сава Центар, Синий зал (Plava dvorana)",
+    "reminder": false
   }
 }
