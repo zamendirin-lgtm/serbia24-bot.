@@ -557,6 +557,22 @@ def normalize_sava_description(description: str) -> str:
     return value
 
 
+AFISHA_FOOTER_HASHTAG = "#Сербия24"
+
+
+def finalize_afisha_post(post: str, photo_credit: str = "") -> str:
+    """Keep one clickable Telegram hashtag as the very last line.
+
+    A verified Commons photo's short linked camera icon must appear BEFORE the
+    hashtag, not after it. The helper is also used at the Telegram send boundary,
+    so even future nonstandard posting paths retain the channel footer.
+    """
+    clean_post = re.sub(r"(?:\s*#Сербия24\s*)+$", "", post).rstrip()
+    if photo_credit:
+        clean_post += "\n" + photo_credit.strip()
+    return clean_post + "\n\n" + AFISHA_FOOTER_HASHTAG
+
+
 def format_event(event: Event, title_ru: str = "", description_ru: str = "", *, reminder: bool = False) -> str:
     title = html.escape(title_ru or event.title)
     description = html.escape(normalize_sava_description(description_ru)) if description_ru else (
@@ -588,7 +604,7 @@ def format_event(event: Event, title_ru: str = "", description_ru: str = "", *, 
         f'\n🎟 <a href="{html.escape(ticket, quote=True)}">Купить билеты</a>'
         if ticket else ""
     )
-    return (
+    return finalize_afisha_post(
         (f"🔔 <b>Напоминаем о предстоящем событии</b>\n\n" if reminder else "")
         + f"🎭 <b>{title}</b>\n\n"
         f"📅 <b>Дата:</b> {when}\n"
@@ -1028,6 +1044,7 @@ def publish(session: requests.Session, token: str, chat: str, post: str,
     Telegram link previews pull the source's Serbian/English title and synopsis,
     making a second foreign-language block above the Russian announcement.
     """
+    post = finalize_afisha_post(post)
     api = f"https://api.telegram.org/bot{token}/"
     official = _official_poster(image_url)
     commons = (
@@ -1144,7 +1161,7 @@ def main() -> int:
         if not chosen_image:
             photo = find_licensed_photo(session, event)
             if photo:
-                with_credit = post + "\n\n" + photo.credit_html()
+                with_credit = finalize_afisha_post(post, photo.credit_html())
                 if len(with_credit) <= 1024:
                     post = with_credit
                     chosen_image = photo.image_url
