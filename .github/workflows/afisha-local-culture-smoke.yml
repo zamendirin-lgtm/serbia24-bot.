@@ -29,3 +29,5 @@ jobs:
 # Verify real Ložionica Elementor dates and descriptions.
 
 # Retest true Ložionica event headings against real site.
+
+# Final read-only parser recheck after fallback fixture support.
