@@ -204,5 +204,16 @@
     "city": "Белград",
     "venue": "Сава Центар, Синий зал (Plava dvorana)",
     "reminder": false
+  },
+  "4836313a01693b1fc507d9c4c8f0ee6b7b388f96b3dfa122e809c9d92ea753d2": {
+    "url": "https://savacentar.rs/dogadjaji/sledeci-put-kada-dotaknes-dno-6/",
+    "event_start": "2026-11-22T00:00:00+01:00",
+    "published_at": "2026-11-18T13:38:52.573409+01:00",
+    "topic": "theatre",
+    "ai_editor": "groq",
+    "title": "Sledeći put kada dotakneš dno",
+    "city": "Белград",
+    "venue": "Сава Центар, Синий зал (Plava dvorana)",
+    "reminder": false
   }
 }
