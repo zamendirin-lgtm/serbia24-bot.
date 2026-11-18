@@ -122,7 +122,8 @@ def loz_detail(markup: str, url: str, now: datetime):
     description = " ".join(p for p in pieces if len(p) >= 25)[:415]
     if len(description) < 50:
         # Elementor may contain the event synopsis in a prose div.
-        body = soup.select_one(".elementor-widget-theme-post-content") or soup.select_one("main")
+        body = (soup.select_one(".elementor-widget-theme-post-content")
+                or soup.select_one("main") or soup)
         if body:
             blocks = [
                 clean(div.get_text(" ", strip=True), 400)
