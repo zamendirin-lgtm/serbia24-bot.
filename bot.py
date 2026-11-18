@@ -1427,6 +1427,9 @@ def complete_sentences_for_budget(text: str, length_budget: int) -> str:
     return " ".join(result).strip()
 
 
+NEWS_FOOTER_HASHTAG = "#Сербия24"
+
+
 def format_post(article: Article, title_ru: str, summary_ru: str) -> str:
     emoji = news_emoji(article, title_ru)
     result = f"{emoji} <b>{html.escape(title_ru)}</b>\n\n"
@@ -1434,7 +1437,8 @@ def format_post(article: Article, title_ru: str, summary_ru: str) -> str:
         result += f"{html.escape(summary_ru.strip())}\n\n"
     result += (
         f'🔗 <a href="{html.escape(article.url, quote=True)}">'
-        f"Источник: {html.escape(article.source)}</a>"
+        f"Источник: {html.escape(article.source)}</a>\n\n"
+        f"{NEWS_FOOTER_HASHTAG}"
     )
     return result
 
@@ -1447,10 +1451,13 @@ def photo_caption(article: Article, title_ru: str, summary_ru: str) -> str:
     source = (
         f'\n\n🔗 <a href="{html.escape(article.url, quote=True)}">'
         f"Источник: {html.escape(article.source)}</a>"
+        f"\n\n{NEWS_FOOTER_HASHTAG}"
     )
-    # HTML escapes are not visible characters; Telegram limits the decoded text.
-    visible_reserve = len(title) + len(article.source) + 38
-    budget = max(0, min(770, 1024 - visible_reserve))
+    # Telegram counts the decoded caption, not HTML markup or the link URL.
+    # Reserve the exact visible prefix and footer so the hashtag is never cut.
+    visible_prefix = f"{emoji} {title}\n\n"
+    visible_footer = f"\n\n🔗 Источник: {article.source}\n\n{NEWS_FOOTER_HASHTAG}"
+    budget = max(0, min(770, 1024 - len(visible_prefix) - len(visible_footer)))
     content = summary_ru.strip()
     if len(content) > budget:
         # Never publish a dangling piece of a sentence. If the whole text
