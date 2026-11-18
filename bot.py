@@ -743,6 +743,33 @@ def same_event_summary(article: Article, record: dict, title_norm: str) -> bool:
     )
 
 
+def same_local_waste_emergency(new_title: str, old_title: str) -> bool:
+    """Catch the same municipal waste emergency told with different headlines.
+
+    Serbian titles can say 'nemogućnost sakupljanja otpada' in one outlet
+    and 'smeće/opasnost od zaraznih bolesti' in another. Similarity alone
+    misses those rewrites. Require the same specific locality, emergency
+    status and cause; do not suppress a later resolution of the emergency.
+    """
+    new, old = normalized_title(new_title), normalized_title(old_title)
+    if not all(re.search(r"\\bvanredn\\w*\\s+situacij\\w*\\b", t)
+               for t in (new, old)):
+        return False
+    if not all(any(cause in t for cause in ("otpad", "smec", "deponij"))
+               for t in (new, old)):
+        return False
+    if any(change in new for change in (
+        "ukin", "prest", "zavrs", "otklon", "povuc", "resen",
+    )):
+        return False
+    broad_regions = {"srbij", "vojvodin", "sremsk", "zlatibor"}
+    return any(
+        len(place) >= 6 and place not in broad_regions
+        and place in new and place in old
+        for place in SERBIA_LOCATIONS
+    )
+
+
 def is_duplicate(article: Article, state: dict, threshold: float = 0.86) -> bool:
     """Catch repeated URLs and reworded coverage across all RSS sources."""
     if article_id(article) in state.get("seen", {}):
@@ -763,6 +790,12 @@ def is_duplicate(article: Article, state: dict, threshold: float = 0.86) -> bool
                 return True
         if different_parliamentary_milestones(title, previous_title):
             continue
+        try:
+            hours_since_post = abs(article.published_ts - float(record.get("ts", 0))) / 3600
+        except (TypeError, ValueError):
+            hours_since_post = float("inf")
+        if hours_since_post <= 48 and same_local_waste_emergency(title, previous_title):
+            return True
         if same_event_title(title, previous_title, threshold):
             return True
         if same_event_summary(article, record, title):
