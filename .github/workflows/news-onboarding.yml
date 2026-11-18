@@ -1,0 +1,58 @@
+name: Serbia24 news bot welcome
+
+on:
+  schedule:
+    - cron: '*/5 * * * *'
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/news_bot_onboarding.py'
+      - '.github/workflows/news-onboarding.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: serbia24-news-onboarding
+  cancel-in-progress: false
+
+jobs:
+  welcome:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Handle private Telegram starts
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+        run: python scripts/news_bot_onboarding.py
+      - name: Save only the update offset (no user data)
+        shell: bash
+        run: |
+          set -e
+          if [ ! -f data/news_bot_onboarding_state.json ]; then
+            echo "No state to save"
+            exit 0
+          fi
+          git add data/news_bot_onboarding_state.json
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git config user.name "serbia24-onboarding[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "chore(news): remember Telegram onboarding offset [skip ci]"
+          for attempt in 1 2 3; do
+            git pull --rebase origin main
+            if git push origin HEAD:main; then
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "Could not persist Telegram update offset"
+          exit 1
