@@ -226,5 +226,16 @@
     "city": "Белград",
     "venue": "Сава Центар, Синий зал (Plava dvorana)",
     "reminder": false
+  },
+  "001db106a05b4d5d6d2a22d80a63323778a6e8fabdefd5d7c357a59cf55d0744": {
+    "url": "https://savacentar.rs/dogadjaji/sarah-brightman/",
+    "event_start": "2026-11-24T00:00:00+01:00",
+    "published_at": "2026-11-18T18:08:33.286665+01:00",
+    "topic": "theatre",
+    "ai_editor": "groq",
+    "title": "Sarah Brightman",
+    "city": "Белград",
+    "venue": "Сава Центар, Синий зал (Plava dvorana)",
+    "reminder": false
   }
 }
