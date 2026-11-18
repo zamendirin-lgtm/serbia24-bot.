@@ -27,3 +27,5 @@ jobs:
 # One-time diagnostics for active calendar URLs and robots permissions.
 
 # Verify real Ložionica Elementor dates and descriptions.
+
+# Retest true Ložionica event headings against real site.
