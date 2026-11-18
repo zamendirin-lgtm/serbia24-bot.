@@ -9,7 +9,7 @@ from bot import (
     Article, canonical_url, format_post, is_duplicate, normalized_title,
     foreign_centered_story,
     parse_feed, recent_enough, news_fresh_enough, relevant, post_telegram, prepare_summary, photo_caption, rss_photo, normal_image_url,
-    same_event_title, event_terms, prune_state, publication_allowed,
+    same_event_title, same_local_waste_emergency, event_terms, prune_state, publication_allowed,
     interval_allows_publication, next_eligible_publication, MIN_PUBLICATION_INTERVAL_MINUTES,
     branded_fallback_photo, extract_article_paragraphs, select_news_paragraphs,
     financial_exception_context,
@@ -912,6 +912,34 @@ class NewsBotTests(unittest.TestCase):
         self.assertIn("\n\nТретий абзац", caption)
         self.assertIn("Источник: RTS", caption)
         self.assertLessEqual(len(caption.replace("<b>", "").replace("</b>", "")), 1024)
+
+    def test_cross_outlet_smederevo_emergency_is_one_story(self):
+        old = ("U Smederevu proglašena vanredna situacija zbog nemogućnosti "
+               "sakupljanja komunalnog otpada")
+        new = ("Vanredna situacija u Smederevu zbog smeća: "
+               "Upozoreno na opasnost od zaraznih bolesti")
+        now = datetime(2026, 11, 18, 7, 20, tzinfo=timezone.utc).timestamp()
+        self.assertTrue(same_local_waste_emergency(new, old))
+        article = Article(
+            "Euronews Srbija", new,
+            "https://euronews.rs/smederevo-otpad", "Smederevo ima problem sa smećem.",
+            now - 3600,
+        )
+        state = {"seen": {}, "posted": [{
+            "title_norm": normalized_title(old),
+            "source": "N1", "ts": now - 15 * 3600,
+        }]}
+        self.assertTrue(is_duplicate(article, state))
+
+    def test_waste_emergency_resolution_is_a_new_story(self):
+        old = "U Smederevu proglašena vanredna situacija zbog otpada"
+        resolved = "Ukinuta vanredna situacija u Smederevu zbog otpada"
+        self.assertFalse(same_local_waste_emergency(resolved, old))
+
+    def test_different_city_waste_emergencies_are_not_duplicates(self):
+        old = "U Smederevu proglašena vanredna situacija zbog otpada"
+        other = "U Pančevu proglašena vanredna situacija zbog smeća"
+        self.assertFalse(same_local_waste_emergency(other, old))
 
     def test_major_story_can_be_caught_up_after_eight_hours(self):
         now = datetime(2026, 11, 18, 12, tzinfo=timezone.utc)
