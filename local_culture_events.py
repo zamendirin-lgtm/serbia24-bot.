@@ -304,6 +304,80 @@ def afisha_cards(markup: str, now: datetime, category: str) -> list:
     return result[:12]
 
 
+
+KCGRAD = "https://www.kcgrad.rs"
+KCGRAD_CALENDAR = KCGRAD + "/calendar/"
+EN_MONTHS = {
+    "january": 1, "february": 2, "march": 3, "april": 4,
+    "may": 5, "june": 6, "july": 7, "august": 8, "september": 9,
+    "october": 10, "november": 11, "december": 12,
+}
+KC_DAY = re.compile(
+    r"^(?:monday|tuesday|wednesday|thursday|friday|saturday|sunday),"
+    r"\s*(\d{1,2})(?:st|nd|rd|th)\s+([a-z]+)$", re.I
+)
+KC_TIME = re.compile(r"^(\d{1,2}):(\d{2})\s*[–—-]\s*(.{11,})$")
+
+
+def kcgrad_cards(markup: str, now: datetime) -> list:
+    """Read dated official calendar entries, not arbitrary article snippets.
+
+    Each item is an actual performance at the venue, not a scraped ticket link.
+    Simple recurring classes and past dates are excluded.
+    """
+    from afisha_bot import Event, TZ, clean, event_in_window
+    soup = BeautifulSoup(markup, "html.parser")
+    active_day = None
+    events = []
+    for line in soup.stripped_strings:
+        value = clean(line, 350)
+        heading = KC_DAY.fullmatch(value)
+        if heading:
+            try:
+                month = EN_MONTHS[heading.group(2).lower()]
+                day = int(heading.group(1))
+                active_day = datetime(now.year, month, day, tzinfo=TZ)
+            except (KeyError, ValueError):
+                active_day = None
+            continue
+        if not active_day:
+            continue
+        if value.startswith("If you need any additional information"):
+            break
+        match = KC_TIME.fullmatch(value)
+        if not match:
+            continue
+        title = clean(match.group(3), 125)
+        if len(title) < 15 or any(
+            x in title.casefold() for x in
+            ("language café", "language cafe", "regular lessons")
+        ):
+            continue
+        try:
+            start = active_day.replace(hour=int(match.group(1)), minute=int(match.group(2)))
+        except ValueError:
+            continue
+        label = title.casefold()
+        category = (
+            "Exhibition" if "exhibition" in label
+            else "Concert" if any(x in label for x in ("concert", "dj set", "live", "theme party"))
+            else "Theatre" if any(x in label for x in ("drag show", "performance", "predstava"))
+            else "Workshop" if any(x in label for x in ("pop-up", "deli monday", "brunch", "predstavljanje"))
+            else "Other"
+        )
+        if category == "Other":
+            continue
+        event = Event(
+            url=KCGRAD_CALENDAR, title=title, city="Белград",
+            venue="KC Grad, Braće Krsmanović 4",
+            start=start, category=category, price="не указана",
+            description=f"{title}. Официальная программа KC Grad: начало в {start:%H:%M}.",
+        )
+        if event_in_window(event, now) and all(x.key != event.key for x in events):
+            events.append(event)
+    return events[:24]
+
+
 def robots_allowed(session: requests.Session, origin: str, urls: list[str], ua: str):
     """No permissions inference or scraper bypass when robots are unavailable."""
     try:
@@ -352,4 +426,15 @@ def collect_local_culture(session: requests.Session, now: datetime) -> list:
                     print(f"Local listing {urlparse(url).path}: {len(cards)} cultural events.")
             except requests.RequestException:
                 continue
+    if os.getenv("AFISHA_ENABLE_KCGRAD", "1") == "1":
+        if robots_allowed(session, KCGRAD, [KCGRAD_CALENDAR], UA):
+            try:
+                page = session.get(KCGRAD_CALENDAR, timeout=16)
+                page.raise_for_status()
+                if len(page.content) <= 1_800_000:
+                    cards = kcgrad_cards(page.text, now)
+                    gathered.extend(cards)
+                    print(f"KC Grad official calendar: {len(cards)} cultural events.")
+            except requests.RequestException:
+                print("KC Grad official event calendar unavailable.")
     return gathered
