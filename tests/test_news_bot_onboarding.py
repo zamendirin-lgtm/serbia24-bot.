@@ -33,11 +33,22 @@ class NewsBotOnboardingTests(unittest.TestCase):
             }
         }))
 
-    def test_button_opens_the_channel_and_never_claims_auto_join(self):
-        button = inbox.subscribe_keyboard()["inline_keyboard"][0][0]
-        self.assertEqual(button["url"], "https://t.me/serbia24live")
-        self.assertIn("Подписаться", button["text"])
-        self.assertIn("Затем нажмите", inbox.WELCOME_TEXT)
+    def test_three_buttons_news_first_and_opt_in(self):
+        buttons = [row[0] for row in inbox.subscribe_keyboard()["inline_keyboard"]]
+        self.assertEqual(
+            [button["url"] for button in buttons],
+            [
+                "https://t.me/serbia24live",
+                "https://t.me/Serbia24Afisha",
+                "https://t.me/baraholka_serbia",
+            ],
+        )
+        self.assertIn("Подписаться", buttons[0]["text"])
+        self.assertIn("Выберите канал", inbox.WELCOME_TEXT)
+        self.assertIn("«Подписаться»", inbox.WELCOME_TEXT)
+        self.assertIn("Новости", inbox.WELCOME_TEXT)
+        self.assertIn("Афиша", inbox.WELCOME_TEXT)
+        self.assertIn("Барахолка", inbox.WELCOME_TEXT)
 
     def test_start_sends_one_message_with_url_button(self):
         state = inbox.default_state()
@@ -101,6 +112,13 @@ class NewsBotOnboardingTests(unittest.TestCase):
             ["setMyShortDescription", "setMyDescription", "setMyCommands"],
         )
         self.assertIn(inbox.CHANNEL_URL, calls[1][1]["description"])
+        self.assertIn(inbox.AFISHA_URL, calls[1][1]["description"])
+        self.assertIn(inbox.MARKET_URL, calls[1][1]["description"])
+        self.assertIn("@serbia24live", calls[0][1]["short_description"])
+        self.assertIn("@Serbia24Afisha", calls[0][1]["short_description"])
+        self.assertIn("@baraholka_serbia", calls[0][1]["short_description"])
+        self.assertLessEqual(len(inbox.SHORT_DESCRIPTION), 120)
+        self.assertLessEqual(len(inbox.DESCRIPTION), 512)
 
     def test_offset_storage_does_not_contain_chat_ids(self):
         with tempfile.TemporaryDirectory() as directory:
