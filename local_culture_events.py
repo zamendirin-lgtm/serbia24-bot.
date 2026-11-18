@@ -67,22 +67,29 @@ def loz_detail(markup: str, url: str, now: datetime):
     if not source:
         return None
     soup = BeautifulSoup(markup, "html.parser")
-    heading = soup.select_one("h1")
+    heading = (soup.select_one(".tribe-events-single-event-title")
+               or soup.select_one("h1")
+               or soup.select_one(".elementor-heading-title")
+               or soup.select_one("h2"))
     title = clean(heading.get_text(" ", strip=True) if heading else "", 125)
     if not title:
+        og = soup.select_one("meta[property='og:title']")
+        title = clean(og.get("content", "").split(" | ")[0] if og else "", 125)
+    if not title:
         return None
-    # The page's event header, not navigation/article publication dates.
-    header = soup.select_one(".tribe-events-schedule") or soup.select_one(
-        ".tribe-events-single-event-description"
-    )
-    raw = (header.get_text(" ", strip=True) if header else "")[:900]
-    if not LOZ_DATE.search(raw):
-        # Official detail pages put the date immediately under the H1.
-        raw = " ".join(heading.parent.stripped_strings)[:700] if heading.parent else ""
+    # The Ložionica Elementor templates may render the date in heading-like
+    # divs, not a tribe-events-schedule element. Search near the event title.
+    header = soup.select_one(".tribe-events-schedule")
+    raw = (header.get_text(" ", strip=True) if header else "")[:1000]
     matches = list(LOZ_DATE.finditer(raw))
     if not matches:
-        raw = " ".join(soup.stripped_strings)[:1100]
-        matches = list(LOZ_DATE.finditer(raw))
+        # The exact event title occurs in main content; the first 4K chars
+        # after it contain the event start/end, but exclude global navigation.
+        scope = soup.select_one("main") or soup.select_one("article") or soup
+        all_text = " ".join(scope.stripped_strings)
+        match_title = re.search(re.escape(title), all_text, re.I)
+        tail = all_text[match_title.end():match_title.end()+3500] if match_title else all_text
+        matches = list(LOZ_DATE.finditer(tail))
     if not matches:
         return None
 
@@ -106,6 +113,15 @@ def loz_detail(markup: str, url: str, now: datetime):
         for p in content.select("p")[:4]
     ] if content else []
     description = " ".join(p for p in pieces if len(p) >= 25)[:415]
+    if len(description) < 50:
+        # Elementor may contain the event synopsis in a prose div.
+        body = soup.select_one(".elementor-widget-theme-post-content") or soup.select_one("main")
+        if body:
+            blocks = [
+                clean(div.get_text(" ", strip=True), 400)
+                for div in body.select(".elementor-widget-text-editor")[:5]
+            ]
+            description = " ".join(t for t in blocks if len(t) >= 60)[:415]
     if len(description) < 50:
         return None
     text = clean(" ".join(soup.stripped_strings), 3200)

@@ -40,6 +40,15 @@ def main():
                             print("SMALL_CULTURE_DIAG detail", d.status_code, u,
                                   "event", event.title if event else None,
                                   "bytes", len(d.content))
+                            if not event:
+                                from bs4 import BeautifulSoup
+                                soup=BeautifulSoup(d.text, "html.parser")
+                                h=[x.get_text(" ", strip=True)[:90] for x in soup.select("h1,h2,h3")[:12]]
+                                m=soup.select_one("meta[property='og:title']")
+                                print("SMALL_CULTURE_DIAG head", h[:8],
+                                      "og", m.get("content","")[:95] if m else "",
+                                      "tribe", len(soup.select(".tribe-events-schedule")),
+                                      "elem_text", len(soup.select(".elementor-widget-text-editor")))
             except requests.RequestException as err:
                 print("SMALL_CULTURE_DIAG network_exception", base, type(err).__name__)
         print("SMALL_CULTURE_ERROR: no verified live events from any new source")
