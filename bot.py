@@ -649,6 +649,7 @@ OPPOSING_EVENTS = (
     ("pobed", "izgub"),  # won vs lost
     ("pokre", "obust"),  # started vs halted
     ("odob", "zabra"),  # approved vs prohibited
+    ("proglas", "ukin"),  # emergency status declared vs lifted
 )
 
 
