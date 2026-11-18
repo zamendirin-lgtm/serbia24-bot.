@@ -102,6 +102,29 @@ class SmallCultureTests(unittest.TestCase):
                                            "Лекция и дегустация в доме-музее."))
         self.assertEqual(len(select(found, {}, NOW)), 1)
 
+
+    def test_kcgrad_calendar_extracts_future_unique_culture_events(self):
+        from local_culture_events import kcgrad_cards
+        html = """
+        <main>
+        <h4>Tuesday, 17th November</h4>
+        <p>18:00 – Language Café</p>
+        <h4>Friday, 20th November</h4>
+        <p>22:00 – Sexual Friday – Episode 13: Riderz On The Storm (DJ set)</p>
+        <h4>Sunday, 22nd November</h4>
+        <p>12:30 – Drag Brunch</p>
+        <h4>Monday, 23rd November</h4>
+        <p>21:00 – Bad Music For Bad People present: Plattenbau (concert)</p>
+        </main>"""
+        found = kcgrad_cards(html, NOW)
+        self.assertEqual(len(found), 3)
+        self.assertEqual(found[0].start.strftime("%Y-%m-%d %H:%M"),
+                         "2026-11-20 22:00")
+        self.assertTrue(all(e.city == "Белград" for e in found))
+        self.assertTrue(all(e.price == "не указана" for e in found))
+        self.assertTrue(all("kcgrad.rs/calendar/" in e.url for e in found))
+        self.assertEqual(found[-1].category, "Concert")
+
     def test_listing_does_not_rehost_unlicensed_photo(self):
         found = afisha_cards(AFISHA_PAGE, NOW, "/ru/lekcii")
         self.assertEqual(found[0].image, "")
