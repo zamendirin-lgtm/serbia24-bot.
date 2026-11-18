@@ -193,5 +193,16 @@
     "city": "Белград",
     "venue": "Сава Центар, Синий зал (Plava dvorana)",
     "reminder": false
+  },
+  "0c8c96bcbd64d52ef30a2e5ceda37486b70ff8566762f76e48fc3faab951b177": {
+    "url": "https://savacentar.rs/dogadjaji/aleksandar-sofronijevic-i-majstori-za-dusu/",
+    "event_start": "2026-12-08T00:00:00+01:00",
+    "published_at": "2026-11-18T11:39:33.866762+01:00",
+    "topic": "concert",
+    "ai_editor": "groq",
+    "title": "Aleksandar Sofronijević i Majstori za dušu",
+    "city": "Белград",
+    "venue": "Сава Центар, Синий зал (Plava dvorana)",
+    "reminder": false
   }
 }
