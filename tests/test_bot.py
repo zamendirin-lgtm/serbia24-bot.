@@ -740,6 +740,27 @@ class NewsBotTests(unittest.TestCase):
         self.assertIn("Источник: RTS", caption)
         self.assertNotIn("Original", caption)
 
+    def test_news_footer_has_one_searchable_hashtag_at_the_end(self):
+        from bs4 import BeautifulSoup
+        item = Article("RTS", "Srpska vest", "https://rts.rs/a", "", 0)
+        for published in (
+            format_post(item, "Новости Белграда", "Подробности события."),
+            photo_caption(item, "Новости Белграда", "Подробности события."),
+        ):
+            visible = BeautifulSoup(published, "html.parser").get_text()
+            self.assertTrue(visible.endswith("Источник: RTS\n\n#Сербия24"))
+            self.assertEqual(visible.count("#Сербия24"), 1)
+
+    def test_very_long_photo_caption_preserves_footer_under_1024(self):
+        from bs4 import BeautifulSoup
+        item = Article("RTS", "Izvestaj", "https://rts.rs/a", "", 0)
+        long_summary = ("В Белграде объявили об изменениях. " * 60).strip()
+        caption = photo_caption(item, "Длинная новость о событиях Белграда", long_summary)
+        visible = BeautifulSoup(caption, "html.parser").get_text()
+        self.assertLessEqual(len(visible), 1024)
+        self.assertTrue(visible.endswith("Источник: RTS\n\n#Сербия24"))
+
+
     def test_reject_youtube_embed_as_news_photo(self):
         fake = "https://www.youtube.com/embed/XNxSvHuHthQ"
         self.assertEqual(normal_image_url(fake), "")
