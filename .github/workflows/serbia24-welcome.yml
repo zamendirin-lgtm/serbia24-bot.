@@ -1,0 +1,40 @@
+name: Serbia24 bots — private /start channel welcome
+
+on:
+  schedule:
+    - cron: '*/5 * * * *'
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/serbia24-welcome.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: serbia24-private-welcome
+  cancel-in-progress: false
+
+jobs:
+  welcome:
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install lightweight Telegram dependency
+        run: python -m pip install 'requests>=2.32,<3'
+      - name: Test private welcome and channel links
+        run: python -m unittest discover -s tests -p 'test_serbia24_welcome.py' -v
+      - name: Respond to voluntary /start or /channels requests
+        id: replies
+        env:
+          AFISHA_BOT_TOKEN: ${{ secrets.AFISHA_BOT_TOKEN || secrets.PROPERTY_BOT_TOKEN }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+        run: python scripts/serbia24_welcome.py
+      - name: Save only private command offsets, no personal data
+        if: steps.replies.outcome != 'skipped'
+        run: python scripts/persist_welcome_offsets.py
