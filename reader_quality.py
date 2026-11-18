@@ -66,13 +66,18 @@ def validate_grade(
         )
     if result.scores["fidelity"] != 2:
         raise QualityRejected("Недостаточно подтверждена точность изложения")
-    if result.scores["clarity"] < 1 or result.scores["russian"] < 1:
-        raise QualityRejected("Текст непонятен или плохо написан по-русски")
+    if result.total < minimum:
+        raise QualityRejected(f"Редакторская оценка {result.total}/10 ниже порога {minimum}/10")
+    # The 8/10 total is necessary but not sufficient: a post can score
+    # eight while its Russian is awkward or the subject is unclear.
+    # Such posts must be corrected by the second editorial pass.
+    if result.scores["russian"] != 2:
+        raise QualityRejected("Русский текст недостаточно естественный для публикации")
+    if result.scores["clarity"] != 2:
+        raise QualityRejected("Смысл новости недостаточно понятен читателю")
     problems = unidiomatic_phrases(title, paragraphs)
     if problems:
         raise QualityRejected("Механический перевод: " + ", ".join(problems))
-    if result.total < minimum:
-        raise QualityRejected(f"Редакторская оценка {result.total}/10 ниже порога {minimum}/10")
     return result
 
 
