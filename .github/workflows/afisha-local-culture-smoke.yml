@@ -31,3 +31,5 @@ jobs:
 # Retest true Ložionica event headings against real site.
 
 # Final read-only parser recheck after fallback fixture support.
+
+# Live check after Elementor text-editor description fallback.
