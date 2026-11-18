@@ -17,23 +17,28 @@ from urllib.request import Request, urlopen
 LOG = logging.getLogger("serbia24.onboarding")
 
 CHANNEL_URL = "https://t.me/serbia24live"
+AFISHA_URL = "https://t.me/Serbia24Afisha"
+MARKET_URL = "https://t.me/baraholka_serbia"
 STATE_FILE = Path(__file__).resolve().parents[1] / "data" / "news_bot_onboarding_state.json"
 WELCOME_TEXT = (
-    "🇷🇸 <b>Сербия 24 — Новости</b>\n\n"
-    "Главные события Сербии на русском языке: решения властей, цены, "
-    "экономика, происшествия и всё, что важно для жизни в стране.\n\n"
-    "Нажмите кнопку ниже, чтобы открыть наш новостной канал. "
-    "Затем нажмите «Подписаться» в Telegram, чтобы получать новости."
+    "🇷🇸 <b>Сербия 24 — наши каналы</b>\n\n"
+    "📰 <b>Новости Сербии</b> — главное: важные события, цены, законы, "
+    "экономика и происшествия.\n"
+    "🎭 <b>Афиша</b> — концерты, выставки и интересные мероприятия.\n"
+    "🛍 <b>Барахолка Сербии</b> — объявления и предложения.\n\n"
+    "Выберите канал ниже и нажмите «Подписаться» в Telegram."
 )
-SHORT_DESCRIPTION = "🇷🇸 Новости Сербии на русском языке. Подписка: @serbia24live"
+SHORT_DESCRIPTION = (
+    "🇷🇸 Новости: @serbia24live | Афиша: @Serbia24Afisha | "
+    "Барахолка: @baraholka_serbia"
+)
 DESCRIPTION = (
-    "Сербия 24 — новости и важные события Сербии на русском языке.\n\n"
-    "Получайте информацию о ценах, экономике, законах, "
-    "происшествиях и жизни в Сербии.\n\n"
-    "Откройте канал: https://t.me/serbia24live\n"
-    "Нажмите «Запустить», чтобы получить кнопку подписки."
+    "🇷🇸 Сербия 24 — новости, афиша и барахолка на русском языке.\n\n"
+    "📰 Главное — новости Сербии: https://t.me/serbia24live\n"
+    "🎭 Концерты и события: https://t.me/Serbia24Afisha\n"
+    "🛍 Объявления и покупки: https://t.me/baraholka_serbia\n\n"
+    "Нажмите «Запустить», чтобы выбрать канал и подписаться."
 )
-
 
 class TelegramAPIError(RuntimeError):
     """A Telegram call failed without exposing the bot token."""
@@ -61,10 +66,13 @@ def telegram_api(token: str, method: str, payload: dict) -> object:
 
 
 def subscribe_keyboard() -> dict:
+    """The main news channel appears first; other projects remain optional."""
     return {
-        "inline_keyboard": [[
-            {"text": "📢 Подписаться и перейти к новостям", "url": CHANNEL_URL}
-        ]]
+        "inline_keyboard": [
+            [{"text": "📰 Подписаться на новости", "url": CHANNEL_URL}],
+            [{"text": "🎭 Афиша Сербии", "url": AFISHA_URL}],
+            [{"text": "🛍 Барахолка Сербии", "url": MARKET_URL}],
+        ]
     }
 
 
