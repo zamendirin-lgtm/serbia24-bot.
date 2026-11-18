@@ -35,3 +35,5 @@ jobs:
 # Live check after Elementor text-editor description fallback.
 
 # Data extraction diagnostic: date and event body metadata.
+
+# Recheck genuine Elementor descriptions in first-party source.
