@@ -16,7 +16,7 @@ class ReaderQualityTests(unittest.TestCase):
         return {"scores": scores, "critical_issues": []}
 
     def test_eight_is_accepted_if_no_critical_errors(self):
-        grade = validate_grade(self.good(clarity=1, headline=1),
+        grade = validate_grade(self.good(completeness=1, headline=1),
             "В Белграде изменили тарифы на проезд",
             ["Городские власти изменили тарифы на общественный транспорт.",
              "Новые правила вступят в силу после официальной публикации."])
@@ -26,6 +26,20 @@ class ReaderQualityTests(unittest.TestCase):
         with self.assertRaisesRegex(QualityRejected, "7/10"):
             validate_grade(self.good(clarity=1, completeness=1, headline=1),
                 "Новость", ["Текст первого абзаца.", "Текст второго абзаца."])
+
+    def test_awkward_russian_is_rejected_despite_nine_points(self):
+        with self.assertRaisesRegex(QualityRejected, "естественный"):
+            validate_grade(self.good(russian=1),
+                "В Белграде запустили новый автобусный маршрут",
+                ["Город открыл новый маршрут общественного транспорта.",
+                 "Расписание опубликовано на сайте перевозчика."])
+
+    def test_unclear_story_is_rejected_despite_nine_points(self):
+        with self.assertRaisesRegex(QualityRejected, "понятен"):
+            validate_grade(self.good(clarity=1),
+                "Новые условия для жителей Белграда",
+                ["Муниципалитет объявил об изменении городских правил.",
+                 "Порядок их применения будет сообщён дополнительно."])
 
     def test_fidelity_must_have_two_even_at_nine(self):
         with self.assertRaisesRegex(QualityRejected, "точность"):
