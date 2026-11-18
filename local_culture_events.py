@@ -348,7 +348,7 @@ def kcgrad_cards(markup: str, now: datetime) -> list:
         if not match:
             continue
         title = clean(match.group(3), 125)
-        if len(title) < 15 or any(
+        if len(title) < 10 or any(
             x in title.casefold() for x in
             ("language café", "language cafe", "regular lessons")
         ):
