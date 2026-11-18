@@ -170,14 +170,36 @@ def loz_detail(markup: str, url: str, now: datetime):
 
     catnode = soup.select_one(".tribe-events-event-categories")
     cat = clean(catnode.get_text(" ", strip=True), 100) if catnode else ""
+    if not cat:
+        # The live Elementor page's category is in a dedicated section:
+        # "Категорије: Radionica CENA" or "Категорије: VR izložba CENA".
+        cat_full = clean(" ".join(soup.stripped_strings), 9000)
+        category_match = re.search(
+            r"(?:Категорије\s*:|KATEGORIJA\s*:?)\s*(.*?)\s+(?:CENA|ЦЕНА|KARTE)",
+            cat_full, re.I,
+        )
+        if category_match:
+            cat = clean(category_match.group(1), 100)
     joined = (title + " " + cat + " " + description[:100]).casefold()
-    category = (
-        "Exhibition" if any(t in joined for t in ("izložb", "izlozb", "vr", "immersive", "imerziv"))
-        else "Workshop" if any(t in joined for t in ("radionic", "workshop", "мастер", "pop-up"))
-        else "Theatre" if any(t in joined for t in ("pozoriš", "pozoris", "predstav", "theatre"))
-        else "Concert" if any(t in joined for t in ("koncert", "fourchestra", "muzika", "dj nastup"))
-        else "Other"
-    )
+    # Trust the event's explicit category over incidental words such as
+    # "izložba" in the description of a workshop related to an exhibition.
+    category_label = cat.casefold().strip()
+    if any(w in category_label for w in ("radionic", "workshop")):
+        category = "Workshop"
+    elif any(w in category_label for w in ("pozoriš", "pozoris", "predstav", "theatre")):
+        category = "Theatre"
+    elif any(w in category_label for w in ("izložb", "izlozb", "exhibit")):
+        category = "Exhibition"
+    elif any(w in category_label for w in ("koncert", "dj nastup", "music")):
+        category = "Concert"
+    else:
+        category = (
+            "Workshop" if any(w in joined for w in ("radionic", "workshop", "pop-up"))
+            else "Exhibition" if any(w in joined for w in ("izložb", "izlozb", "imerziv"))
+            else "Theatre" if any(w in joined for w in ("pozoriš", "pozoris", "predstav", "theatre"))
+            else "Concert" if any(w in joined for w in ("koncert", "fourchestra", "muzika", "dj nastup"))
+            else "Other"
+        )
     if category == "Other":
         return None
 
