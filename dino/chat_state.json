@@ -1,6 +1,6 @@
 {
-  "offset": 859917483,
-  "last_check_utc": "2026-11-18T13:37:26.072011+00:00",
+  "offset": 859917485,
+  "last_check_utc": "2026-11-18T14:33:41.874687+00:00",
   "total_replies": 12,
   "last_spontaneous_at": 1794682840,
   "announcement_message_id": 741503,
@@ -12,8 +12,8 @@
     741568
   ],
   "style": {
-    "seen": 41,
-    "short": 41,
+    "seen": 43,
+    "short": 43,
     "questions": 11,
     "emoji": 0,
     "slang": {},
