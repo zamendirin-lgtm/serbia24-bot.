@@ -936,6 +936,18 @@ class NewsBotTests(unittest.TestCase):
         resolved = "Ukinuta vanredna situacija u Smederevu zbog otpada"
         self.assertFalse(same_local_waste_emergency(resolved, old))
 
+    def test_resolved_emergency_is_not_deduped_by_generic_similarity(self):
+        old = "U Smederevu proglašena vanredna situacija zbog otpada"
+        resolved = "Ukinuta vanredna situacija u Smederevu zbog otpada"
+        now = datetime(2026, 11, 18, 7, 20, tzinfo=timezone.utc).timestamp()
+        article = Article("RTS", resolved, "https://rts.rs/ukinuta-situacija",
+                          "", now - 3600)
+        state = {"seen": {}, "posted": [{
+            "title_norm": normalized_title(old),
+            "source": "N1", "ts": now - 15 * 3600,
+        }]}
+        self.assertFalse(is_duplicate(article, state))
+
     def test_different_city_waste_emergencies_are_not_duplicates(self):
         old = "U Smederevu proglašena vanredna situacija zbog otpada"
         other = "U Pančevu proglašena vanredna situacija zbog smeća"
