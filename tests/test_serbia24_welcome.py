@@ -38,7 +38,7 @@ class Serbia24WelcomeTests(unittest.TestCase):
             "https://t.me/serbia24live",
             "https://t.me/baraholka_serbia",
         ])
-        self.assertEqual([x[0] for x in KEYBOARD["inline_keyboard"]],
+        self.assertEqual(KEYBOARD["inline_keyboard"],
                          [[{"text": title, "url": url}] for title, url, _ in CHANNELS])
         self.assertIn("🎭 Сербия 24 | Афиша", WELCOME_TEXT)
         self.assertIn("📰 Сербия 24 | Новости", WELCOME_TEXT)
