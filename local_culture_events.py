@@ -67,14 +67,18 @@ def loz_detail(markup: str, url: str, now: datetime):
     if not source:
         return None
     soup = BeautifulSoup(markup, "html.parser")
-    heading = (soup.select_one(".tribe-events-single-event-title")
-               or soup.select_one("h1")
-               or soup.select_one(".elementor-heading-title")
-               or soup.select_one("h2"))
-    title = clean(heading.get_text(" ", strip=True) if heading else "", 125)
-    if not title:
-        og = soup.select_one("meta[property='og:title']")
-        title = clean(og.get("content", "").split(" | ")[0] if og else "", 125)
+    # Ložionica has menu h2 headings ("Program", "Bukiraj prostor")
+    # before the actual event h2. Use per-page OpenGraph title to identify
+    # the event heading, rather than blindly taking the first h1/h2.
+    og = soup.select_one("meta[property='og:title']")
+    og_title = clean(og.get("content", "").split(" | ")[0] if og else "", 125)
+    heading = next((
+        h for h in soup.select("h1,h2,h3")
+        if og_title and clean(h.get_text(" ", strip=True), 125).casefold() == og_title.casefold()
+    ), None)
+    if heading is None:
+        heading = soup.select_one(".tribe-events-single-event-title")
+    title = og_title or clean(heading.get_text(" ", strip=True) if heading else "", 125)
     if not title:
         return None
     # The Ložionica Elementor templates may render the date in heading-like
@@ -288,7 +292,7 @@ def collect_local_culture(session: requests.Session, now: datetime) -> list:
                 print(f"Ložionica: {len(gathered)} upcoming or ongoing cultural events.")
             except requests.RequestException:
                 print("Ložionica official culture calendar unavailable.")
-    if os.getenv("AFISHA_ENABLE_LOCAL_LISTINGS", "1") == "1":
+    if os.getenv("AFISHA_ENABLE_LOCAL_LISTINGS", "0") == "1":
         allowed = robots_allowed(session, AFISHA,
                                  [AFISHA + path for path in AFISHA_CATEGORIES], UA)
         for url in allowed[:6]:
