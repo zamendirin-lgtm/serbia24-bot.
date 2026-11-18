@@ -752,7 +752,7 @@ def same_local_waste_emergency(new_title: str, old_title: str) -> bool:
     status and cause; do not suppress a later resolution of the emergency.
     """
     new, old = normalized_title(new_title), normalized_title(old_title)
-    if not all(re.search(r"\\bvanredn\\w*\\s+situacij\\w*\\b", t)
+    if not all(re.search(r"\bvanredn\w*\s+situacij\w*\b", t)
                for t in (new, old)):
         return False
     if not all(any(cause in t for cause in ("otpad", "smec", "deponij"))
