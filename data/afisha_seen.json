@@ -215,5 +215,16 @@
     "city": "Белград",
     "venue": "Сава Центар, Синий зал (Plava dvorana)",
     "reminder": false
+  },
+  "ffb259a1de13691e4c04eab2088437807bf678bbd4b9b948c1a1269be806048a": {
+    "url": "https://savacentar.rs/dogadjaji/bozicna-avantura/",
+    "event_start": "2026-12-03T00:00:00+01:00",
+    "published_at": "2026-11-18T16:04:19.246615+01:00",
+    "topic": "theatre",
+    "ai_editor": "groq",
+    "title": "Božićna avantura",
+    "city": "Белград",
+    "venue": "Сава Центар, Синий зал (Plava dvorana)",
+    "reminder": false
   }
 }
