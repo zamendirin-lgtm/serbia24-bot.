@@ -598,7 +598,8 @@ def format_event(event: Event, title_ru: str = "", description_ru: str = "", *, 
         f'🔗 <a href="{link}">Подробности</a>{ticket_line}'
         + (f'\n<a href="{link}">📷</a>' if event.image and urlparse(event.url).hostname in (
             "savacentar.rs", "www.savacentar.rs", "novisad.travel", "www.novisad.travel",
-            "arenabeograd.com", "www.arenabeograd.com"
+            "arenabeograd.com", "www.arenabeograd.com",
+            "lozionica.rs", "www.lozionica.rs"
         ) else "")
     )
 
@@ -648,15 +649,15 @@ def is_routine_sports_fixture(event: Event) -> bool:
 
 
 def event_topic(event: Event) -> str:
-    title = (event.title + " " + event.description[:130]).casefold()
+    title = (event.title + " " + event.category + " " + event.description[:130]).casefold()
     groups = (
-        ("family", ("deca", "decji", "dečji", "children", "kids", "family", "porodic", "детск", "семей")),
+        ("family", ("deca", "decji", "dečji", "children", "kids", "family", "porodic", "детск", "семей", "детям", "kids", "дошколь", "кружок")),
         ("festival", ("festival", "фестив", "manifestacij")),
         ("concert", ("koncert", "concert", "muzik", "music", "концерт", "музык")),
-        ("theatre", ("theatre", "theater", "pozoriš", "pozoris", "представлен", "театр", "balet", "ballet", "балет", "опера")),
+        ("theatre", ("theatre", "theater", "pozoriš", "pozoris", "представлен", "театр", "balet", "ballet", "балет", "опера", "стендап", "standup", "stand-up", "comedy")),
         ("fair", ("sajam", "fair", "market", "ярмарк", "базар")),
         ("exhibition", ("izložb", "izlozb", "exhibit", "gallery", "izlozba", "выстав", "музе")),
-        ("workshop", ("radionic", "workshop", "мастер-класс")),
+        ("workshop", ("radionic", "workshop", "мастер-класс", "творческ", "лекция", "лекции", "lecture", "киноклуб", "кино", "vr ", "иммерсив", "экскурс", "эксперимент")),
     )
     for kind, words in groups:
         if any(x in title for x in words):
@@ -736,6 +737,11 @@ def interest_score(event: Event, now: datetime) -> int:
     }[topic]
     if is_marquee_event(event):
         score += 14  # allow distant headline events to clear quality threshold
+    # Give smaller real-life experiences room beside large concert halls.
+    if (topic in ("workshop", "family", "exhibition", "theatre")
+        and urlparse(event.url).hostname in ("lozionica.rs", "www.lozionica.rs", "afisha.rs", "www.afisha.rs")
+        and 0 <= (event.start.date() - now.date()).days <= 14):
+        score += 10
     days = (event.start.date() - now.date()).days
     if 0 <= days <= 7:
         score += 16
@@ -958,6 +964,7 @@ def _official_poster(url: str) -> bool:
             "novisad.travel", "www.novisad.travel",
             "savacentar.rs", "www.savacentar.rs",
             "arenabeograd.com", "www.arenabeograd.com",
+            "lozionica.rs", "www.lozionica.rs",
         )
         and not parsed.username
         and not parsed.password
@@ -1100,6 +1107,7 @@ def main() -> int:
     from subotica_events import collect_subotica_events
     from sava_events import collect_sava_events
     from major_venues import collect_major_venues
+    from local_culture_events import collect_local_culture
     events = (
         load_curated_events(now)
         + collect_official_events(session, now)
@@ -1107,6 +1115,7 @@ def main() -> int:
         + collect_subotica_events(session, now)
         + collect_sava_events(session, now)
         + collect_major_venues(session, now)
+        + collect_local_culture(session, now)
     )
     shortlisted = select(events, seen, now)
     print(f"Event candidates: {len(events)}, ranked shortlist: {len(shortlisted)}, "
