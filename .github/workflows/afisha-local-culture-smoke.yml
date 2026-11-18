@@ -23,3 +23,5 @@ jobs:
       - run: python -m unittest discover -s tests -p 'test_afisha*.py' -v
       - name: Check current small-venue event listings without publication
         run: PYTHONPATH=. python scripts/afisha_local_culture_smoke.py
+
+# One-time diagnostics for active calendar URLs and robots permissions.
