@@ -598,7 +598,9 @@ unresolved_referent.
 {"approved": true, "title":"...", "paragraphs":["...","..."],
 "quality":{"scores":{"clarity":2,"completeness":2,"russian":2,"headline":2,"fidelity":2},
 "critical_issues":[]}}.
-Если не можешь исправить, approved=false. Порог допуска — 8/10.
+Если не можешь исправить, approved=false. Порог допуска — 8/10, но для
+публикации ясность (clarity), естественный русский (russian) и точность
+(fidelity) должны получить ровно 2/2 каждый. Никаких скидок за общий балл.
 
 """
 

@@ -596,6 +596,29 @@ def rank_news(candidates: list[Article], now: datetime) -> list[Article]:
     )
 
 
+def news_fresh_enough(article: Article, now: datetime) -> bool:
+    """Do not lose major Serbia stories just because one 8-hour window passed.
+
+    Keep the ordinary 8-hour freshness filter. Only clearly significant
+    national, public-safety, policy, cultural and infrastructure stories get
+    an 18-hour catch-up window; they must still pass all usual editorial
+    and duplicate checks. Never republish stale ordinary RSS items.
+    """
+    if recent_enough(article, now):
+        return True
+    if not recent_enough(article, now, hours=18):
+        return False
+    return (
+        major_national_story(article)
+        or major_incident_story(article)
+        or public_safety_breaking_story(article)
+        or benchmark_news_category(article) in {
+            "major_infrastructure", "economic_proposal",
+            "healthcare_opening", "major_festival",
+        }
+    )
+
+
 MIN_INTEREST_SCORE = 2  # skip low-value filler when no useful news is available.
 
 
@@ -1690,7 +1713,7 @@ def run() -> None:
     generic_images = {url for url, count in image_counts.items() if count > 1}
     if generic_images:
         LOG.info("Скрываем %s повторяющихся шаблонных изображений RSS", len(generic_images))
-    candidates = [a for a in all_articles if recent_enough(a, now) and relevant(a)]
+    candidates = [a for a in all_articles if news_fresh_enough(a, now) and relevant(a)]
     candidates = rank_news(candidates, now)
     LOG.info(
         "Подходящих свежих новостей: %s; среди них полезных (балл >= %s): %s",

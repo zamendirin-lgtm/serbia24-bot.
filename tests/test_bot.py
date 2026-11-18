@@ -8,7 +8,7 @@ from zoneinfo import ZoneInfo
 from bot import (
     Article, canonical_url, format_post, is_duplicate, normalized_title,
     foreign_centered_story,
-    parse_feed, recent_enough, relevant, post_telegram, prepare_summary, photo_caption, rss_photo, normal_image_url,
+    parse_feed, recent_enough, news_fresh_enough, relevant, post_telegram, prepare_summary, photo_caption, rss_photo, normal_image_url,
     same_event_title, event_terms, prune_state, publication_allowed,
     interval_allows_publication, next_eligible_publication, MIN_PUBLICATION_INTERVAL_MINUTES,
     branded_fallback_photo, extract_article_paragraphs, select_news_paragraphs,
@@ -912,6 +912,29 @@ class NewsBotTests(unittest.TestCase):
         self.assertIn("\n\nТретий абзац", caption)
         self.assertIn("Источник: RTS", caption)
         self.assertLessEqual(len(caption.replace("<b>", "").replace("</b>", "")), 1024)
+
+    def test_major_story_can_be_caught_up_after_eight_hours(self):
+        now = datetime(2026, 11, 18, 12, tzinfo=timezone.utc)
+        major = Article("RTS", "Potvrđena nova većina u Skupštini Srbije",
+                        "https://rts.rs/politika/nova-vecina",
+                        "Poslanici potvrdili mandate u Skupštini Srbije.",
+                        now.timestamp() - 12 * 3600)
+        self.assertFalse(recent_enough(major, now))
+        self.assertTrue(news_fresh_enough(major, now))
+        self.assertFalse(news_fresh_enough(
+            Article("RTS", major.title, major.url, major.summary,
+                    now.timestamp() - 19 * 3600), now))
+
+    def test_old_minor_rss_item_does_not_get_catchup(self):
+        now = datetime(2026, 11, 18, 12, tzinfo=timezone.utc)
+        minor = Article("Danas", "Radionica o koncentraciji u Kragujevcu",
+                        "https://danas.rs/radionica",
+                        "Danas će biti održana radionica za građane.",
+                        now.timestamp() - 12 * 3600)
+        self.assertFalse(news_fresh_enough(minor, now))
+        self.assertTrue(news_fresh_enough(
+            Article("Danas", minor.title, minor.url, minor.summary,
+                    now.timestamp() - 4 * 3600), now))
 
     def test_long_rss_excerpt_remains_concise(self):
         item = Article("RTS", "Novi zakon", "https://rts.rs/a",
