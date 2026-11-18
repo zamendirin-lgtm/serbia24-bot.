@@ -33,3 +33,5 @@ jobs:
 # Final read-only parser recheck after fallback fixture support.
 
 # Live check after Elementor text-editor description fallback.
+
+# Data extraction diagnostic: date and event body metadata.
