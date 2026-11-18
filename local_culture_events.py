@@ -113,7 +113,7 @@ def loz_detail(markup: str, url: str, now: datetime):
     # Pricing is displayed in the event's specific "CENA" metadata.
     metadata = soup.select_one(".tribe-events-event-meta") or soup
     meta_text = clean(metadata.get_text(" ", strip=True), 2300)
-    price_match = re.search(r"(?:\\bCENA\\b|ЦЕНА)[\s\S]{0,90}?(?:RSD\s*(\d[\d.]*)(?!\d)|(\d[\d.]*)\s*RSD)", meta_text, re.I)
+    price_match = re.search(r"(?:\bCENA\b|ЦЕНА)[\s\S]{0,90}?(?:RSD\s*(\d[\d.]*)(?!\d)|(\d[\d.]*)\s*RSD)", meta_text, re.I)
     if not price_match:
         price_match = re.search(r"(?<!\w)(?:RSD\s*(\d[\d.]*)(?!\d)|(\d[\d.]*)\s*RSD)", text, re.I)
     if price_match:
