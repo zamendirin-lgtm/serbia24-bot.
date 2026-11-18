@@ -131,6 +131,27 @@ def loz_detail(markup: str, url: str, now: datetime):
             ]
             description = " ".join(t for t in blocks if len(t) >= 60)[:415]
     if len(description) < 50:
+        # Live Ložionica Elementor event pages keep the synopsis as loose
+        # text between the first event date range and the "DATUM I VREME"
+        # detail panel, not in a <p>/article/main/widget-text-editor.
+        full = " ".join(soup.stripped_strings)
+        first = LOZ_DATE.search(full)
+        if first:
+            tail = full[first.end():]
+            second = LOZ_DATE.search(tail)
+            if second and second.start() < 100:
+                tail = tail[second.end():]
+            # Strip heading labels; stop before ticket/location boilerplate.
+            section = re.split(
+                r"DATUM I VREME|Датум и време|KATEGORIJA|Категорије",
+                tail, maxsplit=1, flags=re.IGNORECASE,
+            )[0]
+            section = re.sub(
+                r"^(?:\s*[-–]\s*\d{1,2}:\d{2}\s*|\s*(?:Kupi kartu|Prijavi se!?|Image)\s*)+",
+                "", section, flags=re.IGNORECASE,
+            )
+            description = clean(section, 415)
+    if len(description) < 50:
         return None
     text = clean(" ".join(soup.stripped_strings), 3200)
     price = "не указана"
