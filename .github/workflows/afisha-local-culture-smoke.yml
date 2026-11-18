@@ -25,3 +25,5 @@ jobs:
         run: PYTHONPATH=. python scripts/afisha_local_culture_smoke.py
 
 # One-time diagnostics for active calendar URLs and robots permissions.
+
+# Verify real Ložionica Elementor dates and descriptions.
