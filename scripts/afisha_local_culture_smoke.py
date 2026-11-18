@@ -49,6 +49,14 @@ def main():
                                       "og", m.get("content","")[:95] if m else "",
                                       "tribe", len(soup.select(".tribe-events-schedule")),
                                       "elem_text", len(soup.select(".elementor-widget-text-editor")))
+                                from local_culture_events import LOZ_DATE
+                                raw=" ".join(soup.stripped_strings)
+                                dates=list(LOZ_DATE.finditer(raw))
+                                blocks=soup.select(".elementor-widget-text-editor")
+                                print("SMALL_CULTURE_DIAG eventfields dates", [x.group(0) for x in dates[:5]],
+                                      "body", [x.get_text(" ", strip=True)[:180] for x in blocks[:2]],
+                                      "main", bool(soup.select_one("main")),
+                                      "articles", len(soup.select("article")))
             except requests.RequestException as err:
                 print("SMALL_CULTURE_DIAG network_exception", base, type(err).__name__)
         print("SMALL_CULTURE_ERROR: no verified live events from any new source")
