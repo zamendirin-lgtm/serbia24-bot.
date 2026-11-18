@@ -78,6 +78,9 @@ def loz_detail(markup: str, url: str, now: datetime):
     ), None)
     if heading is None:
         heading = soup.select_one(".tribe-events-single-event-title")
+    if heading is None and not og_title:
+        # Minimal verified pages without OpenGraph metadata.
+        heading = soup.select_one("h1,h2")
     title = og_title or clean(heading.get_text(" ", strip=True) if heading else "", 125)
     if not title:
         return None
