@@ -182,5 +182,16 @@
     "city": "Белград",
     "venue": "Сава Центар, Синий зал (Plava dvorana)",
     "reminder": false
+  },
+  "eef45b2e64911ae5deaeb41dd738d75fe8e7e99199b714e91fb6ac6af5d84e9c": {
+    "url": "https://savacentar.rs/dogadjaji/amira-medunjanin/",
+    "event_start": "2026-12-04T00:00:00+01:00",
+    "published_at": "2026-11-18T09:43:11.088169+01:00",
+    "topic": "concert",
+    "ai_editor": "groq",
+    "title": "Amira Medunjanin",
+    "city": "Белград",
+    "venue": "Сава Центар, Синий зал (Plava dvorana)",
+    "reminder": false
   }
 }
