@@ -281,5 +281,16 @@
     "city": "Белград",
     "venue": "Сава Центар, Синий зал (Plava dvorana)",
     "reminder": false
+  },
+  "fa946dea60d42ec6bec73bdb4ef099aebc4fad6eb185b970701f3c09c8849c49": {
+    "url": "https://savacentar.rs/dogadjaji/medja-gala-koncert-nacionalnog-ansambla-kolo/",
+    "event_start": "2026-12-22T00:00:00+01:00",
+    "published_at": "2026-11-19T21:34:06.606487+01:00",
+    "topic": "concert",
+    "ai_editor": "groq",
+    "title": "Međa – Gala koncert Nacionalnog ansambla „Kolo“",
+    "city": "Белград",
+    "venue": "Сава Центар, Синий зал (Plava dvorana)",
+    "reminder": false
   }
 }
