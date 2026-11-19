@@ -237,5 +237,16 @@
     "city": "Белград",
     "venue": "Сава Центар, Синий зал (Plava dvorana)",
     "reminder": false
+  },
+  "e09136e40d4c9b6e843c7208ea1fda23b06e733a524531228260d8f5bd2a61ca": {
+    "url": "https://savacentar.rs/dogadjaji/novi-fosili/",
+    "event_start": "2026-12-06T00:00:00+01:00",
+    "published_at": "2026-11-19T09:29:14.776126+01:00",
+    "topic": "concert",
+    "ai_editor": "groq",
+    "title": "Novi fosili",
+    "city": "Белград",
+    "venue": "Сава Центар, Синий зал (Plava dvorana)",
+    "reminder": false
   }
 }
