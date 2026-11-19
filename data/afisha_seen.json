@@ -259,5 +259,16 @@
     "city": "Белград",
     "venue": "Сава Центар, Синий зал (Plava dvorana)",
     "reminder": false
+  },
+  "d77b1fe12a7587b34635b22e46282a704071c93a77bb28ac063f028c47f47e3b": {
+    "url": "https://savacentar.rs/dogadjaji/magla-bend-8/",
+    "event_start": "2026-11-30T00:00:00+01:00",
+    "published_at": "2026-11-19T13:05:32.954551+01:00",
+    "topic": "concert",
+    "ai_editor": "groq",
+    "title": "Magla bend",
+    "city": "Белград",
+    "venue": "Сава Центар, Синий зал (Plava dvorana)",
+    "reminder": false
   }
 }
