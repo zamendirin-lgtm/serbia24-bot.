@@ -270,5 +270,16 @@
     "city": "Белград",
     "venue": "Сава Центар, Синий зал (Plava dvorana)",
     "reminder": false
+  },
+  "7a7236233811c29472225aa0fe0206d409c0399cae34a8780facc2abab33e197": {
+    "url": "https://savacentar.rs/dogadjaji/perpetuum-jazzile/",
+    "event_start": "2026-12-07T00:00:00+01:00",
+    "published_at": "2026-11-19T19:36:12.664606+01:00",
+    "topic": "theatre",
+    "ai_editor": "groq",
+    "title": "Perpetuum Jazzile",
+    "city": "Белград",
+    "venue": "Сава Центар, Синий зал (Plava dvorana)",
+    "reminder": false
   }
 }
