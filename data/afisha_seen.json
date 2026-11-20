@@ -325,5 +325,16 @@
     "city": "Белград",
     "venue": "Сава Центар, Синий зал (Plava dvorana)",
     "reminder": false
+  },
+  "db569a45fbd26e801f7a15cbb734c6c354310900786abbffb8796ec78647894b": {
+    "url": "https://savacentar.rs/dogadjaji/nikolija/",
+    "event_start": "2026-11-27T00:00:00+01:00",
+    "published_at": "2026-11-20T16:02:12.313624+01:00",
+    "topic": "theatre",
+    "ai_editor": "groq",
+    "title": "Nikolija",
+    "city": "Белград",
+    "venue": "Сава Центар, Синий зал (Plava dvorana)",
+    "reminder": false
   }
 }
