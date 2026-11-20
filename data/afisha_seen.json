@@ -314,5 +314,16 @@
     "city": "Белград",
     "venue": "Сава Центар, Синий зал (Plava dvorana)",
     "reminder": false
+  },
+  "92e4ab9144c1dddb76e8715274e6bc102b2efca396c597a0ea8090a9184a63b7": {
+    "url": "https://savacentar.rs/dogadjaji/vlatko-stefanovski/",
+    "event_start": "2026-12-21T00:00:00+01:00",
+    "published_at": "2026-11-20T13:04:29.451405+01:00",
+    "topic": "concert",
+    "ai_editor": "groq",
+    "title": "Vlatko Stefanovski",
+    "city": "Белград",
+    "venue": "Сава Центар, Синий зал (Plava dvorana)",
+    "reminder": false
   }
 }
