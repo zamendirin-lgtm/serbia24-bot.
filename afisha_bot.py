@@ -676,7 +676,8 @@ def is_routine_sports_fixture(event: Event) -> bool:
 
 def event_topic(event: Event) -> str:
     """Classify concrete leisure genres, suitable for all ages and interests."""
-    title = (event.title + " " + event.category + " " + event.description[:130]).casefold()
+    primary = (event.title + " " + event.category).casefold()
+    context = event.description[:130].casefold()
     groups = (
         ("family", ("deca", "decji", "dečji", "children", "kids", "family", "porodic",
                     "детск", "семей", "дошколь", "cirkus", "circus", "цирк",
@@ -690,8 +691,8 @@ def event_topic(event: Event) -> str:
         ("theatre", ("theatre", "theater", "pozoriš", "pozoris", "представлен",
                      "театр", "balet", "ballet", "балет", "мюзикл", "musical")),
         ("cinema", ("film", "bioskop", "cinema", "кино", "кинопоказ", "projekcij")),
-        ("nightlife", ("dj set", "diskot", "žurka", "zurка", "журка",
-                       "rave", "рейв", "techno", "техно", "ночнои клуб")),
+        ("nightlife", ("dj set", "diskot", "žurka", "zurka", "журка",
+                       "rave", "рейв", "techno", "техно", "ночной клуб")),
         ("festival", ("festival", "фестив", "manifestacij")),
         ("fair", ("sajam", "fair", "market", "ярмарк", "базар", "gastronom")),
         ("exhibition", ("izložb", "izlozb", "izlozba", "exhibit", "gallery",
@@ -702,9 +703,12 @@ def event_topic(event: Event) -> str:
         ("concert", ("koncert", "concert", "muzik", "music", "концерт",
                      "музык", "nastup", "сольный")),
     )
-    for kind, words in groups:
-        if any(x in title for x in words):
-            return kind
+    # The advertised event category wins over supporting text: a ballet
+    # stays theatre even when its description mentions an orchestra.
+    for content in (primary, context):
+        for kind, words in groups:
+            if any(x in content for x in words):
+                return kind
     return "other"
 
 
@@ -780,7 +784,7 @@ def interest_score(event: Event, now: datetime) -> int:
         score -= 9
     if event.city in ('Белград', 'Нови-Сад'):
         score += 9  # primary readership, not a filter for other cities
-    elif event_topic(event) in ('festival', 'fair', 'concert'):
+    elif event_topic(event) in ('festival', 'fair', 'concert', 'classical', 'theatre'):
         score += 5  # worthwhile events can justify travel
     if event.venue:
         score += 12
@@ -809,7 +813,8 @@ def interest_score(event: Event, now: datetime) -> int:
     score += {
         "family": 14, "festival": 15, "concert": 14,
         "theatre": 11, "fair": 13, "exhibition": 10,
-        "workshop": 9, "other": 3,
+        "workshop": 9, "comedy": 12, "classical": 14,
+        "cinema": 11, "nightlife": 11, "other": 3,
     }[topic]
     if is_marquee_event(event):
         score += 14  # allow distant headline events to clear quality threshold
