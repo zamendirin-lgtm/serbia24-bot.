@@ -1,4 +1,4 @@
-"""Offline QA for up to five good Afisha posts/day and mandatory AI editing."""
+"""Offline QA for up to six good Afisha posts/day and mandatory AI editing."""
 import os
 import unittest
 from datetime import datetime, timedelta
@@ -36,18 +36,18 @@ class AfishaDailyQualityTests(unittest.TestCase):
         self.assertGreater(interest_score(strong, NOW), interest_score(weak, NOW))
         self.assertGreaterEqual(interest_score(strong, NOW), MIN_INTEREST_SCORE)
         self.assertEqual(select([weak, strong], {}, NOW), [strong])
-        self.assertEqual(event_topic(strong), "concert")
+        self.assertEqual(event_topic(strong), "classical")
 
-    def test_maximum_five_per_local_day(self):
+    def test_maximum_six_per_local_day(self):
         new = event()
         seen = {
             f"p{i}": {
                 "published_at": NOW.replace(hour=8 + i).isoformat(),
                 "topic": "concert",
-            } for i in range(5)
+            } for i in range(6)
         }
-        self.assertEqual(MAX_DAILY_POSTS, 5)
-        self.assertEqual(len(posted_today(seen, NOW)), 5)
+        self.assertEqual(MAX_DAILY_POSTS, 6)
+        self.assertEqual(len(posted_today(seen, NOW)), 6)
         self.assertEqual(select([new], seen, NOW), [])
         # The previous calendar day must not block a new day.
         for item in seen.values():
@@ -121,7 +121,7 @@ class AfishaDailyQualityTests(unittest.TestCase):
             with patch("afisha_bot.datetime") as dt:
                 dt.now.return_value = NOW
                 with patch("afisha_bot.load_seen", return_value={}):
-                    with patch("afisha_bot.posted_today", return_value=[{}, {}, {}, {}, {}]):
+                    with patch("afisha_bot.posted_today", return_value=[{}, {}, {}, {}, {}, {}]):
                         with patch("afisha_bot.collect_official_events") as get_events:
                             self.assertEqual(afisha_bot.main(), 0)
                             get_events.assert_not_called()
