@@ -15,7 +15,7 @@ import re
 import sys
 import time
 from dataclasses import dataclass, replace
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from urllib.parse import urljoin, urlparse, urlunparse
 from urllib.robotparser import RobotFileParser
@@ -34,8 +34,18 @@ UA = "Serbia24Afisha/1.0 (+https://github.com/zamendirin-lgtm/serbia24-bot.)"
 MAX_LINKS = 32
 MAX_POSTS = 1  # only one good event per run
 PRICE_UNKNOWN = "не указана"
-MAX_DAILY_POSTS = 5
+MAX_DAILY_POSTS = 6
 SELECTION_POOL = 24
+# Six non-overlapping publication slots match the six GitHub Actions runs.
+# They map to roughly 08-20 local time in winter and 09-21 in summer.
+SLOT_STARTS_UTC = (7, 9, 11, 14, 17, 19)
+# Eleven editorial themes roll forward by six slots per day. The full range
+# is covered across days rather than requiring all genres on the same day.
+TOPIC_CYCLE = (
+    "family", "concert", "theatre", "exhibition", "comedy", "workshop",
+    "classical", "festival", "cinema", "fair", "nightlife",
+)
+TOPIC_CYCLE_START = date(2026, 11, 21)
 MARQUEE_LOOKAHEAD_DAYS = 300
 MONTHLY_REMINDER_DAYS = 30
 MIN_INTEREST_SCORE = 52
@@ -665,20 +675,70 @@ def is_routine_sports_fixture(event: Event) -> bool:
 
 
 def event_topic(event: Event) -> str:
+    """Classify concrete leisure genres, suitable for all ages and interests."""
     title = (event.title + " " + event.category + " " + event.description[:130]).casefold()
     groups = (
-        ("family", ("deca", "decji", "dečji", "children", "kids", "family", "porodic", "детск", "семей", "детям", "kids", "дошколь", "кружок")),
+        ("family", ("deca", "decji", "dečji", "children", "kids", "family", "porodic",
+                    "детск", "семей", "дошколь", "cirkus", "circus", "цирк",
+                    "mađionič", "magic show", "magični show", "фокусник", "иллюзион")),
+        ("comedy", ("standup", "stand-up", "stand up", "стендап", "стэнд-ап",
+                    "komed", "comedy", "комед", "improv", "импровиз", "humor")),
+        ("classical", ("simfonij", "simfon", "symphon", "симфони", "orkestar",
+                       "orchestra", "оркестр", "filharmon", "филармон",
+                       "klasič", "klasicn", "классическ", "jazz", "džez",
+                       "джаз", "опера", "opera")),
+        ("theatre", ("theatre", "theater", "pozoriš", "pozoris", "представлен",
+                     "театр", "balet", "ballet", "балет", "мюзикл", "musical")),
+        ("cinema", ("film", "bioskop", "cinema", "кино", "кинопоказ", "projekcij")),
+        ("nightlife", ("dj set", "diskot", "žurka", "zurка", "журка",
+                       "rave", "рейв", "techno", "техно", "ночнои клуб")),
         ("festival", ("festival", "фестив", "manifestacij")),
-        ("concert", ("koncert", "concert", "muzik", "music", "концерт", "музык")),
-        ("theatre", ("theatre", "theater", "pozoriš", "pozoris", "представлен", "театр", "balet", "ballet", "балет", "опера", "стендап", "standup", "stand-up", "comedy")),
-        ("fair", ("sajam", "fair", "market", "ярмарк", "базар")),
-        ("exhibition", ("izložb", "izlozb", "exhibit", "gallery", "izlozba", "выстав", "музе")),
-        ("workshop", ("radionic", "workshop", "мастер-класс", "творческ", "лекция", "лекции", "lecture", "киноклуб", "кино", "vr ", "иммерсив", "экскурс", "эксперимент")),
+        ("fair", ("sajam", "fair", "market", "ярмарк", "базар", "gastronom")),
+        ("exhibition", ("izložb", "izlozb", "izlozba", "exhibit", "gallery",
+                        "выстав", "музе", "galerij")),
+        ("workshop", ("radionic", "workshop", "мастер-класс", "творческ",
+                      "лекция", "лекции", "lecture", "киноклуб", "vr ",
+                      "иммерсив", "экскурс", "эксперимент")),
+        ("concert", ("koncert", "concert", "muzik", "music", "концерт",
+                     "музык", "nastup", "сольный")),
     )
     for kind, words in groups:
         if any(x in title for x in words):
             return kind
     return "other"
+
+
+def posting_slot(now: datetime) -> int | None:
+    """Slot index for the running schedule (accounts for Belgrade daylight saving)."""
+    local = now.astimezone(TZ)
+    if not 8 <= local.hour < 22:
+        return None
+    utc_hour = now.astimezone(timezone.utc).hour
+    for slot in range(len(SLOT_STARTS_UTC) - 1, -1, -1):
+        if utc_hour >= SLOT_STARTS_UTC[slot]:
+            return slot
+    return None
+
+
+def target_topic(now: datetime) -> str | None:
+    """Rotate all editorial themes over successive days and publication slots."""
+    slot = posting_slot(now)
+    if slot is None:
+        return None
+    days = (now.astimezone(TZ).date() - TOPIC_CYCLE_START).days
+    return TOPIC_CYCLE[(days * MAX_DAILY_POSTS + slot) % len(TOPIC_CYCLE)]
+
+
+def slot_already_used(seen: dict, now: datetime) -> bool:
+    """Do not use the backup run to post twice in the same editorial slot."""
+    slot = posting_slot(now)
+    if slot is None:
+        return False
+    for entry in posted_today(seen, now):
+        previous = parse_date(entry.get("published_at"))
+        if previous and posting_slot(previous) == slot:
+            return True
+    return False
 
 
 def posted_today(seen: dict, now: datetime) -> list[dict]:
@@ -924,11 +984,29 @@ def eligible_for_post(event: Event, seen: dict, now: datetime) -> bool:
 
 
 def select(events: list[Event], seen: dict, now: datetime) -> list[Event]:
-    """Prioritize nearby new events; keep measured major-event reminders."""
+    """Choose verified events with a multi-day rotation of leisure genres.
+
+    The target genre receives priority only among events meeting the usual
+    relevance threshold. If nothing good exists for a genre, use a strong
+    alternative instead of fabricating or repeating an announcement.
+    """
     daily = posted_today(seen, now)
     if len(daily) >= MAX_DAILY_POSTS:
         return []
     posted_topics = [r.get("topic", "") for r in daily]
+    posted_venues = [str(r.get("venue", "")).casefold() for r in daily]
+    posted_hosts = [urlparse(str(r.get("url", ""))).hostname for r in daily]
+    recent_topic_counts = {}
+    for row in seen.values():
+        if not isinstance(row, dict) or row.get("corrected_test"):
+            continue
+        stamp = parse_date(row.get("published_at"))
+        if stamp and timedelta(0) <= now - stamp <= timedelta(days=3):
+            topic = row.get("topic", "")
+            if topic:
+                recent_topic_counts[topic] = recent_topic_counts.get(topic, 0) + 1
+
+    desired_topic = target_topic(now)
     deduped = {}
     for event in events:
         if not eligible_for_post(event, seen, now):
@@ -944,26 +1022,45 @@ def select(events: list[Event], seen: dict, now: datetime) -> list[Event]:
         }) for other in deduped.values()):
             continue
         deduped[key] = event
+
     scored = []
     for event in deduped.values():
         topic = event_topic(event)
-        penalty = posted_topics.count(topic) * 9 if topic != "other" else 0
-        score = interest_score(event, now) - penalty
+        base = interest_score(event, now)
         days = (event.start.astimezone(TZ).date() - now.astimezone(TZ).date()).days
-        # Never crowd out compelling next-week plans with distant festival ads.
+        # Still require a worthwhile event before considering the rotation.
         if days > 75:
-            score -= 16
+            base -= 16
         if monthly_reminder_due(event, seen, now):
-            score -= 15
-        if score >= MIN_INTEREST_SCORE:
-            scored.append((score, event))
+            base -= 15
+        if base < MIN_INTEREST_SCORE:
+            continue
+        score = base
+        if topic == desired_topic:
+            score += 65
+        score -= posted_topics.count(topic) * 24
+        score -= recent_topic_counts.get(topic, 0) * 6
+        if event.venue:
+            score -= posted_venues.count(event.venue.casefold()) * 12
+        score -= posted_hosts.count(urlparse(event.url).hostname) * 5
+        scored.append((score, event))
+
     scored.sort(key=lambda item: (
         -item[0],
         max((item[1].start.astimezone(TZ).date() - now.astimezone(TZ).date()).days, 0),
         item[1].title,
     ))
-    return [event for _, event in scored[:SELECTION_POOL]]
-
+    # Put at most two candidates per genre in the first editorial pass.
+    # This makes AI rejection of one listing less likely to monopolize the run.
+    shortlist, overflow, per_topic = [], [], {}
+    for _, event in scored:
+        topic = event_topic(event)
+        if per_topic.get(topic, 0) >= 2:
+            overflow.append(event)
+        else:
+            shortlist.append(event)
+            per_topic[topic] = per_topic.get(topic, 0) + 1
+    return (shortlist + overflow)[:SELECTION_POOL]
 
 
 def _official_poster(url: str) -> bool:
@@ -1117,6 +1214,12 @@ def main() -> int:
     if daily_count >= MAX_DAILY_POSTS:
         print(f"Daily Afisha cap reached: {daily_count}/{MAX_DAILY_POSTS}.")
         return 0
+    if posting_slot(now) is None:
+        print("Afisha is outside the six scheduled publication slots.")
+        return 0
+    if slot_already_used(seen, now):
+        print("Afisha already published in this slot; no second post.")
+        return 0
     if not post_spacing_ok(seen, now):
         print("Afisha last post was less than 90 minutes ago; skipping this check.")
         return 0
@@ -1193,7 +1296,7 @@ def main() -> int:
                              encoding="utf8")
             print(f"One quality Afisha event published. AI editor: {approved.provider}.")
             published = True
-            break  # maximum one per check; maximum 5 per Belgrade calendar day
+            break  # one per check and slot; maximum 6 per Belgrade calendar day
         return 1
     if not published:
         print("No editorially approved event; quality over quantity.")
