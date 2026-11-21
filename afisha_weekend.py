@@ -68,9 +68,11 @@ def create_weekend_history(seen, entries, now):
         "city": "Сербия", "venue": "", "title": "Афиша выходных",
     }
     for event, edited in entries:
-        # No published_at: a bundled event is not a separate Telegram post.
+        # A bundled item has a timestamp for reminders/dedupe but does not
+        # count as a separate Telegram message in daily-limit calculations.
         seen[event.key] = {
             "url": event.url, "event_start": event.start.isoformat(),
+            "published_at": stamp, "digest_item": True,
             "topic": event_topic(event),
             "title": event.title, "city": event.city, "venue": event.venue,
             "included_in_roundup": stamp, "ai_editor": edited.provider,
