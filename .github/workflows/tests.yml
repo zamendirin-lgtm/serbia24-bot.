@@ -23,4 +23,4 @@ jobs:
       - name: Check official MTS event discovery without posting
         if: github.event_name == 'pull_request'
         continue-on-error: true
-        run: python scripts/smoke_mts.py
+        run: python -m scripts.smoke_mts
