@@ -382,5 +382,17 @@
     "venue": "Сава Центар, Синий зал (Plava dvorana)",
     "is_free": false,
     "reminder": false
+  },
+  "ea195d16647d9fd41eac2bf60e43ad583971525c55833d9e3b232de62e038c17": {
+    "url": "https://mtsdvorana.rs/dogadjaj/igorov-magicni-show",
+    "event_start": "2026-12-05T12:00:00+01:00",
+    "published_at": "2026-11-21T15:26:51.211195+01:00",
+    "topic": "family",
+    "ai_editor": "groq",
+    "title": "IGOROV MAGIČNI SHOW",
+    "city": "Белград",
+    "venue": "MTS Dvorana, Sala 6",
+    "is_free": false,
+    "reminder": false
   }
 }
