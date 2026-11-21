@@ -20,3 +20,7 @@ jobs:
         run: python -m pip install -r requirements.txt
       - name: Unit tests
         run: python -m unittest discover -s tests -v
+      - name: Check official MTS event discovery without posting
+        if: github.event_name == 'pull_request'
+        continue-on-error: true
+        run: python -m scripts.smoke_mts

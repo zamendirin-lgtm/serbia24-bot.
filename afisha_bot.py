@@ -25,6 +25,8 @@ import requests
 from bs4 import BeautifulSoup
 from afisha_editor import edit_event
 from afisha_photos import find_licensed_photo
+from afisha_context import contextual_lines
+from afisha_cards import branded_poster
 
 TZ = ZoneInfo("Europe/Belgrade")
 STATE = Path("data/afisha_seen.json")
@@ -614,12 +616,14 @@ def format_event(event: Event, title_ru: str = "", description_ru: str = "", *, 
         f'\n🎟 <a href="{html.escape(ticket, quote=True)}">Купить билеты</a>'
         if ticket else ""
     )
+    context = contextual_lines(event)
+    context_line = ("\n" + "\n".join(context)) if context else ""
     return finalize_afisha_post(
         (f"🔔 <b>Напоминаем о предстоящем событии</b>\n\n" if reminder else "")
         + f"🎭 <b>{title}</b>\n\n"
         f"📅 <b>Дата:</b> {when}\n"
         f"📍 <b>Город:</b> {html.escape(event.city)}{venue}\n"
-        f"🎟 <b>Цена:</b> {html.escape(event.price)}\n\n"
+        f"🎟 <b>Цена:</b> {html.escape(event.price)}{context_line}\n\n"
         f"📝 {description[:500]}\n\n"
         f'🔗 <a href="{link}">Подробности</a>{ticket_line}'
         + (f'\n<a href="{link}">📷</a>' if event.image and urlparse(event.url).hostname in (
@@ -748,7 +752,7 @@ def slot_already_used(seen: dict, now: datetime) -> bool:
 def posted_today(seen: dict, now: datetime) -> list[dict]:
     result = []
     for row in seen.values():
-        if not isinstance(row, dict) or row.get("corrected_test") is True:
+        if not isinstance(row, dict) or row.get("corrected_test") is True or row.get("digest_item") is True:
             continue
         stamp = parse_date(row.get("published_at"))
         if stamp and stamp.astimezone(TZ).date() == now.astimezone(TZ).date():
@@ -759,7 +763,7 @@ def posted_today(seen: dict, now: datetime) -> list[dict]:
 def post_spacing_ok(seen: dict, now: datetime, minutes: int = 90) -> bool:
     """Protect channel from near-simultaneous main and backup scheduled runs."""
     for row in seen.values():
-        if not isinstance(row, dict) or row.get("corrected_test") is True:
+        if not isinstance(row, dict) or row.get("corrected_test") is True or row.get("digest_item") is True:
             continue
         stamp = parse_date(row.get("published_at"))
         if stamp:
@@ -1000,6 +1004,8 @@ def select(events: list[Event], seen: dict, now: datetime) -> list[Event]:
         return []
     posted_topics = [r.get("topic", "") for r in daily]
     posted_venues = [str(r.get("venue", "")).casefold() for r in daily]
+    posted_cities = [str(r.get("city", "")).casefold() for r in daily]
+    posted_free = sum(1 for r in daily if r.get("is_free") is True)
     posted_hosts = [urlparse(str(r.get("url", ""))).hostname for r in daily]
     recent_topic_counts = {}
     for row in seen.values():
@@ -1048,6 +1054,17 @@ def select(events: list[Event], seen: dict, now: datetime) -> list[Event]:
         if event.venue:
             score -= posted_venues.count(event.venue.casefold()) * 12
         score -= posted_hosts.count(urlparse(event.url).hostname) * 5
+        score -= posted_cities.count(event.city.casefold()) * 5
+        # Accessible free events deserve airtime beside ticketed concerts,
+        # but unknown prices are NEVER classified as free.
+        if event.price.startswith("Бесплатно") and posted_free == 0:
+            score += 12
+        if now.astimezone(TZ).weekday() in (3, 4):
+            # Thursday/Friday: emphasize immediate weekend plans without
+            # claiming that older far-off concerts are newly announced.
+            gap = (event.start.astimezone(TZ).date() - now.astimezone(TZ).date()).days
+            if 0 <= gap <= 3 and event.start.astimezone(TZ).weekday() in (5, 6):
+                score += 8
         scored.append((score, event))
 
     scored.sort(key=lambda item: (
@@ -1140,7 +1157,8 @@ def _send_event_photo(session: requests.Session, api: str, chat: str,
 
 def publish(session: requests.Session, token: str, chat: str, post: str,
             source_url: str, image_url: str = "",
-            *, licensed_commons: bool = False) -> bool:
+            *, licensed_commons: bool = False,
+            generated_card: bytes | None = None) -> bool:
     """Use a clean photo with Russian caption or text-only, never foreign previews.
 
     Telegram link previews pull the source's Serbian/English title and synopsis,
@@ -1160,6 +1178,22 @@ def publish(session: requests.Session, token: str, chat: str, post: str,
         print("Licensed event image failed; posting Russian text without a link preview.")
     elif image_url and (official or commons):
         print("Long Afisha caption; posting full Russian text without a link preview.")
+
+    # Own-brand artwork is always preferable to a misleading unrelated photo.
+    # Keep the full text-only fallback for captions that exceed 1024 chars.
+    if generated_card and len(post) <= 1024:
+        try:
+            sent = session.post(
+                api + "sendPhoto",
+                data={"chat_id": chat, "caption": post, "parse_mode": "HTML"},
+                files={"photo": ("serbia24-afisha.jpg", generated_card, "image/jpeg")},
+                timeout=28,
+            )
+            if sent.ok and sent.json().get("ok") is True:
+                print("Afisha published with own-brand event card.")
+                return True
+        except (requests.RequestException, ValueError):
+            print("Branded Afisha card send failed; trying text.")
 
     try:
         result = session.post(
@@ -1233,18 +1267,52 @@ def main() -> int:
     from sava_events import collect_sava_events
     from major_venues import collect_major_venues
     from local_culture_events import collect_local_culture
-    events = (
-        load_curated_events(now)
-        + collect_official_events(session, now)
-        + collect_belgrade_events(session, now)
-        + collect_subotica_events(session, now)
-        + collect_sava_events(session, now)
-        + collect_major_venues(session, now)
-        + collect_local_culture(session, now)
-    )
+    from mts_events import collect_mts_events
+    sources = [
+        ("approved", lambda: load_curated_events(now)),
+        ("novi_sad_tourism", lambda: collect_official_events(session, now)),
+        ("run_bgd", lambda: collect_belgrade_events(session, now)),
+        ("subotica", lambda: collect_subotica_events(session, now)),
+        ("sava_centar", lambda: collect_sava_events(session, now)),
+        ("arena_and_snp", lambda: collect_major_venues(session, now)),
+        ("local_culture", lambda: collect_local_culture(session, now)),
+        ("mts_dvorana", lambda: collect_mts_events(session, now)),
+    ]
+    events, source_health = [], {}
+    for name, collector in sources:
+        began = time.monotonic()
+        try:
+            items = collector()
+            if not isinstance(items, list):
+                raise TypeError("Collector returned non-list")
+            events.extend(items)
+            source_health[name] = {"count": len(items), "status": "events" if items else "empty"}
+        except (requests.RequestException, ValueError, TypeError, OSError) as exc:
+            print(f"Afisha source {name} failed: {type(exc).__name__}.")
+            source_health[name] = {"count": 0, "status": "error"}
+        source_health[name]["duration_s"] = round(time.monotonic() - began, 2)
     shortlisted = select(events, seen, now)
+    try:
+        report = {
+            "checked_at": now.isoformat(), "sources": source_health,
+            "candidate_count": len(events), "shortlist_count": len(shortlisted),
+            "posted_today": daily_count, "target_topic": target_topic(now),
+        }
+        path = Path("reports/afisha_health.json")
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n",
+                        encoding="utf8")
+        print("Afisha health report:", json.dumps(report, ensure_ascii=False))
+    except OSError:
+        print("Afisha health report could not be written.")
     print(f"Event candidates: {len(events)}, ranked shortlist: {len(shortlisted)}, "
           f"today already: {daily_count}/{MAX_DAILY_POSTS}.")
+    # A Friday roundup replaces one ordinary publication, never increases the cap.
+    if now.astimezone(TZ).weekday() == 4 and posting_slot(now) == 2:
+        from afisha_weekend import maybe_publish_weekend
+        if maybe_publish_weekend(session, token, chat, shortlisted, seen, now, dry=dry):
+            return 0
+
     published = False
     for event in shortlisted[:10]:
         # Require AI editorial approval and an adequate interest score.
@@ -1277,8 +1345,14 @@ def main() -> int:
                     print(f"Afisha matched {photo.subject_label} from Wikimedia Commons.")
                 else:
                     print("Licensed image credit would exceed Telegram caption size; keeping full text.")
+        card = None
+        if not chosen_image or not _official_poster(chosen_image):
+            try:
+                card = branded_poster(approved.title_ru, event.city, event.start.strftime("%d.%m.%Y"))
+            except (OSError, ValueError):
+                print("Branded poster unavailable; full text will still publish.")
         if publish(session, token, chat, post, event.url, chosen_image,
-                   licensed_commons=licensed_commons):
+                   licensed_commons=licensed_commons, generated_card=card):
             # Preserve the original event key on first publication, but keep
             # separate history records for monthly reminders of the same edition.
             history_key = (
@@ -1294,6 +1368,7 @@ def main() -> int:
                 "title": event.title,
                 "city": event.city,
                 "venue": event.venue,
+                "is_free": event.price.startswith("Бесплатно"),
                 "reminder": reminder,
             }
             STATE.parent.mkdir(parents=True, exist_ok=True)
