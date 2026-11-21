@@ -1004,6 +1004,8 @@ def select(events: list[Event], seen: dict, now: datetime) -> list[Event]:
         return []
     posted_topics = [r.get("topic", "") for r in daily]
     posted_venues = [str(r.get("venue", "")).casefold() for r in daily]
+    posted_cities = [str(r.get("city", "")).casefold() for r in daily]
+    posted_free = sum(1 for r in daily if r.get("is_free") is True)
     posted_hosts = [urlparse(str(r.get("url", ""))).hostname for r in daily]
     recent_topic_counts = {}
     for row in seen.values():
@@ -1052,6 +1054,17 @@ def select(events: list[Event], seen: dict, now: datetime) -> list[Event]:
         if event.venue:
             score -= posted_venues.count(event.venue.casefold()) * 12
         score -= posted_hosts.count(urlparse(event.url).hostname) * 5
+        score -= posted_cities.count(event.city.casefold()) * 5
+        # Accessible free events deserve airtime beside ticketed concerts,
+        # but unknown prices are NEVER classified as free.
+        if event.price.startswith("Бесплатно") and posted_free == 0:
+            score += 12
+        if now.astimezone(TZ).weekday() in (3, 4):
+            # Thursday/Friday: emphasize immediate weekend plans without
+            # claiming that older far-off concerts are newly announced.
+            gap = (event.start.astimezone(TZ).date() - now.astimezone(TZ).date()).days
+            if 0 <= gap <= 3 and event.start.astimezone(TZ).weekday() in (5, 6):
+                score += 8
         scored.append((score, event))
 
     scored.sort(key=lambda item: (
@@ -1349,6 +1362,7 @@ def main() -> int:
                 "title": event.title,
                 "city": event.city,
                 "venue": event.venue,
+                "is_free": event.price.startswith("Бесплатно"),
                 "reminder": reminder,
             }
             STATE.parent.mkdir(parents=True, exist_ok=True)
