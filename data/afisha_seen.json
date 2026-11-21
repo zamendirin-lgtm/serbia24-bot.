@@ -358,5 +358,17 @@
     "city": "Белград",
     "venue": "Сава Центар, Синий зал (Plava dvorana)",
     "reminder": false
+  },
+  "30c34a42ba27b542c360c65468d480181ce8ef9659939d78c51fca4be8954f64": {
+    "url": "https://arenabeograd.com/dogadjaj/jakov-jozinovic/",
+    "event_start": "2026-11-28T00:00:00+01:00",
+    "published_at": "2026-11-21T10:23:01.239020+01:00",
+    "topic": "concert",
+    "ai_editor": "groq",
+    "title": "Jakov Jozinović",
+    "city": "Белград",
+    "venue": "Белградская арена (Beogradska arena)",
+    "is_free": false,
+    "reminder": false
   }
 }
