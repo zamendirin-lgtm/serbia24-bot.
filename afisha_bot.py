@@ -1286,7 +1286,7 @@ def main() -> int:
             if not isinstance(items, list):
                 raise TypeError("Collector returned non-list")
             events.extend(items)
-            source_health[name] = {"count": len(items), "status": "ok"}
+            source_health[name] = {"count": len(items), "status": "events" if items else "empty"}
         except (requests.RequestException, ValueError, TypeError, OSError) as exc:
             print(f"Afisha source {name} failed: {type(exc).__name__}.")
             source_health[name] = {"count": 0, "status": "error"}
