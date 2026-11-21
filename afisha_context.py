@@ -22,7 +22,7 @@ def age_label(text: str) -> str:
             return f"{lo}–{hi} лет (по информации организатора)"
     minimum = re.search(
         r"(?:za\s+decu|deca|uzrast[a-z]*|ages?\s*|odrasli)"
-        r".{0,30}?\b(?:od\s+)?(\d{1,2})\s*(?:\+|godina|years?)\b?",
+        r".{0,30}?\b(?:od\s+)?(\d{1,2})\s*(?:\+|godina|years?)",
         source,
     )
     if minimum:
@@ -38,13 +38,13 @@ def age_label(text: str) -> str:
 def language_label(text: str) -> str:
     source = str(text or "").casefold()
     explicit = (
-        (r"\bna\s+srpskom\s+(?:jeziku|govornom|titlovima)?\b|"
+        (r"\bna\s+srpskom(?:\s+(?:jeziku|govornom|titlovima))?\b|"
          r"\b(?:jezik|izvođenj[ea])\s*[:–-]\s*srpski\b|"
          r"\bsinhronizovan[a-z]*\s+na\s+srpski", "сербский"),
-        (r"\bna\s+engleskom\s+(?:jeziku)?\b|"
+        (r"\bna\s+engleskom(?:\s+jeziku)?\b|"
          r"\b(?:jezik|izvođenj[ea])\s*[:–-]\s*engleski\b|"
          r"\bin\s+english\b", "английский"),
-        (r"\bna\s+ruskom\s+(?:jeziku)?\b|"
+        (r"\bna\s+ruskom(?:\s+jeziku)?\b|"
          r"\b(?:jezik|izvođenj[ea])\s*[:–-]\s*ruski\b|"
          r"\bin\s+russian\b", "русский"),
     )
