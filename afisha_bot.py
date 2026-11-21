@@ -752,7 +752,7 @@ def slot_already_used(seen: dict, now: datetime) -> bool:
 def posted_today(seen: dict, now: datetime) -> list[dict]:
     result = []
     for row in seen.values():
-        if not isinstance(row, dict) or row.get("corrected_test") is True:
+        if not isinstance(row, dict) or row.get("corrected_test") is True or row.get("digest_item") is True:
             continue
         stamp = parse_date(row.get("published_at"))
         if stamp and stamp.astimezone(TZ).date() == now.astimezone(TZ).date():
@@ -763,7 +763,7 @@ def posted_today(seen: dict, now: datetime) -> list[dict]:
 def post_spacing_ok(seen: dict, now: datetime, minutes: int = 90) -> bool:
     """Protect channel from near-simultaneous main and backup scheduled runs."""
     for row in seen.values():
-        if not isinstance(row, dict) or row.get("corrected_test") is True:
+        if not isinstance(row, dict) or row.get("corrected_test") is True or row.get("digest_item") is True:
             continue
         stamp = parse_date(row.get("published_at"))
         if stamp:
@@ -1307,6 +1307,12 @@ def main() -> int:
         print("Afisha health report could not be written.")
     print(f"Event candidates: {len(events)}, ranked shortlist: {len(shortlisted)}, "
           f"today already: {daily_count}/{MAX_DAILY_POSTS}.")
+    # A Friday roundup replaces one ordinary publication, never increases the cap.
+    if now.astimezone(TZ).weekday() == 4 and posting_slot(now) == 2:
+        from afisha_weekend import maybe_publish_weekend
+        if maybe_publish_weekend(session, token, chat, shortlisted, seen, now, dry=dry):
+            return 0
+
     published = False
     for event in shortlisted[:10]:
         # Require AI editorial approval and an adequate interest score.
