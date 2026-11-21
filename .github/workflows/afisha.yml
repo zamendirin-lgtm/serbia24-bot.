@@ -74,3 +74,21 @@ jobs:
       - name: Safely persist Afisha history
         if: steps.dest.outputs.ready == 'true' && (github.event_name != 'push' || contains(github.event.head_commit.message, '[afisha-publish]'))
         run: python scripts/persist_afisha.py
+      - name: Summarize event source health
+        if: always()
+        shell: bash
+        run: |
+          if [ -f reports/afisha_health.json ]; then
+            echo '### Afisha event-source diagnostics' >> "$GITHUB_STEP_SUMMARY"
+            echo '\`\`\`json' >> "$GITHUB_STEP_SUMMARY"
+            cat reports/afisha_health.json >> "$GITHUB_STEP_SUMMARY"
+            echo '\`\`\`' >> "$GITHUB_STEP_SUMMARY"
+          fi
+      - name: Keep Afisha source diagnostics for 7 days
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: afisha-source-health
+          path: reports/afisha_health.json
+          if-no-files-found: ignore
+          retention-days: 7
