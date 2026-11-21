@@ -406,5 +406,17 @@
     "venue": "",
     "is_free": true,
     "reminder": false
+  },
+  "3c2b6fe5c1aac8ad6ab212ac4ff1f40d01d12f5b1166d9beee72cd89123f58a2": {
+    "url": "https://www.runbgd.com/whats-on/from-opera-to-hollywood-tamara-radjenovic-2026-12-28",
+    "event_start": "2026-12-28T00:00:00+01:00",
+    "published_at": "2026-11-21T20:52:43.780168+01:00",
+    "topic": "classical",
+    "ai_editor": "groq",
+    "title": "From Opera to Hollywood -Tamara Radjenović",
+    "city": "Белград",
+    "venue": "Sava Centar - Plava dvorana",
+    "is_free": false,
+    "reminder": false
   }
 }
