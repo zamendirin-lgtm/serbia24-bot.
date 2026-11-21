@@ -370,5 +370,17 @@
     "venue": "Белградская арена (Beogradska arena)",
     "is_free": false,
     "reminder": false
+  },
+  "f2af77275a34dbbcc2d660bb10dfa81a3a4fd6c694b9485f20088964ff3cc80a": {
+    "url": "https://savacentar.rs/dogadjaji/emina-jahovic-2/",
+    "event_start": "2026-11-23T00:00:00+01:00",
+    "published_at": "2026-11-21T12:24:39.846898+01:00",
+    "topic": "theatre",
+    "ai_editor": "groq",
+    "title": "Emina Jahović",
+    "city": "Белград",
+    "venue": "Сава Центар, Синий зал (Plava dvorana)",
+    "is_free": false,
+    "reminder": false
   }
 }
