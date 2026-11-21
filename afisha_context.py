@@ -29,7 +29,7 @@ def age_label(text: str) -> str:
         age = int(minimum.group(1))
         if 0 <= age <= 21:
             return f"от {age} лет (по информации организатора)"
-    restricted = re.search(r"(?<!\d)18\+\s*(?:godina|only|publika|audience)?\b", source)
+    restricted = re.search(r"(?<!\d)18\+(?!\w)", source)
     if restricted:
         return "18+ (по информации организатора)"
     return ""
