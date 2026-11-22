@@ -430,5 +430,17 @@
     "venue": "Сава Центар, Синий зал (Plava dvorana)",
     "is_free": false,
     "reminder": false
+  },
+  "d7dbe0f93e07855b8b02c17d4201d7263d843c7aae64035ff0c4c92adcf656dd": {
+    "url": "https://mtsdvorana.rs/dogadjaj/thrillerfest",
+    "event_start": "2026-12-05T13:00:00+01:00",
+    "published_at": "2026-11-22T10:23:14.391903+01:00",
+    "topic": "festival",
+    "ai_editor": "groq",
+    "title": "THRILLERFEST",
+    "city": "Белград",
+    "venue": "MTS Dvorana, Central Hall",
+    "is_free": false,
+    "reminder": false
   }
 }
