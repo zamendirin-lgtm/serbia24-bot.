@@ -239,7 +239,7 @@ class AfishaTests(unittest.TestCase):
 
     def test_telegram_rejected_image_url_downloads_and_uploads_jpeg(self):
         response = Mock(ok=False, status_code=400)
-        image_bytes = b"\\xff\\xd8\\xff" + b"x" * 2200
+        image_bytes = b"\xff\xd8\xff" + b"x" * 2200
         downloaded = Mock(content=image_bytes)
         uploaded = Mock(ok=True)
         uploaded.json.return_value = {"ok": True}
