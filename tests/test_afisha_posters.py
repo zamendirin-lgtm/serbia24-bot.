@@ -60,6 +60,21 @@ class OfficialMtsImageTests(unittest.TestCase):
         self.assertFalse(trusted_event_image("https://kombank.s3.amazonaws.com/2026/11/x.jpg",
                                              "https://mtsdvorana.rs/not-an-event"))
 
+    def test_mts_second_official_region_bucket_for_concert_posters(self):
+        regional = "https://kombank.s3.eu-central-1.amazonaws.com/bbbd1cd601847.png"
+        self.assertTrue(trusted_event_image(regional,
+                                            "https://mtsdvorana.rs/dogadjaj/bozo-vreco"))
+        self.assertFalse(trusted_event_image(regional,
+                                             "https://arenabeograd.com/dogadjaj/bozo"))
+        self.assertFalse(trusted_event_image(
+            "https://kombank.s3.eu-central-1.amazonaws.com/logo.png",
+            "https://mtsdvorana.rs/dogadjaj/bozo-vreco"))
+        poster = find_official_event_poster(BeautifulSoup(
+            f'<h1>BOŽO VREĆO</h1><img alt="BOŽO VREĆO" src="{regional}">',
+            "html.parser"), "https://mtsdvorana.rs/dogadjaj/bozo-vreco",
+            "BOŽO VREĆO")
+        self.assertEqual(poster, regional)
+
     def test_lazy_loading_real_poster_and_rejection_of_site_logo(self):
         markup = (
             '<h1>IGOROV NOVOGODIŠNJI MAGIČNI SHOW</h1>'
