@@ -418,5 +418,17 @@
     "venue": "Sava Centar - Plava dvorana",
     "is_free": false,
     "reminder": false
+  },
+  "889f0e2e60a123d4ce6cebc16da68ca5062c2adb97559f92be0d375f5d8594e8": {
+    "url": "https://savacentar.rs/dogadjaji/abba-symphonic-tribute-show/",
+    "event_start": "2026-12-23T00:00:00+01:00",
+    "published_at": "2026-11-22T08:10:23.443870+01:00",
+    "topic": "classical",
+    "ai_editor": "groq",
+    "title": "ABBA Symphonic Tribute Show",
+    "city": "Белград",
+    "venue": "Сава Центар, Синий зал (Plava dvorana)",
+    "is_free": false,
+    "reminder": false
   }
 }
