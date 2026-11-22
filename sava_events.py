@@ -13,6 +13,7 @@ from urllib.robotparser import RobotFileParser
 
 import requests
 from bs4 import BeautifulSoup
+from afisha_media import find_official_event_poster
 
 BASE = "https://savacentar.rs"
 CALENDAR = BASE + "/dogadjaji-u-plavoj-dvorani/"
@@ -119,18 +120,8 @@ def parse_detail(markup: str, url: str, now: datetime):
             ticket = checked
             break
 
-    # Only a verified promo image from this exact event page is eligible.
-    # Do not substitute Sava Centar's generic logo or a photo of its building.
-    image = ""
-    for node in soup.select("meta[property='og:image'], meta[name='twitter:image']"):
-        candidate = urljoin(source, node.get("content", ""))
-        parsed = urlparse(candidate)
-        if (parsed.scheme == "https" and
-            parsed.hostname in ("savacentar.rs", "www.savacentar.rs") and
-            parsed.path.lower().endswith((".jpg", ".jpeg", ".png", ".webp")) and
-            not any(tag in parsed.path.casefold() for tag in ("logo", "default", "placeholder"))):
-            image = candidate
-            break
+    # Prefer the event-specific named hero; OG metadata is a fallback.
+    image = find_official_event_poster(soup, source, title)
     # Event-specific editorial fact, confirmed by Sava Centar and Tickets.rs.
     price = "не указана"
     if "krcko" in lower and "ora" in lower and year == 2026 and month == 12 and day == 20:

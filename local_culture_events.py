@@ -14,6 +14,7 @@ from urllib.robotparser import RobotFileParser
 
 import requests
 from bs4 import BeautifulSoup
+from afisha_media import find_official_event_poster
 
 LOZ = "https://lozionica.rs"
 LOZ_CALENDAR = LOZ + "/dogadjaji/"
@@ -212,17 +213,9 @@ def loz_detail(markup: str, url: str, now: datetime):
                 ticket = link
                 break
 
-    # Images are accepted only if this event's page explicitly contains a
-    # poster on the Ložionica domain. Never use logos/default thumbnails.
-    image = ""
-    for tag in soup.select(".tribe-events-event-image img, meta[property='og:image']"):
-        path = urljoin(source, tag.get("src") or tag.get("content") or "")
-        parsed = urlparse(path)
-        if (parsed.scheme == "https" and parsed.hostname in ("lozionica.rs", "www.lozionica.rs")
-            and parsed.path.casefold().endswith((".jpg", ".jpeg", ".png"))
-            and not any(x in parsed.path.casefold() for x in ("logo", "placeholder", "default"))):
-            image = path
-            break
+    # Prefer a title-matched official poster (including lazy-loaded images);
+    # meta previews are considered only after event-specific imagery.
+    image = find_official_event_poster(soup, source, title)
     ev = Event(url=source, title=title, city="Белград", venue="Ložionica, Ulica Ideja 2",
                start=start, end=end, description=description, category=category,
                image=image, price=price, ticket_url=ticket)

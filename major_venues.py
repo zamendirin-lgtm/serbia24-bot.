@@ -11,6 +11,7 @@ from urllib.parse import urlparse, urljoin, urlunparse
 from urllib.robotparser import RobotFileParser
 import requests
 from bs4 import BeautifulSoup
+from afisha_media import find_official_event_poster
 
 ARENA = "https://arenabeograd.com"
 SNP = "https://prodaja.snp.org.rs"
@@ -82,15 +83,7 @@ def arena_detail(markup, url, now):
         return None
     if re.search("sport|utakmica|basketball|fudbal", tags, re.I):
         return None
-    image = ""
-    for node in soup.select(".tribe-events-event-image img, meta[property='og:image']")[:5]:
-        raw = node.get("src") or node.get("content") or ""
-        p = urlparse(urljoin(source, raw))
-        if (p.scheme == "https" and p.hostname in ("arenabeograd.com", "www.arenabeograd.com")
-                and p.path.lower().endswith((".jpg", ".jpeg", ".png"))
-                and not any(z in p.path.lower() for z in ("logo", "placeholder", "default"))):
-            image = urljoin(source, raw)
-            break
+    image = find_official_event_poster(soup, source, title)
     ticket = ""
     for a in body.select("a[href]"):
         if not re.search("ulaznic|karte|tickets|kupi", a.get_text(" ", strip=True), re.I):
