@@ -14,6 +14,7 @@ from urllib.robotparser import RobotFileParser
 
 import requests
 from bs4 import BeautifulSoup
+from afisha_media import find_official_event_poster
 
 BASE = "https://mtsdvorana.rs"
 CALENDAR = BASE + "/dogadjaji"
@@ -146,10 +147,13 @@ def parse_detail(markup: str, url: str, now: datetime):
             price = "от " + amount + " дин."
     elif re.search(r"besplatan\s+ulaz|ulaz\s+je\s+slobodan", header_text, re.I):
         price = "Бесплатно (по данным организатора)"
+    # The venue's actual event poster is frequently hosted at
+    # kombank.s3.amazonaws.com and marked with the exact event title as alt.
+    image = find_official_event_poster(soup, url, title)
     event = Event(
         url=safe_detail_url(url), title=title, city="Белград",
         venue=venue, start=start, description=summary,
-        category=category, price=price, ticket_url=ticket_url,
+        category=category, price=price, ticket_url=ticket_url, image=image,
     )
     return event if event_in_window(event, now) else None
 
@@ -192,5 +196,7 @@ def collect_mts_events(session: requests.Session, now: datetime) -> list:
                 found.append(item)
         except requests.RequestException:
             continue
-    print("MTS Dvorana: " + str(len(found)) + " verified upcoming events.")
+    with_posters = sum(bool(event.image) for event in found)
+    print("MTS Dvorana: " + str(len(found)) + " verified upcoming events, "
+          + str(with_posters) + " official event posters.")
     return found
