@@ -454,5 +454,17 @@
     "venue": "MTS Dvorana, Sala 1",
     "is_free": false,
     "reminder": false
+  },
+  "18d2b6d119476590624431694643374b92a41a7f5acb2d9bad3f3b4f6ba4d5bf": {
+    "url": "https://novisad.travel/en/kalendar-dogadjaja/vojvodina-flavours-market",
+    "event_start": "2026-11-27T00:00:00+01:00",
+    "published_at": "2026-11-22T15:55:24.120959+01:00",
+    "topic": "fair",
+    "ai_editor": "groq",
+    "title": "Vojvodina Flavours Market",
+    "city": "Нови-Сад",
+    "venue": "",
+    "is_free": false,
+    "reminder": false
   }
 }
