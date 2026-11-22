@@ -466,5 +466,17 @@
     "venue": "",
     "is_free": false,
     "reminder": false
+  },
+  "6f61ae502238e2f5c19e351dafc0af80e81818e243f0ec639de183008143d8b6": {
+    "url": "https://savacentar.rs/dogadjaji/magla-bend-7/",
+    "event_start": "2026-11-26T00:00:00+01:00",
+    "published_at": "2026-11-22T18:22:17.404095+01:00",
+    "topic": "theatre",
+    "ai_editor": "groq",
+    "title": "Magla bend",
+    "city": "Белград",
+    "venue": "Сава Центар, Синий зал (Plava dvorana)",
+    "is_free": false,
+    "reminder": false
   }
 }
