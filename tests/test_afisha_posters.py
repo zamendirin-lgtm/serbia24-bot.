@@ -118,7 +118,7 @@ class OfficialMtsImageTests(unittest.TestCase):
     def test_webp_official_image_converts_to_jpeg_for_upload(self):
         webp_url = OFFICIAL_POSTER.replace(".jpg", ".webp")
         raw = io.BytesIO()
-        Image.new("RGB", (70, 90), (80, 100, 120)).save(raw, "WEBP")
+        Image.effect_noise((360, 420), 55).convert("RGB").save(raw, "WEBP", quality=85)
         session = Mock()
         fail = Mock(ok=False, status_code=400)
         ok = Mock(ok=True)
