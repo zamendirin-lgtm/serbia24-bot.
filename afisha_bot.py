@@ -27,6 +27,7 @@ from afisha_editor import edit_event
 from afisha_photos import find_licensed_photo
 from afisha_context import contextual_lines
 from afisha_cards import branded_poster
+from afisha_media import trusted_event_image
 
 TZ = ZoneInfo("Europe/Belgrade")
 STATE = Path("data/afisha_seen.json")
@@ -1085,32 +1086,13 @@ def select(events: list[Event], seen: dict, now: datetime) -> list[Event]:
     return (shortlist + overflow)[:SELECTION_POOL]
 
 
-def _official_poster(url: str) -> bool:
-    """Allow the official tourism source's real event image only."""
-    if not isinstance(url, str):
-        return False
-    try:
-        parsed = urlparse(url)
-    except ValueError:
-        return False
-    return (
-        parsed.scheme == "https"
-        and parsed.hostname in (
-            "novisad.travel", "www.novisad.travel",
-            "savacentar.rs", "www.savacentar.rs",
-            "arenabeograd.com", "www.arenabeograd.com",
-            "lozionica.rs", "www.lozionica.rs",
-        )
-        and not parsed.username
-        and not parsed.password
-        and parsed.path.lower().endswith((".jpg", ".jpeg", ".png", ".webp")) and not any(
-            label in parsed.path.casefold() for label in ("logo", "placeholder", "default")
-        )
-    )
+def _official_poster(url: str, source_url: str = "") -> bool:
+    """Organizer's real event photo, with exact venue/CDN host allowlists."""
+    return trusted_event_image(url, source_url)
 
 
 def _send_event_photo(session: requests.Session, api: str, chat: str,
-                      caption: str, image_url: str) -> bool:
+                      caption: str, image_url: str, source_url: str = "") -> bool:
     """Try Telegram photo-by-URL, then upload validated official image bytes."""
     payload = {
         "chat_id": chat, "photo": image_url,
@@ -1125,11 +1107,17 @@ def _send_event_photo(session: requests.Session, api: str, chat: str,
     except (requests.RequestException, ValueError):
         pass
 
+    print("Afisha photo: direct URL send failed; attempting binary upload.")
     # Telegram sometimes cannot fetch a poster URL due to redirects/CDN policy.
     # Upload its image bytes instead, but only after strict source/size checks.
     try:
         downloaded = session.get(image_url, timeout=16)
         downloaded.raise_for_status()
+        # A redirected download must remain on a vetted organizer media host.
+        resolved = getattr(downloaded, "url", None)
+        if isinstance(resolved, str) and not _official_poster(resolved, source_url):
+            print("Afisha photo: image redirect left the trusted organizer CDN.")
+            return False
         content = downloaded.content
         if not isinstance(content, bytes) or not (1024 <= len(content) <= 8_000_000):
             print("Official event image was missing or unusually sized.")
@@ -1138,8 +1126,22 @@ def _send_event_photo(session: requests.Session, api: str, chat: str,
             extension, content_type = "jpg", "image/jpeg"
         elif content.startswith(b"\\x89PNG\\r\\n\\x1a\\n"):
             extension, content_type = "png", "image/png"
+        elif content[:4] == b"RIFF" and content[8:12] == b"WEBP":
+            # Telegram does not consistently accept WEBP as a photo upload.
+            try:
+                from io import BytesIO
+                from PIL import Image
+                with Image.open(BytesIO(content)) as picture:
+                    rgb = picture.convert("RGB")
+                    buffer = BytesIO()
+                    rgb.save(buffer, format="JPEG", quality=90)
+                content = buffer.getvalue()
+                extension, content_type = "jpg", "image/jpeg"
+            except (OSError, ValueError):
+                print("Afisha photo: WEBP to JPEG conversion failed.")
+                return False
         else:
-            print("Official image format is not supported for Telegram photos.")
+            print("Afisha photo: downloaded response is not a supported poster.")
             return False
         uploaded = session.post(
             api + "sendPhoto",
@@ -1151,7 +1153,7 @@ def _send_event_photo(session: requests.Session, api: str, chat: str,
             print("Afisha event photo uploaded directly with Russian caption.")
             return True
     except (requests.RequestException, ValueError):
-        pass
+        print("Afisha photo: binary upload failed.")
     return False
 
 
@@ -1166,18 +1168,25 @@ def publish(session: requests.Session, token: str, chat: str, post: str,
     """
     post = finalize_afisha_post(post)
     api = f"https://api.telegram.org/bot{token}/"
-    official = _official_poster(image_url)
+    official = _official_poster(image_url, source_url)
     commons = (
         licensed_commons
         and urlparse(image_url).scheme == "https"
         and urlparse(image_url).hostname == "upload.wikimedia.org"
     )
+    if image_url:
+        image_host = urlparse(image_url).hostname or "(unknown)"
+        print(f"Afisha image: found=1 host={image_host} allowed={bool(official or commons)}.")
+    else:
+        print("Afisha image: no real event poster or verified licensed performer photo.")
     if image_url and (official or commons) and len(post) <= 1024:
-        if _send_event_photo(session, api, chat, post, image_url):
+        if _send_event_photo(session, api, chat, post, image_url, source_url):
             return True
-        print("Licensed event image failed; posting Russian text without a link preview.")
-    elif image_url and (official or commons):
-        print("Long Afisha caption; posting full Russian text without a link preview.")
+        print("Afisha photo: both organizer photo send methods failed; using branded fallback.")
+    elif image_url and not (official or commons):
+        print("Afisha photo: image host not approved for this event source; using branded fallback.")
+    elif image_url:
+        print("Afisha photo: caption over 1024 chars; using full text format.")
 
     # Own-brand artwork is always preferable to a misleading unrelated photo.
     # Keep the full text-only fallback for captions that exceed 1024 chars.
@@ -1345,12 +1354,13 @@ def main() -> int:
                     print(f"Afisha matched {photo.subject_label} from Wikimedia Commons.")
                 else:
                     print("Licensed image credit would exceed Telegram caption size; keeping full text.")
-        card = None
-        if not chosen_image or not _official_poster(chosen_image):
-            try:
-                card = branded_poster(approved.title_ru, event.city, event.start.strftime("%d.%m.%Y"))
-            except (OSError, ValueError):
-                print("Branded poster unavailable; full text will still publish.")
+        # Build a backup card *even when the official image looks valid*.
+        # If Telegram rejects both URL and file upload, never leave the post bare.
+        try:
+            card = branded_poster(approved.title_ru, event.city, event.start.strftime("%d.%m.%Y"))
+        except (OSError, ValueError):
+            card = None
+            print("Branded poster unavailable; full text will still publish.")
         if publish(session, token, chat, post, event.url, chosen_image,
                    licensed_commons=licensed_commons, generated_card=card):
             # Preserve the original event key on first publication, but keep
