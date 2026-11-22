@@ -1122,9 +1122,9 @@ def _send_event_photo(session: requests.Session, api: str, chat: str,
         if not isinstance(content, bytes) or not (1024 <= len(content) <= 8_000_000):
             print("Official event image was missing or unusually sized.")
             return False
-        if content.startswith(b"\\xff\\xd8\\xff"):
+        if content.startswith(b"\xff\xd8\xff"):
             extension, content_type = "jpg", "image/jpeg"
-        elif content.startswith(b"\\x89PNG\\r\\n\\x1a\\n"):
+        elif content.startswith(b"\x89PNG\r\n\x1a\n"):
             extension, content_type = "png", "image/png"
         elif content[:4] == b"RIFF" and content[8:12] == b"WEBP":
             # Telegram does not consistently accept WEBP as a photo upload.
