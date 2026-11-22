@@ -442,5 +442,17 @@
     "venue": "MTS Dvorana, Central Hall",
     "is_free": false,
     "reminder": false
+  },
+  "5e5e93a881ce78bf233049ac2a16bb087f123bf23781466e6fb8d50d94e26d6a": {
+    "url": "https://mtsdvorana.rs/dogadjaj/premijera-filma-saligia",
+    "event_start": "2026-11-30T20:00:00+01:00",
+    "published_at": "2026-11-22T12:22:58.164112+01:00",
+    "topic": "cinema",
+    "ai_editor": "groq",
+    "title": "PREMIJERA FILMA SALIGIA",
+    "city": "Белград",
+    "venue": "MTS Dvorana, Sala 1",
+    "is_free": false,
+    "reminder": false
   }
 }
