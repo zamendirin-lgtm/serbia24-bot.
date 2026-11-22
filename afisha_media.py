@@ -14,7 +14,11 @@ from bs4 import BeautifulSoup
 
 
 VENUE_IMAGE_HOSTS = {
-    "mtsdvorana.rs": {"mtsdvorana.rs", "www.mtsdvorana.rs", "kombank.s3.amazonaws.com"},
+    "mtsdvorana.rs": {
+        "mtsdvorana.rs", "www.mtsdvorana.rs",
+        "kombank.s3.amazonaws.com",
+        "kombank.s3.eu-central-1.amazonaws.com",
+    },
     "savacentar.rs": {"savacentar.rs", "www.savacentar.rs"},
     "arenabeograd.com": {"arenabeograd.com", "www.arenabeograd.com"},
     "lozionica.rs": {"lozionica.rs", "www.lozionica.rs"},
@@ -53,13 +57,18 @@ def trusted_event_image(image_url: str, source_url: str = "") -> bool:
         # trust the S3 bucket without the linked verified MTS event page.
         return image.hostname in {
             h for group in VENUE_IMAGE_HOSTS.values() for h in group
-        } - {"kombank.s3.amazonaws.com"}
+        } - {"kombank.s3.amazonaws.com", "kombank.s3.eu-central-1.amazonaws.com"}
     if image.hostname == "kombank.s3.amazonaws.com":
-        # Only the official venue's dated, image-like bucket object path.
+        # The first bucket uses year/month UUID filenames.
         if not re.fullmatch(
             r"/20\d\d/(?:0?[1-9]|1[0-2])/[A-Za-z0-9_.-]+\.(?:jpe?g|png|webp)",
             image.path, re.I,
         ):
+            return False
+    if image.hostname == "kombank.s3.eu-central-1.amazonaws.com":
+        # The venue's newer regional bucket uses flat hex-encoded object keys,
+        # e.g. /bbbd1cd601847.png on the BOŽO VREĆO event page.
+        if not re.fullmatch(r"/[0-9a-f]{10,64}\.(?:jpe?g|png|webp)", image.path, re.I):
             return False
     return True
 
