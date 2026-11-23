@@ -538,5 +538,17 @@
     "venue": "",
     "is_free": true,
     "reminder": false
+  },
+  "321e05cda9752c298afc2de24fec6efefaffe6119f0cb6f09a7c81bbb91d4058": {
+    "url": "https://mtsdvorana.rs/dogadjaj/carobnjak-iz-oza",
+    "event_start": "2026-11-29T12:00:00+01:00",
+    "published_at": "2026-11-23T18:24:21.425749+01:00",
+    "topic": "classical",
+    "ai_editor": "groq",
+    "title": "ČAROBNJAK IZ OZA",
+    "city": "Белград",
+    "venue": "MTS Dvorana, Sala 1",
+    "is_free": false,
+    "reminder": false
   }
 }
