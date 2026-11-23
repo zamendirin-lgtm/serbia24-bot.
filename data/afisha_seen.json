@@ -550,5 +550,17 @@
     "venue": "MTS Dvorana, Sala 1",
     "is_free": false,
     "reminder": false
+  },
+  "9e0e61b2f9909a22b7cf1a0df52a6be0997f2190e3b5dacac807f2d7556f4c64": {
+    "url": "https://mtsdvorana.rs/dogadjaj/novogodisnja-rock-opera",
+    "event_start": "2026-12-22T20:00:00+01:00",
+    "published_at": "2026-11-23T21:10:48.748526+01:00",
+    "topic": "classical",
+    "ai_editor": "groq",
+    "title": "NOVOGODIŠNJA ROCK OPERA",
+    "city": "Белград",
+    "venue": "MTS Dvorana, Sala 1",
+    "is_free": false,
+    "reminder": false
   }
 }
