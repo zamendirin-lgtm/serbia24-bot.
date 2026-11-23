@@ -526,5 +526,17 @@
     "venue": "MTS Dvorana, Sala 1",
     "is_free": false,
     "reminder": false
+  },
+  "7d525f4f7ec995967169b0c7f3ad39fbdf82f424dde8f9927007b2d5402a0a39": {
+    "url": "https://novisad.travel/en/kalendar-dogadjaja/novembar-fest",
+    "event_start": "2026-11-28T00:00:00+01:00",
+    "published_at": "2026-11-23T16:13:13.838163+01:00",
+    "topic": "other",
+    "ai_editor": "groq",
+    "title": "November Fest",
+    "city": "Нови-Сад",
+    "venue": "",
+    "is_free": true,
+    "reminder": false
   }
 }
