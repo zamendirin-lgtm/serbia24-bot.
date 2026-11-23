@@ -514,5 +514,17 @@
     "venue": "Сава Центар, Синий зал (Plava dvorana)",
     "is_free": false,
     "reminder": false
+  },
+  "063331364915d13e07b52621641e6fc6cea8439f642c7ae6d24b01c61da434f5": {
+    "url": "https://mtsdvorana.rs/dogadjaj/bokiozo-grandiozo-novogodisnji-cirkus",
+    "event_start": "2026-12-27T17:00:00+01:00",
+    "published_at": "2026-11-23T13:00:46.883959+01:00",
+    "topic": "family",
+    "ai_editor": "groq",
+    "title": "BOKIOZO GRANDIOZO – NOVOGODIŠNJI CIRKUS",
+    "city": "Белград",
+    "venue": "MTS Dvorana, Sala 1",
+    "is_free": false,
+    "reminder": false
   }
 }
