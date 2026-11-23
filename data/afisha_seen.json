@@ -490,5 +490,17 @@
     "venue": "MTS Dvorana, Sala 6",
     "is_free": false,
     "reminder": false
+  },
+  "5d7c2c7fef46705371dbdbc8517787d5a347f93dc2643aafbefdb10670e53a67": {
+    "url": "https://mtsdvorana.rs/dogadjaj/artur-menezes",
+    "event_start": "2026-11-25T21:00:00+01:00",
+    "published_at": "2026-11-23T09:43:28.602559+01:00",
+    "topic": "concert",
+    "ai_editor": "groq",
+    "title": "Artur Menezes",
+    "city": "Белград",
+    "venue": "MTS Dvorana",
+    "is_free": false,
+    "reminder": false
   }
 }
