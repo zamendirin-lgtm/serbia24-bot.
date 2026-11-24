@@ -610,5 +610,17 @@
     "venue": "Белградская арена (Beogradska arena)",
     "is_free": false,
     "reminder": false
+  },
+  "6b1802e2f443a730c9f68435c1e39b93c2b469b8563297fe236899f9fa90d4dd": {
+    "url": "https://mtsdvorana.rs/dogadjaj/daniel-sloss-bitter",
+    "event_start": "2026-12-07T20:00:00+01:00",
+    "published_at": "2026-11-24T18:59:34.121364+01:00",
+    "topic": "other",
+    "ai_editor": "groq",
+    "title": "Daniel Sloss - BITTER",
+    "city": "Белград",
+    "venue": "MTS Dvorana, Sala 1",
+    "is_free": false,
+    "reminder": false
   }
 }
