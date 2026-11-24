@@ -574,5 +574,17 @@
     "venue": "",
     "is_free": true,
     "reminder": false
+  },
+  "0729f2dae15c0f8d85494a8f0df35dcd033b36112c24690975b54ef8dc45082d": {
+    "url": "https://mtsdvorana.rs/dogadjaj/ekv-mi-to-mozemo-zajedno",
+    "event_start": "2026-12-02T20:00:00+01:00",
+    "published_at": "2026-11-24T11:18:18.309145+01:00",
+    "topic": "concert",
+    "ai_editor": "groq",
+    "title": "EKV - MI TO MOŽEMO ZAJEDNO",
+    "city": "Белград",
+    "venue": "MTS Dvorana, Sala 1",
+    "is_free": false,
+    "reminder": false
   }
 }
