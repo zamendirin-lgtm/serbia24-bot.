@@ -586,5 +586,17 @@
     "venue": "MTS Dvorana, Sala 1",
     "is_free": false,
     "reminder": false
+  },
+  "87019b8d510e22b429c7fbc6684123c122ce43d5bbc0e089633cf6d972cecc31": {
+    "url": "https://savacentar.rs/dogadjaji/zeljko-samardzic-2/",
+    "event_start": "2026-12-14T00:00:00+01:00",
+    "published_at": "2026-11-24T13:04:54.613678+01:00",
+    "topic": "theatre",
+    "ai_editor": "groq",
+    "title": "Željko Samardžić",
+    "city": "Белград",
+    "venue": "Сава Центар, Синий зал (Plava dvorana)",
+    "is_free": false,
+    "reminder": false
   }
 }
