@@ -598,5 +598,17 @@
     "venue": "Сава Центар, Синий зал (Plava dvorana)",
     "is_free": false,
     "reminder": false
+  },
+  "82c1b10f325a1f7a03b4a50a3c8c0921345963f226752bb6898c9c34984a7a11": {
+    "url": "https://arenabeograd.com/dogadjaj/miroslav-ilic/",
+    "event_start": "2026-12-10T00:00:00+01:00",
+    "published_at": "2026-11-24T15:06:40.547893+01:00",
+    "topic": "concert",
+    "ai_editor": "groq",
+    "title": "Мирослав Илић",
+    "city": "Белград",
+    "venue": "Белградская арена (Beogradska arena)",
+    "is_free": false,
+    "reminder": false
   }
 }
