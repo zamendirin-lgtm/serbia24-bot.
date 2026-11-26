@@ -95,8 +95,13 @@ def polish(en_title: str, en_summary: str, ru_title: str, ru_summary: str):
         return title, summary
     except requests.HTTPError as exc:
         status = exc.response.status_code if exc.response is not None else 0
+        detail = ""
+        try:
+            detail = str(exc.response.json().get("error", {}).get("message", ""))[:130]
+        except (ValueError, AttributeError, TypeError):
+            pass
         print("SCIENCE_EDITOR_HTTP_UNAVAILABLE", status,
-              "using guarded literal translation")
+              "reason:", repr(detail), "using guarded literal translation")
         return ru_title, ru_summary
     except (requests.RequestException, ValueError, KeyError, TypeError) as exc:
         print("SCIENCE_EDITOR_UNAVAILABLE", type(exc).__name__,
