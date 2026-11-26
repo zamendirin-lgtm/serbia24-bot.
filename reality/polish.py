@@ -56,8 +56,9 @@ def editorial_ok(en_title: str, en_summary: str, title: str, summary: str) -> bo
 def polish(en_title: str, en_summary: str, ru_title: str, ru_summary: str):
     """Return checked editorial output or None when a configured editor fails.
 
-    If no Groq key exists, return literal translations for downstream
-    sentence/length checks; never invent a nonexistent model response.
+    If Groq is unconfigured or unreachable, return literal translations for
+    downstream sentence and length checks, never invent a model response.
+    Explicit model fact-check rejection still results in a skipped post.
     """
     key = os.environ.get("GROQ_API_KEY", "").strip()
     if not key:
@@ -91,6 +92,12 @@ def polish(en_title: str, en_summary: str, ru_title: str, ru_summary: str):
             print("SCIENCE_EDITOR_CHECK_REJECTED")
             return None
         return title, summary
+    except requests.HTTPError as exc:
+        status = exc.response.status_code if exc.response is not None else 0
+        print("SCIENCE_EDITOR_HTTP_UNAVAILABLE", status,
+              "using guarded literal translation")
+        return ru_title, ru_summary
     except (requests.RequestException, ValueError, KeyError, TypeError) as exc:
-        print("SCIENCE_EDITOR_FAILED", type(exc).__name__)
-        return None
+        print("SCIENCE_EDITOR_UNAVAILABLE", type(exc).__name__,
+              "using guarded literal translation")
+        return ru_title, ru_summary
