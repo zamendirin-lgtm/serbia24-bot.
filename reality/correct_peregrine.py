@@ -71,34 +71,32 @@ def locate_original():
 
 
 def verified_falcon_photo():
-    """Fallback: documented public-domain US Fish & Wildlife Service falcon."""
+    """Exact verified U.S. Fish & Wildlife Service public-domain Commons file.
+
+    Use Wikimedia's direct file path rather than the API, which may return HTTP 429.
+    Never send the URL until the remote server confirms a JPEG response.
+    """
+    import hashlib
+    filename = "Falco_peregrinus.jpg"
+    digest = hashlib.md5(filename.encode("utf-8")).hexdigest()
+    url = ("https://upload.wikimedia.org/wikipedia/commons/" +
+           digest[0] + "/" + digest[:2] + "/" + filename)
     page = "https://commons.wikimedia.org/wiki/File:Falco_peregrinus.jpg"
     try:
-        response = requests.get("https://commons.wikimedia.org/w/api.php", params={
-            "action": "query", "format": "json", "formatversion": "2",
-            "titles": "File:Falco peregrinus.jpg",
-            "prop": "imageinfo", "iiprop": "url|mime|extmetadata",
-            "iiurlwidth": "1280"
-        }, timeout=22)
-        response.raise_for_status()
-        pages = response.json().get("query", {}).get("pages", [])
-        for entry in pages:
-            info = (entry.get("imageinfo") or [{}])[0]
-            url = info.get("thumburl") or info.get("url", "")
-            if (entry.get("title") != "File:Falco peregrinus.jpg"
-                    or info.get("mime") != "image/jpeg"
-                    or not url.startswith("https://upload.wikimedia.org/")):
-                continue
-            meta = info.get("extmetadata", {})
-            name = bot.clean(meta.get("LicenseShortName", {}).get("value", ""))
-            if "public domain" not in name.lower():
-                print("FALCON_PUBLIC_DOMAIN_LICENSE_NOT_CONFIRMED", repr(name))
-                continue
-            return {"id": "commons:public-domain-falco-peregrinus",
-                    "url": url, "page": page,
-                    "license": {"name": "Public domain", "credit": "", "lic_url": ""}}
-    except (requests.RequestException, ValueError, TypeError) as exc:
-        print("FALCON_PUBLIC_DOMAIN_FETCH_FAILED", type(exc).__name__)
+        with bot.HTTP.get(url, stream=True, timeout=25) as response:
+            print("FALCON_DIRECT_STATUS", response.status_code,
+                  response.headers.get("content-type", "unknown"))
+            response.raise_for_status()
+            if not response.headers.get("content-type", "").lower().startswith("image/jpeg"):
+                return None
+            first = next(response.iter_content(1024), b"")
+            if not first.startswith(b"\xff\xd8"):
+                return None
+        return {"id": "commons:public-domain-falco-peregrinus",
+                "url": url, "page": page,
+                "license": {"name": "Public domain", "credit": "", "lic_url": ""}}
+    except (requests.RequestException, ValueError, OSError) as exc:
+        print("FALCON_DIRECT_FETCH_FAILED", type(exc).__name__)
     return None
 
 
