@@ -112,6 +112,8 @@ jobs:
       cancel-in-progress: false
     env:
       REALITY_BOT_TOKEN: ${{ secrets.REALITY_BOT_TOKEN }}
+      GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+      GROQ_MODEL: 'openai/gpt-oss-120b'
       REALITY_CHAT_ID: '@priroda_realnosti'
       REALITY_DRY_RUN: 'false'
     steps:
