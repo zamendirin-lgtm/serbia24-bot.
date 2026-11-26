@@ -48,8 +48,12 @@ def locate_original():
                       repr(preview[:150]))
             for div in posts:
                 text = div.get_text(" ", strip=True).lower()
-                if (("самое быстрое животное" not in text or
-                     "2080" not in text or "сапсан" not in text)):
+                if ("2080" not in text or "сапсан" not in text):
+                    continue
+                # The post may already have an improved headline; identify
+                # the same 26-Nov article by its unique subject and date.
+                if ("самое быстрое животное" not in text and
+                    "сапсаны могут" not in text):
                     continue
                 element = div.select_one("time[datetime]")
                 if element:
