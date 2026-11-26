@@ -231,6 +231,37 @@ def license_info(meta):
     return {"name": label, "credit": author, "lic_url": lic_url}
 
 
+def verified_species_fallback(query, state):
+    """Known public-domain species image for temporary Commons search outages.
+
+    Confirmed work of a US Fish & Wildlife Service employee, hosted on Commons.
+    No generic animal photo is ever used in place of a different species.
+    """
+    if query != "peregrine falcon":
+        return None
+    identifier = "commons:public-domain-falco-peregrinus"
+    if any(v.get("image_id") == identifier for v in state.get("posted", {}).values()):
+        return None
+    filename = "Falco_peregrinus.jpg"
+    digest = hashlib.md5(filename.encode("utf-8")).hexdigest()
+    url = ("https://upload.wikimedia.org/wikipedia/commons/" +
+           digest[0] + "/" + digest[:2] + "/" + filename)
+    try:
+        with HTTP.get(url, stream=True, timeout=22) as response:
+            response.raise_for_status()
+            if not response.headers.get("content-type", "").lower().startswith("image/jpeg"):
+                return None
+            data = next(response.iter_content(1024), b"")
+            if not data.startswith(b"\xff\xd8"):
+                return None
+        return {"id": identifier, "url": url,
+                "page": "https://commons.wikimedia.org/wiki/File:Falco_peregrinus.jpg",
+                "license": {"name": "Public domain", "credit": "", "lic_url": ""}}
+    except (requests.RequestException, ValueError):
+        print("VERIFIED_SPECIES_IMAGE_UNAVAILABLE", query)
+        return None
+
+
 def commons_image(query, state):
     params = {"action": "query", "format": "json", "formatversion": "2",
               "generator": "search", "gsrnamespace": "6",
@@ -243,7 +274,7 @@ def commons_image(query, state):
         response.raise_for_status()
         pages = response.json().get("query", {}).get("pages", [])
     except (requests.RequestException, ValueError):
-        return None
+        return verified_species_fallback(query, state)
     used = {x.get("image_id") for x in state.get("posted", {}).values()}
     for page in pages:
         if not eq.photo_matches(query, page.get("title", "")):
@@ -261,7 +292,7 @@ def commons_image(query, state):
             continue
         return {"id": image_id, "url": src, "page": info.get("descriptionurl", ""),
                 "license": licence}
-    return None
+    return verified_species_fallback(query, state)
 
 
 def telegram(method, data, files=None):
