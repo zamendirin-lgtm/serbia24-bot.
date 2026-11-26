@@ -3,6 +3,7 @@ import unittest
 
 import editorial_quality as eq
 import bot
+import polish
 
 
 class EditorialTests(unittest.TestCase):
@@ -48,6 +49,31 @@ class EditorialTests(unittest.TestCase):
             "Территория может увеличиться на 74% в случае климатического сценария с высоким уровнем",
             "🔗 Источник", "🐦")
         self.assertEqual(result, "")
+
+    def test_ai_editor_keeps_falcon_uncertainty_and_numbers(self):
+        src_title = "Peregrine falcons could see habitat grow 74% by 2080"
+        src_summary = "The area suitable for peregrine falcons could grow by 74% in 2080."
+        self.assertTrue(polish.editorial_ok(
+            src_title, src_summary,
+            "Сапсаны могут расширить ареал на 74% к 2080 году",
+            "В Великобритании территория для сапсанов может увеличиться на 74% к 2080 году."
+        ))
+
+    def test_ai_editor_rejects_invented_numbers(self):
+        self.assertFalse(polish.editorial_ok(
+            "Peregrine falcons could gain 74% habitat by 2080",
+            "The area suitable for peregrine falcons could grow by 74% by 2080.",
+            "Сапсаны могут расширить ареал на 90% к 2080 году",
+            "Учёные прогнозируют рост площади на 90% к 2080 году."
+        ))
+
+    def test_ai_editor_rejects_certainty_and_missing_species(self):
+        self.assertFalse(polish.editorial_ok(
+            "Peregrine falcons could gain habitat",
+            "The area suitable for peregrine falcons could expand in future.",
+            "Самое быстрое животное гарантированно получит новые земли",
+            "Его среда обитания точно увеличится."
+        ))
 
     def test_caption_is_valid_and_fits_telegram(self):
         caption = eq.compose_caption("Изменение климата может расширить ареал сапсанов",
