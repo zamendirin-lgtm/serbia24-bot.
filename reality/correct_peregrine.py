@@ -38,7 +38,15 @@ def locate_original():
                              timeout=24)
             r.raise_for_status()
             soup = BeautifulSoup(r.text, "html.parser")
-            for div in soup.select(".tgme_widget_message[data-post]"):
+            posts = soup.select(".tgme_widget_message[data-post]")
+            print("PUBLIC_PREVIEW", url, "cards", len(posts))
+            for item in posts[-12:]:
+                preview = item.get_text(" ", strip=True)
+                dt = item.select_one("time[datetime]")
+                print("PREVIEW_ITEM", item.get("data-post", "?"),
+                      (dt.get("datetime", "")[:10] if dt else "no-date"),
+                      repr(preview[:150]))
+            for div in posts:
                 text = div.get_text(" ", strip=True).lower()
                 if (("самое быстрое животное" not in text or
                      "2080" not in text or "сапсан" not in text)):
