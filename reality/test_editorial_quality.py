@@ -78,6 +78,14 @@ class EditorialTests(unittest.TestCase):
             "Его среда обитания точно увеличится."
         ))
 
+    def test_ai_editor_rejects_bilingual_species_glitch(self):
+        self.assertFalse(polish.editorial_ok(
+            "Peregrine falcons could gain 74% habitat by 2080",
+            "The area suitable for peregrine falcons could increase 74% by 2080.",
+            "Сапсаны могут расширить ареал на 74% к 2080 году",
+            "Площадь территорий для сапсанов (п peregrine falcon) может увеличиться на 74% к 2080 году."
+        ))
+
     def test_editor_falls_back_when_groq_unreachable(self):
         with patch.dict(os.environ, {"GROQ_API_KEY": "test-key"}):
             with patch.object(polish.requests, "post", side_effect=requests.Timeout):
