@@ -1,0 +1,36 @@
+name: Reality — correct 26 November peregrine post
+on:
+  issues:
+    types: [opened]
+permissions:
+  contents: read
+  issues: write
+jobs:
+  fix_peregrine:
+    if: github.event.issue.user.login == 'zamendirin-lgtm' && github.event.issue.title == '[reality] correct peregrine post in place'
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    env:
+      REALITY_BOT_TOKEN: ${{ secrets.REALITY_BOT_TOKEN }}
+      REALITY_CHAT_ID: '@priroda_realnosti'
+      REALITY_DRY_RUN: 'false'
+      GH_TOKEN: ${{ github.token }}
+      ISSUE_NUMBER: ${{ github.event.issue.number }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install dependencies
+        run: python -m pip install -r reality/requirements.txt
+      - name: Check editorial quality regression tests
+        run: python -m unittest discover -s reality -p 'test_editorial_quality.py' -v
+      - name: Find and update only the current peregrine article
+        run: python reality/correct_peregrine.py
+      - name: Report result without posting any duplicate
+        if: always()
+        env:
+          RESULT: ${{ job.status }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          gh issue comment "$ISSUE_NUMBER" --body "Peregrine post correction: **$RESULT**. [Run log]($RUN_URL). This job never sends a new Telegram post."
