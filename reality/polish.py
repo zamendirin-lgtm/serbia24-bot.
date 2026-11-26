@@ -22,6 +22,10 @@ PROMPT = """Ты выпускающий редактор русскоязычн�
 - не придумывай и не округляй числа, даты, страны, причины, результаты исследований;
 - «рост на 74%» не называй «удвоением»; площадь ареала не равна численности особей;
 - избегай штампов («гостеприимный дом», «сенсация», «уникальное открытие»);
+- пиши ТОЛЬКО по-русски, не вставляй английские пояснения в скобках
+  и латинские названия видов, если их можно назвать по-русски;
+- категорически нельзя добавлять причины вроде «нехватка пищи» или «места
+  гнездования», если в переданном фрагменте они не названы;
 - если исходных фактов недостаточно — publish=false.
 Верни ТОЛЬКО JSON {"publish":true/false,"title":"...","summary":"..."}.
 Без Markdown, ссылок, внешних знаний и английских пояснений."""
@@ -37,6 +41,12 @@ def editorial_ok(en_title: str, en_summary: str, title: str, summary: str) -> bo
     if len(title) > 105 or len(title) < 15 or len(summary) > 500:
         return False
     if not re.search("[А-Яа-яЁё]", title + summary):
+        return False
+    # No untranslated English phrases or broken half-Russian parentheses.
+    latin = re.findall(r"\b[A-Za-z]{2,}\b", title + " " + summary)
+    allowed_acronyms = {"NASA", "DNA", "RNA", "JWST", "CRISPR", "MIT", "GPS",
+                        "COVID", "Perseverance"}
+    if any(word not in allowed_acronyms for word in latin):
         return False
     if not quality.russian_sentences(summary):
         return False
