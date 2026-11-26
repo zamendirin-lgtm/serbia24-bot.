@@ -117,6 +117,6 @@ def compose_caption(title: str, translated: str, footer: str, emoji: str = "🔬
         selected.append(sentence)
         if len(selected) >= 3:
             break
-    if not selected or len(" ".join(selected)) < 85:
+    if not selected or len(" ".join(selected)) < 65:
         return ""
     return head + html.escape(" ".join(selected)) + tail
