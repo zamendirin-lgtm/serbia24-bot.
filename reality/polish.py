@@ -66,7 +66,8 @@ def polish(en_title: str, en_summary: str, ru_title: str, ru_summary: str):
     request = {
         "model": os.environ.get("GROQ_MODEL", "openai/gpt-oss-120b"),
         "temperature": 0.2,
-        "max_tokens": 500,
+        "max_completion_tokens": 1200,
+        "reasoning_effort": "low",
         "response_format": {"type": "json_object"},
         "messages": [
             {"role": "system", "content": PROMPT},
