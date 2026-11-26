@@ -1,5 +1,8 @@
 """Regression checks for errors observed in the 26 November 2026 post."""
 import unittest
+import os
+from unittest.mock import patch
+import requests
 
 import editorial_quality as eq
 import bot
@@ -74,6 +77,35 @@ class EditorialTests(unittest.TestCase):
             "Самое быстрое животное гарантированно получит новые земли",
             "Его среда обитания точно увеличится."
         ))
+
+    def test_editor_falls_back_when_groq_unreachable(self):
+        with patch.dict(os.environ, {"GROQ_API_KEY": "test-key"}):
+            with patch.object(polish.requests, "post", side_effect=requests.Timeout):
+                output = polish.polish(
+                    "Peregrine falcons may gain habitat",
+                    "Peregrine falcons may gain habitat in Britain.",
+                    "Сапсаны могут расширить ареал",
+                    "Площадь их потенциальной среды обитания может увеличиться."
+                )
+        self.assertEqual(output, (
+            "Сапсаны могут расширить ареал",
+            "Площадь их потенциальной среды обитания может увеличиться."
+        ))
+
+    def test_verified_falcon_fallback_is_species_specific(self):
+        self.assertIsNone(bot.verified_species_fallback("wildlife", {"posted": {}}))
+        self.assertIsNone(bot.verified_species_fallback("elephant", {"posted": {}}))
+        class FakePhoto:
+            status_code = 200
+            headers = {"content-type": "image/jpeg"}
+            def __enter__(self): return self
+            def __exit__(self, *args): return False
+            def raise_for_status(self): pass
+            def iter_content(self, n): yield b"\xff\xd8" + b"data"
+        with patch.object(bot.HTTP, "get", return_value=FakePhoto()):
+            image = bot.verified_species_fallback("peregrine falcon", {"posted": {}})
+        self.assertIsNotNone(image)
+        self.assertIn("Falco_peregrinus.jpg", image["url"])
 
     def test_caption_is_valid_and_fits_telegram(self):
         caption = eq.compose_caption("Изменение климата может расширить ареал сапсанов",
