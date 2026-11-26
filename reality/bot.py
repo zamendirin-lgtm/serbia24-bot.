@@ -21,6 +21,8 @@ import feedparser
 import requests
 from bs4 import BeautifulSoup
 
+import editorial_quality as eq
+
 ROOT = Path(__file__).resolve().parent
 STATE = ROOT / "state.json"
 TZ = ZoneInfo("Europe/Belgrade")
@@ -124,7 +126,8 @@ def translate(raw):
     if not raw:
         return ""
     if len(raw) > 680:
-        raw = raw[:680].rsplit(" ", 1)[0]
+        print("TRANSLATE_SOURCE_TOO_LONG")
+        return ""
     try:
         resp = HTTP.get("https://translate.googleapis.com/translate_a/single",
                         params={"client": "gtx", "sl": "en", "tl": "ru",
@@ -139,12 +142,11 @@ def translate(raw):
     return ""
 
 
-def story_topics(title):
-    """Prefer concrete subjects over generic modifiers like 'ancient'.
-
-    For example, 'ancient virus changes the brain' is a brain story,
-    not a photograph of archaeological ruins.
-    """
+def story_topics(title, summary=""):
+    """Choose an explicit subject, including species named in the RSS excerpt."""
+    animal = eq.animal_subject(title, summary)
+    if animal:
+        return animal
     t = title.lower()
     prefixes = {"archaeolog", "fung", "bacter"}
     matches = []
@@ -153,11 +155,10 @@ def story_topics(title):
                    else r"\b" + re.escape(word) + r"(?:s|es)?\b")
         if re.search(pattern, t):
             matches.append((word, topic))
-    if not matches:
-        return None
-    generic = {"ancient", "animal", "computer", "cell"}
-    specific = [item for item in matches if item[0] not in generic]
-    return (specific or matches)[0][1]
+    # Reject non-specific wildlife and other subjects that yield random photos.
+    generic = {"ancient", "animal"}
+    matches = [item for item in matches if item[0] not in generic]
+    return matches[0][1] if matches else None
 
 
 def story_candidates(state, now):
@@ -185,9 +186,12 @@ def story_candidates(state, now):
             low = title.lower()
             if any(term in low for term in MEDICAL_RISK):
                 continue
-            topic = story_topics(title)
+            topic = story_topics(title, summary)
             if not topic:
-                continue  # no unrelated picture just to fill a slot
+                continue  # never use arbitrary "wildlife" or "ancient" images
+            excerpt = eq.english_excerpt(summary)
+            if not excerpt:
+                continue  # source RSS only has incomplete sentences
             pub = ent.get("published_parsed") or ent.get("updated_parsed")
             if pub:
                 age = now.timestamp() - time.mktime(pub)
@@ -205,7 +209,7 @@ def story_candidates(state, now):
                 score += 6
             # RSS summary is never represented as an independently verified study.
             items[k] = {"key": k, "source": source, "title": title,
-                        "summary": summary, "url": link, "topic": topic_key,
+                        "summary": excerpt, "url": link, "topic": topic_key,
                         "picture_search": picture_search, "score": score}
     return sorted(items.values(), key=lambda x: x["score"], reverse=True)
 
@@ -241,6 +245,8 @@ def commons_image(query, state):
         return None
     used = {x.get("image_id") for x in state.get("posted", {}).values()}
     for page in pages:
+        if not eq.photo_matches(query, page.get("title", "")):
+            continue
         info = (page.get("imageinfo") or [{}])[0]
         if (info.get("mime") or "").lower() not in ("image/jpeg", "image/png"):
             continue
@@ -300,17 +306,10 @@ def compact_source_line(source_url, media):
 
 
 def story_caption(item, media, ru_title, ru_summary):
-    emoji = TOPIC_EMOJI.get(item["topic"], "🔬")
-    # Keep HTML links intact and mark topic photos as illustrative, not event photos.
-    title = html.escape(ru_title.strip(" .!?")[:125])
-    head = f"{emoji} <b>{title}</b>\n\n"
-    tail = "\n\n" + compact_source_line(item["url"], media)
-    for limit in range(520, 99, -30):
-        intro = html.escape(ru_summary[:limit].rsplit(" ", 1)[0])
-        caption = head + intro + tail
-        if len(caption) <= 1024:
-            return caption
-    return ""
+    # Never truncate a headline, sentence, link, or license attribution.
+    return eq.compose_caption(ru_title, ru_summary,
+                              compact_source_line(item["url"], media),
+                              TOPIC_EMOJI.get(item["topic"], "🔬"))
 
 
 def post_story(item, state):
@@ -325,6 +324,7 @@ def post_story(item, state):
         return False
     caption = story_caption(item, media, ru_title, ru_summary)
     if len(caption) < 100:
+        print("EDITORIAL_REJECTED", item["title"][:100])
         return False
     print("STORY", item["source"], item["title"][:100], "image:", media["id"])
     reply = telegram("sendPhoto", {"chat_id": CHAT, "photo": media["url"],
@@ -333,15 +333,19 @@ def post_story(item, state):
     if not reply.get("ok"):
         return False
     if not DRY:
-        record_send(state, item["key"], media["id"])
+        record_send(state, item["key"], media["id"],
+                    reply.get("result", {}).get("message_id"))
     return True
 
 
-def record_send(state, key, media_id):
+def record_send(state, key, media_id, message_id=None):
     now = datetime.now(timezone.utc)
     local_day = now.astimezone(TZ).date().isoformat()
-    state.setdefault("posted", {})[key] = {"at": now.timestamp(),
-       "local_day": local_day, "image_id": media_id}
+    record = {"at": now.timestamp(), "local_day": local_day,
+              "image_id": media_id}
+    if message_id is not None:
+        record["message_id"] = message_id
+    state.setdefault("posted", {})[key] = record
     # Keep 90 days of records, enough to prevent near-term repeats.
     state["posted"] = {k: v for k, v in state["posted"].items()
                        if now.timestamp() - v.get("at", 0) < 90 * 86400}
@@ -374,8 +378,11 @@ def nasa_candidates(state, now):
         key = "nasa:" + nasa_id
         if key in sent:
             continue
+        excerpt = eq.english_excerpt(desc, max_length=450)
+        if not excerpt:
+            continue
         candidates.append({"key": key, "id": nasa_id, "title": title,
-            "summary": desc[:550], "url": "https://images.nasa.gov/details/" + nasa_id})
+            "summary": excerpt, "url": "https://images.nasa.gov/details/" + nasa_id})
     return candidates[:10]
 
 
@@ -416,12 +423,14 @@ def post_nasa(state, now):
         if not media_url:
             continue
         ru_title = translate(item["title"])
-        ru_summary = translate(item["summary"][:430])
+        ru_summary = translate(item["summary"])
         if not ru_title or not ru_summary or len(ru_summary) < 70:
             continue
-        caption = ("🎬 <b>" + html.escape(ru_title[:115]) + "</b>\n\n" +
-                   html.escape(ru_summary[:570]) + '\n\nВидео: <a href="' +
-                   html.escape(item["url"], quote=True) + '">NASA</a> · фрагмент до 25 секунд')
+        footer = '🎬 <a href="' + html.escape(item["url"], quote=True) + '">NASA</a> · видео до 25 секунд'
+        caption = eq.compose_caption(ru_title, ru_summary, footer, "🌌")
+        if not caption:
+            print("VIDEO_EDITORIAL_REJECTED", item["title"][:90])
+            continue
         if DRY:
             telegram("sendVideo", {"chat_id": CHAT, "caption": caption})
             return True
@@ -441,11 +450,12 @@ def post_nasa(state, now):
                 if not 5000 < out.stat().st_size < 45_000_000:
                     continue
                 with out.open("rb") as fp:
-                    telegram("sendVideo", {"chat_id": CHAT, "caption": caption[:1024],
+                    result = telegram("sendVideo", {"chat_id": CHAT, "caption": caption,
                         "parse_mode": "HTML", "supports_streaming": "true",
                         "disable_notification": "true"},
                         files={"video": ("science.mp4", fp, "video/mp4")})
-            record_send(state, item["key"], item["id"])
+            record_send(state, item["key"], item["id"],
+                        result.get("result", {}).get("message_id"))
             print("NASA_VIDEO_POSTED", item["id"])
             return True
         except (requests.RequestException, OSError, subprocess.SubprocessError,
