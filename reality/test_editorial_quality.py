@@ -86,6 +86,14 @@ class EditorialTests(unittest.TestCase):
             "Площадь территорий для сапсанов (п peregrine falcon) может увеличиться на 74% к 2080 году."
         ))
 
+    def test_ai_editor_rejects_categorical_body_under_uncertain_source(self):
+        self.assertFalse(polish.editorial_ok(
+            "Peregrine falcons could see habitat rise by 74% by 2080",
+            "The area suitable for peregrine falcons could grow by 74% by 2080.",
+            "Сапсаны могут расширить ареал на 74% к 2080 году",
+            "Площадь пригодного для сапсанов ареала увеличится на 74% к 2080 году."
+        ))
+
     def test_editor_falls_back_when_groq_unreachable(self):
         with patch.dict(os.environ, {"GROQ_API_KEY": "test-key"}):
             with patch.object(polish.requests, "post", side_effect=requests.Timeout):
