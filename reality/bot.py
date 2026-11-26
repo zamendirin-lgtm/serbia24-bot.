@@ -22,6 +22,7 @@ import requests
 from bs4 import BeautifulSoup
 
 import editorial_quality as eq
+import polish as science_editor
 
 ROOT = Path(__file__).resolve().parent
 STATE = ROOT / "state.json"
@@ -322,6 +323,11 @@ def post_story(item, state):
     if not ru_title or not ru_summary or len(ru_summary) < 80:
         print("TRANSLATION_UNAVAILABLE", item["source"])
         return False
+    edited = science_editor.polish(item["title"], item["summary"], ru_title, ru_summary)
+    if edited is None:
+        print("SCIENCE_EDITOR_SKIPPED", item["title"][:100])
+        return False
+    ru_title, ru_summary = edited
     caption = story_caption(item, media, ru_title, ru_summary)
     if len(caption) < 100:
         print("EDITORIAL_REJECTED", item["title"][:100])
@@ -426,6 +432,11 @@ def post_nasa(state, now):
         ru_summary = translate(item["summary"])
         if not ru_title or not ru_summary or len(ru_summary) < 70:
             continue
+        edited = science_editor.polish(item["title"], item["summary"], ru_title, ru_summary)
+        if edited is None:
+            print("NASA_EDITOR_SKIPPED", item["title"][:90])
+            continue
+        ru_title, ru_summary = edited
         footer = '🎬 <a href="' + html.escape(item["url"], quote=True) + '">NASA</a> · видео до 25 секунд'
         caption = eq.compose_caption(ru_title, ru_summary, footer, "🌌")
         if not caption:
