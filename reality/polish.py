@@ -19,6 +19,8 @@ PROMPT = """Ты выпускающий редактор русскоязычн�
 - обязательно назвать конкретного героя, животное, явление (сапсан, а не «животное»),
   обстоятельство и главную цифру, если это есть в оригинале;
 - не подменяй «может/прогнозируется» на «точно будет»;
+  если источник содержит could/may, напиши «может»/«могут» и в
+  заголовке, и в первом предложении основного текста;
 - не придумывай и не округляй числа, даты, страны, причины, результаты исследований;
 - «рост на 74%» не называй «удвоением»; площадь ареала не равна численности особей;
 - избегай штампов («гостеприимный дом», «сенсация», «уникальное открытие»);
@@ -58,7 +60,13 @@ def editorial_ok(en_title: str, en_summary: str, title: str, summary: str) -> bo
     if ("peregrine" in low or "falco peregrinus" in low) and "сапсан" not in output.lower():
         return False
     if any(x in low for x in ("could ", "may ", "might ", "likely ", "projected")):
-        if not any(x in output.lower() for x in ("может", "могут", "возмож", "вероят", "прогноз", "предполага", "ожида")):
+        # An uncertain source must stay conditional in BOTH headline and story.
+        # A cautious title followed by "will definitely grow" is misleading.
+        conditional = ("может", "могут", "возмож", "вероят",
+                       "прогноз", "предполага", "ожида")
+        if not any(x in title.lower() for x in conditional):
+            return False
+        if not any(x in summary.lower() for x in conditional):
             return False
     return True
 
