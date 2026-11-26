@@ -70,6 +70,38 @@ def locate_original():
     return None
 
 
+def verified_falcon_photo():
+    """Fallback: documented public-domain US Fish & Wildlife Service falcon."""
+    page = "https://commons.wikimedia.org/wiki/File:Falco_peregrinus.jpg"
+    try:
+        response = requests.get("https://commons.wikimedia.org/w/api.php", params={
+            "action": "query", "format": "json", "formatversion": "2",
+            "titles": "File:Falco peregrinus.jpg",
+            "prop": "imageinfo", "iiprop": "url|mime|extmetadata",
+            "iiurlwidth": "1280"
+        }, timeout=22)
+        response.raise_for_status()
+        pages = response.json().get("query", {}).get("pages", [])
+        for entry in pages:
+            info = (entry.get("imageinfo") or [{}])[0]
+            url = info.get("thumburl") or info.get("url", "")
+            if (entry.get("title") != "File:Falco peregrinus.jpg"
+                    or info.get("mime") != "image/jpeg"
+                    or not url.startswith("https://upload.wikimedia.org/")):
+                continue
+            meta = info.get("extmetadata", {})
+            name = bot.clean(meta.get("LicenseShortName", {}).get("value", ""))
+            if "public domain" not in name.lower():
+                print("FALCON_PUBLIC_DOMAIN_LICENSE_NOT_CONFIRMED", repr(name))
+                continue
+            return {"id": "commons:public-domain-falco-peregrinus",
+                    "url": url, "page": page,
+                    "license": {"name": "Public domain", "credit": "", "lic_url": ""}}
+    except (requests.RequestException, ValueError, TypeError) as exc:
+        print("FALCON_PUBLIC_DOMAIN_FETCH_FAILED", type(exc).__name__)
+    return None
+
+
 def main():
     if bot.DRY or not bot.TOKEN:
         raise RuntimeError("This correction needs the secret and live mode")
@@ -77,7 +109,8 @@ def main():
     if message_id is None:
         print("NOT_EDITED: target post not reliably identified")
         sys.exit(1)
-    media = bot.commons_image("peregrine falcon", bot.read_state())
+    media = (bot.commons_image("peregrine falcon", bot.read_state())
+             or verified_falcon_photo())
     if not media:
         print("NOT_EDITED: no reusable photo confirmed to depict a peregrine falcon")
         sys.exit(1)
